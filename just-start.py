@@ -111,7 +111,7 @@ def main(stdscr):
     while True:
         try:
             write_status(status_window, '(r)efresh tasks, (a)dd task, '
-                         '(d)elete task, (!) custom command, (p)omodoro (toggle)'
+                         '(d)elete task, d(o)ne (mark task), (!) custom command, (p)omodoro (toggle)'
                          ', (s)top pomodoro, (q)uit')
             read_char = input_char(textbox_window)
 
@@ -132,7 +132,6 @@ def main(stdscr):
 
             try:
                 task_actions[read_char](task_window)
-                task_window.refresh()
                 continue
             except KeyError:
                 pass
@@ -141,6 +140,8 @@ def main(stdscr):
                 action = task_status_textbox_actions[read_char]
                 action(task_window, textbox_window, status_window)
                 refresh_tasks(task_window)
+                continue
+            except KeyboardInterrupt:
                 continue
             except KeyError:
                 pass
