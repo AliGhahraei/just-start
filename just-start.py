@@ -162,5 +162,5 @@ def main(stdscr):
 try:
     wrapper(main)
 except error:
-    print(f"Couldn't start {argv[0]}. My best guess is that the window was too "
-          "small")
+    print(f"An error occured while drawing {argv[0]}. My best guess is that the "
+          f"window was too small")
