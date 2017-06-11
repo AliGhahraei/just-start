@@ -68,6 +68,7 @@ def custom_command(task_window, textbox_window, status_window):
 
 
 def refresh_tasks(task_window):
+    task_window.clear()
     tasks = run(['task'], stdout=PIPE).stdout.decode('utf-8').split("\n")
 
     for y, task in enumerate(tasks):
