@@ -3,6 +3,7 @@ from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from curses.textpad import rectangle
 from math import floor
 from subprocess import run, PIPE
+from sys import argv
 
 
 def input_char(textbox_window):
@@ -157,4 +158,9 @@ def main(stdscr):
         except KeyboardInterrupt:
             quit()
 
-wrapper(main)
+
+try:
+    wrapper(main)
+except error:
+    print(f"Couldn't start {argv[0]}. My best guess is that the window was too "
+          "small")
