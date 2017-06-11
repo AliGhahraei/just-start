@@ -53,13 +53,20 @@ def input_tasknum(textbox_window, status_window):
 
 def add(task_window, textbox_window, status_window):
     name = input_sequence(textbox_window, status_window,
-                          "Enter the task's name")
-    run(['task', 'add', name], stdout=PIPE)
+                          "Enter the new task's data")
+    run(['task', 'add'] + name.split(), stdout=PIPE)
 
 
 def delete(task_window, textbox_window, status_window):
     number = input_tasknum(textbox_window, status_window)
     run(['task', number, 'delete', 'rc.confirmation=off'], stdout=PIPE)
+
+
+def modify(task_window, textbox_window, status_window):
+    number = input_tasknum(textbox_window, status_window)
+    name = input_sequence(textbox_window, status_window,
+                          "Enter the modified task's data")
+    run(['task', number, 'modify'] + name.split(), stdout=PIPE)
 
 
 def custom_command(task_window, textbox_window, status_window):
@@ -112,9 +119,9 @@ def main(stdscr):
 
     while True:
         try:
-            write_status(status_window, '(r)efresh tasks, (a)dd task, '
-                         '(d)elete task, d(o)ne (mark task), (!) custom command, (p)omodoro (toggle)'
-                         ', (s)top pomodoro, (q)uit')
+            write_status(status_window, '(r)efresh tasks, (a)dd task, (d)elete '
+                         'task, d(o)ne (mark task), (m)odify, (!)custom command,'
+                         ' (p)omodoro (toggle), (s)top pomodoro, (q)uit')
             read_char = input_char(textbox_window)
 
             task_actions = {
@@ -124,6 +131,7 @@ def main(stdscr):
                 'a': add,
                 'd': delete,
                 'o': done,
+                'm': modify,
                 '!': custom_command,
             }
             other_actions = {
