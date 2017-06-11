@@ -10,22 +10,17 @@ def input_char(textbox_window):
     return textbox_window.getkey(*textbox_window.getyx())
 
 
-@contextmanager
-def echo_nocbreak():
-    echo()
-    nocbreak()
-    yield
-    noecho()
-    cbreak()
-
-
 def input_sequence(textbox_window, status_window, status):
     write_status(status_window, status + " (or Ctrl-C to cancel)")
     textbox_window.clear()
+    echo()
+    nocbreak()
 
-    with echo_nocbreak():
+    try:
         key_sequence = textbox_window.getstr(*textbox_window.getyx())
-
+    finally:
+        noecho()
+        cbreak()
     return key_sequence
 
 
