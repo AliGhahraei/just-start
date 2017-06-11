@@ -37,21 +37,18 @@ def done(task_window, textbox_window, status_window):
     run(['task', number, 'done'], stdout=PIPE)
 
 
-def delete(task_window, textbox_window, status_window):
-    number_is_valid = False
+def input_tasknum(textbox_window, status_window):
     number = input_sequence(textbox_window, status_window,
                             "Enter the task's number")
 
-    while not number_is_valid:
+    while True:
         try:
             int(number)
+            return number
         except ValueError:
             number = input_sequence(textbox_window, status_window,
                                     "Please enter a valid number")
-        else:
-            number_is_valid = True
 
-    run(['task', number, 'delete', 'rc.confirmation=off'], stdout=PIPE)
 
 def add(task_window, textbox_window, status_window):
     name = input_sequence(textbox_window, status_window,
@@ -59,6 +56,9 @@ def add(task_window, textbox_window, status_window):
     run(['task', 'add', name], stdout=PIPE)
 
 
+def delete(task_window, textbox_window, status_window):
+    number = input_tasknum(textbox_window, status_window)
+    run(['task', number, 'delete', 'rc.confirmation=off'], stdout=PIPE)
 
 
 def custom_command(task_window, textbox_window, status_window):
