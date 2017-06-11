@@ -32,6 +32,9 @@ def stop():
     pass
 
 
+def done(task_window, textbox_window, status_window):
+    number = input_tasknum(textbox_window, status_window)
+    run(['task', number, 'done'], stdout=PIPE)
 
 
 def delete(task_window, textbox_window, status_window):
@@ -58,8 +61,6 @@ def add(task_window, textbox_window, status_window):
 
 
 
-def quit_():
-    quit()
 def custom_command(task_window, textbox_window, status_window):
     command = input_sequence(textbox_window, status_window, 'Enter your command')
 
@@ -120,12 +121,13 @@ def main(stdscr):
             task_status_textbox_actions = {
                 'a': add,
                 'd': delete,
+                'o': done,
                 '!': custom_command,
             }
             other_actions = {
                 'p': toggle_pomodoro,
                 's': stop,
-                'q': quit_,
+                'q': quit,
             }
 
             try:
@@ -151,6 +153,6 @@ def main(stdscr):
                 input_char(textbox_window)
 
         except KeyboardInterrupt:
-            quit_()
+            quit()
 
 wrapper(main)
