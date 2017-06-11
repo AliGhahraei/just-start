@@ -37,11 +37,6 @@ def stop():
     pass
 
 
-def add(task_window, textbox_window, status_window):
-    name = input_sequence(textbox_window, status_window,
-                          "Enter the task's name")
-    run(['task', 'add', name], stdout=PIPE)
-    refresh_tasks(task_window)
 
 
 def delete(task_window, textbox_window, status_window):
@@ -59,18 +54,21 @@ def delete(task_window, textbox_window, status_window):
             number_is_valid = True
 
     run(['task', number, 'delete', 'rc.confirmation=off'], stdout=PIPE)
-    refresh_tasks(task_window)
+
+def add(task_window, textbox_window, status_window):
+    name = input_sequence(textbox_window, status_window,
+                          "Enter the task's name")
+    run(['task', 'add', name], stdout=PIPE)
 
 
-def custom_command(task_window, textbox_window, status_window):
-    command = input_sequence(textbox_window, status_window, 'Enter your command')
-
-    run(['task'] + command.split())
-    refresh_tasks(task_window)
 
 
 def quit_():
     quit()
+def custom_command(task_window, textbox_window, status_window):
+    command = input_sequence(textbox_window, status_window, 'Enter your command')
+
+    run(['task'] + command.split(), stdout=PIPE)
 
 
 def refresh_tasks(task_window):
@@ -145,7 +143,7 @@ def main(stdscr):
             try:
                 action = task_status_textbox_actions[read_char]
                 action(task_window, textbox_window, status_window)
-                task_window.refresh()
+                refresh_tasks(task_window)
                 continue
             except KeyError:
                 pass
