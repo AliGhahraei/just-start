@@ -7,5 +7,5 @@ setup(
     author='Ali Ghahraei Figueroa',
     author_email='aligf94@gmail.com',
     url='https://github.com/AliGhahraei/just-start',
-    py_modules=['just-start'],
+    scripts='just-start',
 )
