@@ -129,7 +129,7 @@ def main(stdscr):
             task_actions = {
                 'r': refresh_tasks,
             }
-            task_status_textbox_actions = {
+            io_actions = {
                 'a': add,
                 'd': delete,
                 'o': done,
@@ -149,7 +149,7 @@ def main(stdscr):
                 pass
 
             try:
-                action = task_status_textbox_actions[read_char]
+                action = io_actions[read_char]
                 action(task_window, textbox_window, status_window)
                 refresh_tasks(task_window)
                 continue
