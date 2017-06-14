@@ -124,31 +124,31 @@ def draw_windows(stdscr):
 def main(stdscr):
     task_window, status_window, textbox_window = draw_windows(stdscr)
 
+    task_actions = {
+        'r': refresh_tasks,
+    }
+    io_actions = {
+        'a': add,
+        'd': delete,
+        'o': done,
+        'm': modify,
+        '!': custom_command,
+    }
+    stdscr_actions = {
+        "KEY_RESIZE": draw_windows,
+    }
+    parameterless_actions = {
+        'p': toggle_pomodoro,
+        's': stop,
+        'q': quit,
+    }
+
     while True:
         try:
             write_status(status_window, '(r)efresh tasks, (a)dd task, (d)elete '
                          'task, d(o)ne (mark task), (m)odify, (!)custom command,'
                          ' (p)omodoro (toggle), (s)top pomodoro, (q)uit')
             read_char = input_char(textbox_window)
-
-            task_actions = {
-                'r': refresh_tasks,
-            }
-            io_actions = {
-                'a': add,
-                'd': delete,
-                'o': done,
-                'm': modify,
-                '!': custom_command,
-            }
-            stdscr_actions = {
-                "KEY_RESIZE": draw_windows,
-            }
-            parameterless_actions = {
-                'p': toggle_pomodoro,
-                's': stop,
-                'q': quit,
-            }
 
             try:
                 task_actions[read_char](task_window)
