@@ -102,8 +102,8 @@ def newborderedwin(height, width, start_y, start_x):
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
 
-def main(stdscr):
-    stdscr.clear()
+def draw_windows(stdscr):
+    stdscr.refresh()
 
     MAX_Y, MAX_X = stdscr.getmaxyx()
     STATUS_WINDOW_HEIGHT = 5
@@ -118,6 +118,11 @@ def main(stdscr):
                                     TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT, 0)
 
     refresh_tasks(task_window)
+    return task_window, status_window, textbox_window
+
+
+def main(stdscr):
+    task_window, status_window, textbox_window = draw_windows(stdscr)
 
     while True:
         try:
@@ -135,6 +140,9 @@ def main(stdscr):
                 'o': done,
                 'm': modify,
                 '!': custom_command,
+            }
+            stdscr_actions = {
+                "KEY_RESIZE": draw_windows,
             }
             parameterless_actions = {
                 'p': toggle_pomodoro,
@@ -154,6 +162,13 @@ def main(stdscr):
                 refresh_tasks(task_window)
                 continue
             except KeyboardInterrupt:
+                continue
+            except KeyError:
+                pass
+
+            try:
+                new_windows = stdscr_actions[read_char](stdscr)
+                task_window, status_window, textbox_window = new_windows
                 continue
             except KeyError:
                 pass
