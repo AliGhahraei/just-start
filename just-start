@@ -54,33 +54,37 @@ def input_tasknum(textbox_window, status_window):
                                     "Please enter a valid number")
 
 
+def run_task(arg_list=[]):
+    return run(['task'] + arg_list, stdout=PIPE)
+
+
 def add(task_window, textbox_window, status_window):
     name = input_sequence(textbox_window, status_window,
                           "Enter the new task's data")
-    run(['task', 'add'] + name.split(), stdout=PIPE)
+    run_task(['add'] + name.split())
 
 
 def delete(task_window, textbox_window, status_window):
     number = input_tasknum(textbox_window, status_window)
-    run(['task', number, 'delete', 'rc.confirmation=off'], stdout=PIPE)
+    run_task([number, 'delete', 'rc.confirmation=off'])
 
 
 def modify(task_window, textbox_window, status_window):
     number = input_tasknum(textbox_window, status_window)
     name = input_sequence(textbox_window, status_window,
                           "Enter the modified task's data")
-    run(['task', number, 'modify'] + name.split(), stdout=PIPE)
+    run_task([number, 'modify'] + name.split())
 
 
 def custom_command(task_window, textbox_window, status_window):
     command = input_sequence(textbox_window, status_window, 'Enter your command')
 
-    run(['task'] + command.split(), stdout=PIPE)
+    run_task(command.split())
 
 
 def refresh_tasks(task_window):
     task_window.clear()
-    tasks = run(['task'], stdout=PIPE).stdout.decode('utf-8').split("\n")
+    tasks = run_task().stdout.decode('utf-8').split("\n")
 
     for y, task in enumerate(tasks):
         task_window.addstr(y, 1, task)
