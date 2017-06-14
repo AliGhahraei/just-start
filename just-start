@@ -136,7 +136,7 @@ def main(stdscr):
                 'm': modify,
                 '!': custom_command,
             }
-            other_actions = {
+            parameterless_actions = {
                 'p': toggle_pomodoro,
                 's': stop,
                 'q': quit,
@@ -159,7 +159,7 @@ def main(stdscr):
                 pass
 
             try:
-                other_actions[read_char]()
+                parameterless_actions[read_char]()
             except KeyError:
                 write_status(status_window, f'Unknown action: "{read_char}". '
                              'Press any key to continue')
