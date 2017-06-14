@@ -14,7 +14,8 @@ def input_char(textbox_window):
 
 
 def input_sequence(textbox_window, status_window, status):
-    write_status(status_window, status + " (or Ctrl-C to cancel)")
+    write_status(status_window, status + " and press Ctrl-Enter when done (or "
+                 "Ctrl-C to cancel)")
     textbox_window.clear()
     echo()
     nocbreak()
