@@ -86,8 +86,11 @@ def refresh_tasks(task_window):
     task_window.clear()
     tasks = run_task().stdout.decode('utf-8').split("\n")
 
-    for y, task in enumerate(tasks):
-        task_window.addstr(y, 1, task)
+    try:
+        for y, task in enumerate(tasks):
+            task_window.addstr(y, 1, task)
+    except error:
+        pass
 
     task_window.refresh()
 
