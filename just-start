@@ -37,21 +37,21 @@ def stop():
 
 
 def complete(task_window, textbox_window, status_window):
-    number = input_tasknum(textbox_window, status_window)
-    run(['task', number, 'done'], stdout=PIPE)
+    id_ = input_taskid(textbox_window, status_window)
+    run(['task', id_, 'done'], stdout=PIPE)
 
 
-def input_tasknum(textbox_window, status_window):
-    number = input_sequence(textbox_window, status_window,
-                            "Enter the task's number")
+def input_taskid(textbox_window, status_window):
+    id_ = input_sequence(textbox_window, status_window,
+                            "Enter the task's id")
 
     while True:
         try:
-            int(number)
-            return number
+            int(id_)
+            return id_
         except ValueError:
-            number = input_sequence(textbox_window, status_window,
-                                    "Please enter a valid number")
+            id_ = input_sequence(textbox_window, status_window,
+                                    "Please enter a valid id")
 
 
 def run_task(arg_list=[]):
@@ -65,15 +65,15 @@ def add(task_window, textbox_window, status_window):
 
 
 def delete(task_window, textbox_window, status_window):
-    number = input_tasknum(textbox_window, status_window)
-    run_task([number, 'delete', 'rc.confirmation=off'])
+    id_ = input_taskid(textbox_window, status_window)
+    run_task([id_, 'delete', 'rc.confirmation=off'])
 
 
 def modify(task_window, textbox_window, status_window):
-    number = input_tasknum(textbox_window, status_window)
+    id_ = input_taskid(textbox_window, status_window)
     name = input_sequence(textbox_window, status_window,
                           "Enter the modified task's data")
-    run_task([number, 'modify'] + name.split())
+    run_task([id_, 'modify'] + name.split())
 
 
 def custom_command(task_window, textbox_window, status_window):
