@@ -36,7 +36,7 @@ def stop():
     pass
 
 
-def done(task_window, textbox_window, status_window):
+def complete(task_window, textbox_window, status_window):
     number = input_tasknum(textbox_window, status_window)
     run(['task', number, 'done'], stdout=PIPE)
 
@@ -138,7 +138,7 @@ def main(stdscr):
     io_actions = {
         'a': add,
         'd': delete,
-        'o': done,
+        'c': complete,
         'm': modify,
         '!': custom_command,
     }
@@ -154,7 +154,7 @@ def main(stdscr):
     while True:
         try:
             write_status(status_window, '(r)efresh tasks, (a)dd task, (d)elete '
-                         'task, d(o)ne (mark task), (m)odify, (!)custom command,'
+                         'task, (c)omplete task, (m)odify, (!)custom command,'
                          ' (p)omodoro (toggle), (s)top pomodoro, (q)uit')
             read_char = input_char(textbox_window)
 
