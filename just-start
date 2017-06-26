@@ -72,10 +72,10 @@ class WinDrawer():
                 id_ = self.input_sequence("Please enter a valid id")
 
 
-    def draw_windows(self, stdscr):
-        stdscr.refresh()
+    def draw_windows(self):
+        self.stdscr.refresh()
 
-        MAX_Y, MAX_X = stdscr.getmaxyx()
+        MAX_Y, MAX_X = self.stdscr.getmaxyx()
         STATUS_WINDOW_HEIGHT = 5
         TEXTBOX_WINDOW_HEIGHT = 4
         TASK_WINDOW_HEIGHT = MAX_Y - STATUS_WINDOW_HEIGHT - TEXTBOX_WINDOW_HEIGHT
@@ -133,7 +133,7 @@ class WinDrawer():
 
 def main(stdscr):
     windrawer = WinDrawer(stdscr)
-    windrawer.draw_windows(stdscr)
+    windrawer.draw_windows()
 
     task_actions = {
         "KEY_RESIZE": windrawer.draw_windows,
