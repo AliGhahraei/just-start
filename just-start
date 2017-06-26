@@ -36,11 +36,6 @@ def stop():
     pass
 
 
-def complete(task_window, textbox_window, status_window):
-    id_ = input_taskid(textbox_window, status_window)
-    run(['task', id_, 'done'], stdout=PIPE)
-
-
 def input_taskid(textbox_window, status_window):
     id_ = input_sequence(textbox_window, status_window,
                             "Enter the task's id")
@@ -56,43 +51,6 @@ def input_taskid(textbox_window, status_window):
 
 def run_task(arg_list=[]):
     return run(['task'] + arg_list, stdout=PIPE)
-
-
-def add(task_window, textbox_window, status_window):
-    name = input_sequence(textbox_window, status_window,
-                          "Enter the new task's data")
-    run_task(['add'] + name.split())
-
-
-def delete(task_window, textbox_window, status_window):
-    id_ = input_taskid(textbox_window, status_window)
-    run_task([id_, 'delete', 'rc.confirmation=off'])
-
-
-def modify(task_window, textbox_window, status_window):
-    id_ = input_taskid(textbox_window, status_window)
-    name = input_sequence(textbox_window, status_window,
-                          "Enter the modified task's data")
-    run_task([id_, 'modify'] + name.split())
-
-
-def custom_command(task_window, textbox_window, status_window):
-    command = input_sequence(textbox_window, status_window, 'Enter your command')
-
-    run_task(command.split())
-
-
-def refresh_tasks(task_window):
-    task_window.clear()
-    tasks = run_task().stdout.decode('utf-8').split("\n")
-
-    try:
-        for y, task in enumerate(tasks):
-            task_window.addstr(y, 1, task)
-    except error:
-        pass
-
-    task_window.refresh()
 
 
 def write_status(status_window, status):
@@ -131,28 +89,66 @@ class WinDrawer():
                                              TASK_WINDOW_HEIGHT
                                              + STATUS_WINDOW_HEIGHT, 0)
 
-        refresh_tasks(self.task_window)
+        self.refresh_tasks()
         return self.task_window, self.status_window, self.textbox_window
+
+
+    def refresh_tasks(self):
+        self.task_window.clear()
+        tasks = run_task().stdout.decode('utf-8').split("\n")
+
+        try:
+            for y, task in enumerate(tasks):
+                self.task_window.addstr(y, 1, task)
+        except error:
+            pass
+
+        self.task_window.refresh()
+
+
+    def add(self):
+        name = input_sequence(self.textbox_window, self.status_window,
+                              "Enter the new task's data")
+        run_task(['add'] + name.split())
+
+
+    def delete(self):
+        id_ = input_taskid(self.textbox_window, self.status_window)
+        run_task([id_, 'delete', 'rc.confirmation=off'])
+
+
+    def modify(self):
+        id_ = input_taskid(self.textbox_window, self.status_window)
+        name = input_sequence(self.textbox_window, self.status_window,
+        "Enter the modified task's data")
+        run_task([id_, 'modify'] + name.split())
+
+
+    def complete(self):
+        id_ = input_taskid(self.textbox_window, self.status_window)
+        run(['task', id_, 'done'], stdout=PIPE)
+
+
+    def custom_command(self):
+        command = input_sequence(self.textbox_window, self.status_window,
+                                 'Enter your command')
+        run_task(command.split())
 
 
 def main(stdscr):
     windrawer = WinDrawer(stdscr)
     task_window, status_window, textbox_window = windrawer.draw_windows(stdscr)
 
-    task_actions = {
-        'r': refresh_tasks,
-    }
-    io_actions = {
-        'a': add,
-        'd': delete,
-        'c': complete,
-        'm': modify,
-        '!': custom_command,
-    }
     stdscr_actions = {
         "KEY_RESIZE": windrawer.draw_windows,
     }
     parameterless_actions = {
+        'r': windrawer.refresh_tasks,
+        'a': windrawer.add,
+        'd': windrawer.delete,
+        'c': windrawer.complete,
+        'm': windrawer.modify,
+        '!': windrawer.custom_command,
         'p': toggle_pomodoro,
         's': stop,
         'q': quit,
@@ -166,22 +162,6 @@ def main(stdscr):
             read_char = input_char(textbox_window)
 
             try:
-                task_actions[read_char](task_window)
-                continue
-            except KeyError:
-                pass
-
-            try:
-                action = io_actions[read_char]
-                action(task_window, textbox_window, status_window)
-                refresh_tasks(task_window)
-                continue
-            except KeyboardInterrupt:
-                continue
-            except KeyError:
-                pass
-
-            try:
                 new_windows = stdscr_actions[read_char](stdscr)
                 task_window, status_window, textbox_window = new_windows
                 continue
@@ -190,6 +170,9 @@ def main(stdscr):
 
             try:
                 parameterless_actions[read_char]()
+                windrawer.refresh_tasks()
+            except KeyboardInterrupt:
+                continue
             except KeyError:
                 write_status(status_window, f'Unknown action: "{read_char}". '
                              'Press any key to continue')
