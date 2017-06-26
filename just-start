@@ -124,11 +124,12 @@ class WinDrawer():
         TASK_WINDOW_HEIGHT = MAX_Y - STATUS_WINDOW_HEIGHT - TEXTBOX_WINDOW_HEIGHT
 
         self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
-                                     0, 0)
+                                          0, 0)
         self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT, MAX_X - 1,
-                                       TASK_WINDOW_HEIGHT, 0)
+                                            TASK_WINDOW_HEIGHT, 0)
         self.textbox_window = newborderedwin(TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
-                                        TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT, 0)
+                                             TASK_WINDOW_HEIGHT
+                                             + STATUS_WINDOW_HEIGHT, 0)
 
         refresh_tasks(self.task_window)
         return self.task_window, self.status_window, self.textbox_window
