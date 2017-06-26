@@ -110,27 +110,33 @@ def newborderedwin(height, width, start_y, start_x):
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
 
-def draw_windows(stdscr):
-    stdscr.refresh()
+class WinDrawer():
+    def __init__(self, stdscr):
+        self.stdscr = stdscr
 
-    MAX_Y, MAX_X = stdscr.getmaxyx()
-    STATUS_WINDOW_HEIGHT = 5
-    TEXTBOX_WINDOW_HEIGHT = 4
-    TASK_WINDOW_HEIGHT = MAX_Y - STATUS_WINDOW_HEIGHT - TEXTBOX_WINDOW_HEIGHT
 
-    task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
-                                 0, 0)
-    status_window = newborderedwin(STATUS_WINDOW_HEIGHT, MAX_X - 1,
-                                   TASK_WINDOW_HEIGHT, 0)
-    textbox_window = newborderedwin(TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
-                                    TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT, 0)
+    def draw_windows(self, stdscr):
+        stdscr.refresh()
 
-    refresh_tasks(task_window)
-    return task_window, status_window, textbox_window
+        MAX_Y, MAX_X = stdscr.getmaxyx()
+        STATUS_WINDOW_HEIGHT = 5
+        TEXTBOX_WINDOW_HEIGHT = 4
+        TASK_WINDOW_HEIGHT = MAX_Y - STATUS_WINDOW_HEIGHT - TEXTBOX_WINDOW_HEIGHT
+
+        self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
+                                     0, 0)
+        self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT, MAX_X - 1,
+                                       TASK_WINDOW_HEIGHT, 0)
+        self.textbox_window = newborderedwin(TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
+                                        TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT, 0)
+
+        refresh_tasks(self.task_window)
+        return self.task_window, self.status_window, self.textbox_window
 
 
 def main(stdscr):
-    task_window, status_window, textbox_window = draw_windows(stdscr)
+    windrawer = WinDrawer(stdscr)
+    task_window, status_window, textbox_window = windrawer.draw_windows(stdscr)
 
     task_actions = {
         'r': refresh_tasks,
@@ -143,7 +149,7 @@ def main(stdscr):
         '!': custom_command,
     }
     stdscr_actions = {
-        "KEY_RESIZE": draw_windows,
+        "KEY_RESIZE": windrawer.draw_windows,
     }
     parameterless_actions = {
         'p': toggle_pomodoro,
