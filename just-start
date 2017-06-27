@@ -89,7 +89,6 @@ class WinDrawer():
                                              + STATUS_WINDOW_HEIGHT, 0)
 
         self.refresh_tasks()
-        return self.task_window, self.status_window, self.textbox_window
 
 
     def refresh_tasks(self):
