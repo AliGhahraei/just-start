@@ -123,7 +123,7 @@ class WinDrawer():
 
     def complete(self):
         id_ = self.input_taskid()
-        run(['task', id_, 'done'], stdout=PIPE)
+        run_task([id_, 'done'])
 
 
     def custom_command(self):
