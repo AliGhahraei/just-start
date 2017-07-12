@@ -1,8 +1,6 @@
 #!/usr/bin/env/python
 
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
-from curses.textpad import rectangle
-from math import floor
 from subprocess import run, PIPE
 from sys import argv
 
@@ -33,21 +31,18 @@ class WinDrawer():
         self.stdscr = stdscr
         self.draw_windows()
 
-
     def input_char(self):
         self.textbox_window.clear()
         return self.textbox_window.getkey(*self.textbox_window.getyx())
-
 
     def write_status(self, status):
         self.status_window.clear()
         self.status_window.addstr(status)
         self.status_window.refresh()
 
-
     def input_sequence(self, status):
         self.write_status(status + " and press Ctrl-Enter when done (or "
-                     "Ctrl-C to cancel)")
+                          "Ctrl-C to cancel)")
         self.textbox_window.clear()
         echo()
         nocbreak()
@@ -60,7 +55,6 @@ class WinDrawer():
             cbreak()
         return key_sequence
 
-
     def input_taskid(self):
         id_ = self.input_sequence("Enter the task's id")
 
@@ -71,14 +65,14 @@ class WinDrawer():
             except ValueError:
                 id_ = self.input_sequence("Please enter a valid id")
 
-
     def draw_windows(self):
         self.stdscr.refresh()
 
         MAX_Y, MAX_X = self.stdscr.getmaxyx()
         STATUS_WINDOW_HEIGHT = 5
         TEXTBOX_WINDOW_HEIGHT = 4
-        TASK_WINDOW_HEIGHT = MAX_Y - STATUS_WINDOW_HEIGHT - TEXTBOX_WINDOW_HEIGHT
+        TASK_WINDOW_HEIGHT = (MAX_Y - STATUS_WINDOW_HEIGHT
+                              - TEXTBOX_WINDOW_HEIGHT)
 
         self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
                                           0, 0)
@@ -89,7 +83,6 @@ class WinDrawer():
                                              + STATUS_WINDOW_HEIGHT, 0)
 
         self.refresh_tasks()
-
 
     def refresh_tasks(self):
         self.task_window.clear()
@@ -103,27 +96,22 @@ class WinDrawer():
 
         self.task_window.refresh()
 
-
     def add(self):
         name = self.input_sequence("Enter the new task's data")
         run_task(['add'] + name.split())
 
-
     def delete(self):
         id_ = self.input_taskid()
         run_task([id_, 'delete', 'rc.confirmation=off'])
-
 
     def modify(self):
         id_ = self.input_taskid()
         name = self.input_sequence("Enter the modified task's data")
         run_task([id_, 'modify'] + name.split())
 
-
     def complete(self):
         id_ = self.input_taskid()
         run_task([id_, 'done'])
-
 
     def custom_command(self):
         command = self.input_sequence('Enter your command')
@@ -148,9 +136,10 @@ def main(stdscr):
 
     while True:
         try:
-            windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete '
-                         'task, (c)omplete task, (m)odify, (!)custom command,'
-                         ' (p)omodoro (toggle), (s)top pomodoro, (q)uit')
+            windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete task'
+                                   ', (c)omplete task, (m)odify, (!)custom '
+                                   'command, (p)omodoro (toggle), (s)top '
+                                   'pomodoro, (q)uit')
 
             read_char = windrawer.input_char()
 
@@ -171,5 +160,5 @@ def main(stdscr):
 try:
     wrapper(main)
 except error:
-    print(f"An error occured while drawing {argv[0]}. My best guess is that the "
-          f"window was too small")
+    print(f'An error occured while drawing {argv[0]}. My best guess is that '
+          f'the window was too small')
