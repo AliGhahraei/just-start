@@ -148,6 +148,7 @@ def main(stdscr):
 
             try:
                 task_actions[read_char.lower()]()
+                task_actions[read_char]()
                 windrawer.refresh_tasks()
             except KeyboardInterrupt:
                 continue
