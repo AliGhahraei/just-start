@@ -7,6 +7,7 @@ from sys import argv
 
 def toggle_pomodoro():
     pass
+SYNC_MSG = 'Syncing task server...'
 
 
 def stop():
@@ -119,6 +120,8 @@ class WinDrawer():
 
 
 def main(stdscr):
+    print(SYNC_MSG)
+    run_task(['sync'])
     windrawer = WinDrawer(stdscr)
 
     task_actions = {
@@ -154,7 +157,11 @@ def main(stdscr):
                 windrawer.input_char()
 
         except KeyboardInterrupt:
-            quit()
+            app_quit(windrawer)
+def app_quit(windrawer):
+    windrawer.write_status(SYNC_MSG)
+    run_task(['sync'])
+    quit()
 
 
 try:
