@@ -151,13 +151,13 @@ def main(stdscr):
             windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete task'
                                    ', (c)omplete task, (m)odify, (!)custom '
                                    'command, (p)omodoro (toggle), (s)top '
-                                   'pomodoro, (q)uit')
+                                   'pomodoro, s(y)nc server, (q)uit')
 
             read_char = windrawer.input_char()
 
             try:
-                task_actions[read_char.lower()]()
-                task_actions[read_char]()
+                action, *params = task_actions[read_char]
+                action(*params)
                 windrawer.refresh_tasks()
             except KeyboardInterrupt:
                 continue
