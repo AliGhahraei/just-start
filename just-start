@@ -3,6 +3,7 @@
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from subprocess import run, PIPE
 from sys import argv
+SYNC_MSG = 'Syncing task server...'
 
 
 def toggle_pomodoro():
@@ -25,6 +26,14 @@ def newborderedwin(height, width, start_y, start_x):
     borderedwindow.refresh()
 
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
+
+
+def sync(display_function=print):
+    try:
+        display_function(SYNC_MSG)
+        run_task(['sync'])
+    except KeyboardInterrupt:
+        pass
 
 
 class WinDrawer():
@@ -120,21 +129,21 @@ class WinDrawer():
 
 
 def main(stdscr):
-    print(SYNC_MSG)
-    run_task(['sync'])
+    sync()
     windrawer = WinDrawer(stdscr)
 
     task_actions = {
-        "KEY_RESIZE": windrawer.draw_windows,
-        'r': windrawer.refresh_tasks,
-        'a': windrawer.add,
-        'd': windrawer.delete,
-        'c': windrawer.complete,
-        'm': windrawer.modify,
-        '!': windrawer.custom_command,
-        'p': toggle_pomodoro,
-        's': stop,
-        'q': quit,
+        "KEY_RESIZE": (windrawer.draw_windows,),
+        'r': (windrawer.refresh_tasks,),
+        'a': (windrawer.add,),
+        'd': (windrawer.delete,),
+        'c': (windrawer.complete,),
+        'm': (windrawer.modify,),
+        '!': (windrawer.custom_command,),
+        'p': (pomodoro_handler.toggle_pomodoro,),
+        's': (pomodoro_handler.stop,),
+        'y': (sync, windrawer.write_status),
+        'q': (app_quit, windrawer),
     }
 
     while True:
@@ -160,8 +169,7 @@ def main(stdscr):
         except KeyboardInterrupt:
             app_quit(windrawer)
 def app_quit(windrawer):
-    windrawer.write_status(SYNC_MSG)
-    run_task(['sync'])
+    sync(windrawer.write_status)
     quit()
 
 
