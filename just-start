@@ -4,12 +4,8 @@ from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from subprocess import run, PIPE
 from sys import argv
 
-def toggle_pomodoro():
-    pass
 
 
-def stop():
-    pass
 SYNC_MSG = 'Syncing task server...'
 
 
