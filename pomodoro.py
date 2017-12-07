@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from itertools import cycle
 from subprocess import run
 from threading import Timer
@@ -10,13 +11,19 @@ LONG_REST_TIME = 60
 CYCLES_BEFORE_LONG_REST = 3
 
 
+class State(Enum):
+    WORK = 'Work', WORK_TIME * 60
+    SHORT_REST = 'Short rest', SHORT_REST_TIME * 60
+    LONG_REST = 'LONG REST!!!',  LONG_REST_TIME * 60
+
+
 class PomodoroTimer():
     def __init__(self):
-        self.POMODORO_CYCLE = cycle([('Work', WORK_TIME * 60),
-                                     ('Short rest', SHORT_REST_TIME * 60)]
-                                    * CYCLES_BEFORE_LONG_REST
-                                    + [('LONG REST!!!', LONG_REST_TIME * 60)])
-        self.state, self.time_left = self.POMODORO_CYCLE.__next__()
+        states = [State.WORK, State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
+        states.append(State.LONG_REST)
+
+        self.POMODORO_CYCLE = cycle(states)
+        self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
 
@@ -35,16 +42,20 @@ class PomodoroTimer():
 
     def _run(self):
         self.start_datetime = datetime.now()
-        run(['notify-send', self.state])
+        run(['notify-send', self.state.value[0]])
 
         self.timer = Timer(self.time_left,
                            self.next_phase)
         self.timer.start()
 
+    def _update_state(self):
+        self.state = self.POMODORO_CYCLE.__next__()
+        self.time_left = self.state.value[1]
+
     def next_phase(self):
         self._stop_countdown()
-        self.state, self.time_left = self.POMODORO_CYCLE.__next__()
         self.is_running = True
+        self._update_state()
         self._run()
 
     def reset(self):
