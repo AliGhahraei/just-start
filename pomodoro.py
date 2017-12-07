@@ -20,7 +20,7 @@ class State(Enum):
 class PomodoroTimer():
     def __init__(self):
         states = [State.WORK, State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
-        states.append(State.LONG_REST)
+        states[-1] = State.LONG_REST
 
         self.POMODORO_CYCLE = cycle(states)
         self._update_state()
