@@ -59,15 +59,15 @@ class WinDrawer():
             cbreak()
         return key_sequence
 
-    def input_taskid(self):
-        id_ = self.input_sequence("Enter the task's id")
+    def input_taskids(self):
+        ids = self.input_sequence("Enter the task's ids")
 
         while True:
             try:
-                int(id_)
-                return id_
+                list(map(int, ids))
+                return ids
             except ValueError:
-                id_ = self.input_sequence("Please enter a valid id")
+                ids = self.input_sequence("Please enter valid ids")
 
     def draw_windows(self):
         self.stdscr.refresh()
@@ -105,17 +105,17 @@ class WinDrawer():
         run_task(['add'] + name.split())
 
     def delete(self):
-        id_ = self.input_taskid()
-        run_task([id_, 'delete', 'rc.confirmation=off'])
+        ids = self.input_taskids()
+        run_task([ids, 'delete', 'rc.confirmation=off'])
 
     def modify(self):
-        id_ = self.input_taskid()
+        ids = self.input_taskids()
         name = self.input_sequence("Enter the modified task's data")
-        run_task([id_, 'modify'] + name.split())
+        run_task([ids, 'modify'] + name.split())
 
     def complete(self):
-        id_ = self.input_taskid()
-        run_task([id_, 'done'])
+        ids = self.input_taskids()
+        run_task([ids, 'done'])
 
     def custom_command(self):
         command = self.input_sequence('Enter your command')
