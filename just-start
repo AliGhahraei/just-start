@@ -3,16 +3,14 @@
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from subprocess import run, PIPE
 from sys import argv
-SYNC_MSG = 'Syncing task server...'
-
 
 def toggle_pomodoro():
     pass
-SYNC_MSG = 'Syncing task server...'
 
 
 def stop():
     pass
+SYNC_MSG = 'Syncing task server...'
 
 
 def run_task(arg_list=[]):
