@@ -44,6 +44,7 @@ class PomodoroTimer():
     def next_phase(self):
         self._stop_countdown()
         self.state, self.time_left = self.POMODORO_CYCLE.__next__()
+        self.is_running = True
         self._run()
 
     def reset(self):
