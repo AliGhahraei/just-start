@@ -1,10 +1,11 @@
 #!/usr/bin/env/python
 
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
+from pexpect import spawn, EOF
 from subprocess import run, PIPE
 from sys import argv
 
-from pomodoro import PomodoroTimer
+from pomodoro import PomodoroTimer, State
 
 
 SYNC_MSG = 'Syncing task server...'
@@ -31,9 +32,20 @@ def sync(display_function=print):
         pass
 
 
+def toggle_timer(windrawer, timer):
+    timer.toggle()
+    windrawer.manage_wifi(timer.is_running, timer.state)
+
+
+def next_phase(windrawer, timer):
+    timer.next_phase()
+    windrawer.manage_wifi(timer.is_running, timer.state)
+
+
 class WinDrawer():
     def __init__(self, stdscr):
         self.stdscr = stdscr
+        self.password = None
         self.draw_windows()
 
     def input_char(self):
@@ -122,6 +134,20 @@ class WinDrawer():
         command = self.input_sequence('Enter your command')
         run_task(command.split())
 
+    def manage_wifi(self, timer_running=False, timer_state=State.WORK):
+        if self.password is None:
+            self.password = self.input_sequence('Messing with wifi. Enter your'
+                                                ' password').decode('utf-8')
+
+        if timer_running and timer_state is not State.WORK:
+            child = spawn('sudo systemctl start netctl-auto@wlp2s0')
+        else:
+            child = spawn('sudo systemctl stop netctl-auto@wlp2s0')
+
+        child.expect('.*')
+        child.sendline(self.password)
+        child.expect(EOF)
+
 
 def main(stdscr):
     sync()
@@ -136,9 +162,9 @@ def main(stdscr):
             'c': (windrawer.complete,),
             'm': (windrawer.modify,),
             '!': (windrawer.custom_command,),
-            'p': (pomodoro_timer.toggle,),
+            'p': (toggle_timer, windrawer, pomodoro_timer),
             's': (pomodoro_timer.reset,),
-            'n': (pomodoro_timer.next_phase,),
+            'n': (next_phase, windrawer, pomodoro_timer),
             'y': (sync, windrawer.write_status),
             'q': (app_quit, windrawer),
         }
@@ -170,6 +196,7 @@ def main(stdscr):
 
 def app_quit(windrawer):
     sync(windrawer.write_status)
+    windrawer.manage_wifi()
     quit()
 
 
