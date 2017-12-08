@@ -195,8 +195,8 @@ def main(stdscr):
 
 
 def app_quit(windrawer):
-    sync(windrawer.write_status)
     windrawer.manage_wifi()
+    sync(windrawer.write_status)
     quit()
 
 
