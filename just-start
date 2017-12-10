@@ -39,8 +39,8 @@ def calc_end_time(time_left):
 
 
 def toggle_timer(windrawer, timer):
+    windrawer.manage_wifi(not timer.is_running, timer.state)
     timer.toggle()
-    windrawer.manage_wifi(timer.is_running, timer.state)
     windrawer.write_pomodoro_status((f'{timer.state.value[0]}. End time: '
                                      f'{calc_end_time(timer.time_left)}'
                                      if timer.is_running else 'Paused'))
@@ -52,8 +52,8 @@ def stop_timer(windrawer, timer):
 
 
 def next_phase(windrawer, timer):
+    windrawer.manage_wifi(timer_running=True, timer_state=timer.state)
     timer.next_phase()
-    windrawer.manage_wifi(timer.is_running, timer.state)
     windrawer.write_pomodoro_status(f'{timer.state.value[0]}. End time: '
                                     f'{calc_end_time(timer.time_left)}')
 
