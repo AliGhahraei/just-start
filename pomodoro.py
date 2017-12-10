@@ -56,9 +56,6 @@ class PomodoroTimer():
         self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
                           f' so far). End time: {end_time(self.time_left)}')
 
-        if self.state is State.WORK:
-            self.work_count += 1
-
         self.timer = Timer(self.time_left,
                            self.next_phase)
         self.timer.start()
@@ -71,6 +68,10 @@ class PomodoroTimer():
         self._stop_countdown()
         self.is_running = True
         self._update_state()
+
+        if self.state is State.WORK:
+            self.work_count += 1
+
         self._run()
 
     def reset(self):
