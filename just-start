@@ -139,7 +139,7 @@ class WinDrawer():
             self.password = self.input_sequence('Messing with wifi. Enter your'
                                                 ' password').decode('utf-8')
 
-        if timer_running and timer_state is not State.WORK:
+        if timer_running:
             child = spawn('sudo systemctl start netctl-auto@wlp2s0')
         else:
             child = spawn('sudo systemctl stop netctl-auto@wlp2s0')
