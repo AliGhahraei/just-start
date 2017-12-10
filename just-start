@@ -39,7 +39,7 @@ def calc_end_time(time_left):
 
 
 def toggle_timer(windrawer, timer):
-    windrawer.manage_wifi(not timer.is_running, timer.state)
+    windrawer.manage_wifi(not timer.is_running)
     timer.toggle()
     windrawer.write_pomodoro_status((f'{timer.state.value[0]}. End time: '
                                      f'{calc_end_time(timer.time_left)}'
@@ -52,7 +52,7 @@ def stop_timer(windrawer, timer):
 
 
 def next_phase(windrawer, timer):
-    windrawer.manage_wifi(timer_running=True, timer_state=timer.state)
+    windrawer.manage_wifi(timer_running=True)
     timer.next_phase()
     windrawer.write_pomodoro_status(f'{timer.state.value[0]}. End time: '
                                     f'{calc_end_time(timer.time_left)}')
@@ -167,7 +167,7 @@ class WinDrawer():
         command = self.input_sequence('Enter your command')
         run_task(command.split())
 
-    def manage_wifi(self, timer_running=False, timer_state=State.WORK):
+    def manage_wifi(self, timer_running=False):
         if self.password is None:
             self.password = self.input_sequence('Messing with wifi. Enter your'
                                                 ' password').decode('utf-8')
