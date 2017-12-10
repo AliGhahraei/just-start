@@ -1,12 +1,11 @@
 #!/usr/bin/env/python
 
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
-from datetime import datetime, timedelta
 from pexpect import spawn, EOF
 from subprocess import run, PIPE
 from sys import argv
 
-from pomodoro import PomodoroTimer, State
+from pomodoro import PomodoroTimer
 
 
 SYNC_MSG = 'Syncing task server...'
@@ -33,29 +32,14 @@ def sync(display_function=print):
         pass
 
 
-def calc_end_time(time_left):
-    end_time = datetime.now() + timedelta(seconds=time_left)
-    return end_time.strftime('%H:%M')
-
-
 def toggle_timer(windrawer, timer):
     windrawer.manage_wifi(not timer.is_running)
     timer.toggle()
-    windrawer.write_pomodoro_status((f'{timer.state.value[0]}. End time: '
-                                     f'{calc_end_time(timer.time_left)}'
-                                     if timer.is_running else 'Paused'))
-
-
-def stop_timer(windrawer, timer):
-    timer.reset()
-    windrawer.write_pomodoro_status('Pomodoro timer stopped')
 
 
 def next_phase(windrawer, timer):
     windrawer.manage_wifi(timer_running=True)
     timer.next_phase()
-    windrawer.write_pomodoro_status(f'{timer.state.value[0]}. End time: '
-                                    f'{calc_end_time(timer.time_left)}')
 
 
 class WinDrawer():
@@ -184,7 +168,7 @@ class WinDrawer():
 def main(stdscr):
     sync()
     windrawer = WinDrawer(stdscr)
-    with PomodoroTimer() as pomodoro_timer:
+    with PomodoroTimer(windrawer.write_pomodoro_status) as pomodoro_timer:
         # (func, args)
         task_actions = {
             "KEY_RESIZE": (windrawer.draw_windows,),
@@ -195,7 +179,7 @@ def main(stdscr):
             'm': (windrawer.modify,),
             '!': (windrawer.custom_command,),
             'p': (toggle_timer, windrawer, pomodoro_timer),
-            's': (stop_timer, windrawer, pomodoro_timer),
+            's': (pomodoro_timer.reset,),
             'n': (next_phase, windrawer, pomodoro_timer),
             'y': (sync, windrawer.write_status),
             'q': (app_quit, windrawer),

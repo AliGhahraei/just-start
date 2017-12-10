@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
 from subprocess import run
@@ -11,6 +11,11 @@ LONG_REST_TIME = 60
 CYCLES_BEFORE_LONG_REST = 3
 
 
+def end_time(time_left):
+    end_time = datetime.now() + timedelta(seconds=time_left)
+    return end_time.strftime('%H:%M')
+
+
 class State(Enum):
     WORK = 'Work', WORK_TIME * 60
     SHORT_REST = 'Short rest', SHORT_REST_TIME * 60
@@ -18,14 +23,20 @@ class State(Enum):
 
 
 class PomodoroTimer():
-    def __init__(self):
+    def __init__(self, external_status_function):
         states = [State.WORK, State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
         states[-1] = State.LONG_REST
 
         self.POMODORO_CYCLE = cycle(states)
+        self.external_status_function = external_status_function
+        self.work_count = 0
         self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
+
+    def write_status(self, status):
+        run(['notify-send', status])
+        self.external_status_function(status)
 
     def toggle(self):
         if self.is_running:
@@ -34,7 +45,7 @@ class PomodoroTimer():
             elapsed_timedelta = datetime.now() - self.start_datetime
             self.time_left -= elapsed_timedelta.seconds
 
-            run(['notify-send', 'Paused'])
+            self.write_status('Paused')
         else:
             self._run()
 
@@ -42,7 +53,11 @@ class PomodoroTimer():
 
     def _run(self):
         self.start_datetime = datetime.now()
-        run(['notify-send', self.state.value[0]])
+        self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
+                          f' so far). End time: {end_time(self.time_left)}')
+
+        if self.state is State.WORK:
+            self.work_count += 1
 
         self.timer = Timer(self.time_left,
                            self.next_phase)
@@ -60,6 +75,7 @@ class PomodoroTimer():
 
     def reset(self):
         self._stop_countdown()
+        self.write_status('Pomodoro timer stopped')
         self.__init__()
 
     def __enter__(self):
