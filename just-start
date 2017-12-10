@@ -204,7 +204,7 @@ def main(stdscr):
         while True:
             try:
                 windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete '
-                                       'task, (c)omplete task, (m)odify,'
+                                       'task, (c)omplete task, (m)odify, '
                                        '(!)custom command, (p)omodoro (toggle)'
                                        ', (s)top pomodoro, (n)ext pomodoro '
                                        'phase, s(y)nc server, (q)uit')
