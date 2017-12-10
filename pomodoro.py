@@ -76,7 +76,7 @@ class PomodoroTimer():
     def reset(self):
         self._stop_countdown()
         self.write_status('Pomodoro timer stopped')
-        self.__init__()
+        self.__init__(self.external_status_function)
 
     def __enter__(self):
         return self
