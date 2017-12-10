@@ -177,7 +177,6 @@ class WinDrawer():
         else:
             child = spawn('sudo systemctl stop netctl-auto@wlp2s0')
 
-        child.expect('.*')
         child.sendline(self.password)
         child.expect(EOF)
 
