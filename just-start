@@ -1,6 +1,7 @@
 #!/usr/bin/env/python
 
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
+from datetime import datetime, timedelta
 from pexpect import spawn, EOF
 from subprocess import run, PIPE
 from sys import argv
@@ -32,14 +33,29 @@ def sync(display_function=print):
         pass
 
 
+def calc_end_time(time_left):
+    end_time = datetime.now() + timedelta(seconds=time_left)
+    return end_time.strftime('%H:%M')
+
+
 def toggle_timer(windrawer, timer):
     timer.toggle()
     windrawer.manage_wifi(timer.is_running, timer.state)
+    windrawer.write_pomodoro_status((f'{timer.state.value[0]}. End time: '
+                                     f'{calc_end_time(timer.time_left)}'
+                                     if timer.is_running else 'Paused'))
+
+
+def stop_timer(windrawer, timer):
+    timer.reset()
+    windrawer.write_pomodoro_status('Pomodoro timer stopped')
 
 
 def next_phase(windrawer, timer):
     timer.next_phase()
     windrawer.manage_wifi(timer.is_running, timer.state)
+    windrawer.write_pomodoro_status(f'{timer.state.value[0]}. End time: '
+                                    f'{calc_end_time(timer.time_left)}')
 
 
 class WinDrawer():
@@ -47,6 +63,7 @@ class WinDrawer():
         self.stdscr = stdscr
         self.password = None
         self.draw_windows()
+        self.write_pomodoro_status('Pomodoro timer stopped')
 
     def input_char(self):
         self.textbox_window.clear()
@@ -56,6 +73,11 @@ class WinDrawer():
         self.status_window.clear()
         self.status_window.addstr(status)
         self.status_window.refresh()
+
+    def write_pomodoro_status(self, status):
+        self.pomodoro_window.clear()
+        self.pomodoro_window.addstr(status)
+        self.pomodoro_window.refresh()
 
     def input_sequence(self, status):
         self.write_status(status + " and press Ctrl-Enter when done (or "
@@ -86,18 +108,29 @@ class WinDrawer():
         self.stdscr.refresh()
 
         MAX_Y, MAX_X = self.stdscr.getmaxyx()
-        STATUS_WINDOW_HEIGHT = 5
+        STATUS_WINDOW_HEIGHT = 4
         TEXTBOX_WINDOW_HEIGHT = 4
-        TASK_WINDOW_HEIGHT = (MAX_Y - STATUS_WINDOW_HEIGHT
-                              - TEXTBOX_WINDOW_HEIGHT)
+        POMODORO_WINDOW_HEIGHT = 3
+        TASK_WINDOW_HEIGHT = (MAX_Y
+                              - STATUS_WINDOW_HEIGHT
+                              - TEXTBOX_WINDOW_HEIGHT
+                              - POMODORO_WINDOW_HEIGHT)
 
         self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
                                           0, 0)
+        self.pomodoro_window = newborderedwin(POMODORO_WINDOW_HEIGHT,
+                                              MAX_X - 1,
+                                              TASK_WINDOW_HEIGHT,
+                                              0)
         self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT, MAX_X - 1,
-                                            TASK_WINDOW_HEIGHT, 0)
+                                            TASK_WINDOW_HEIGHT
+                                            + POMODORO_WINDOW_HEIGHT,
+                                            0)
         self.textbox_window = newborderedwin(TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
                                              TASK_WINDOW_HEIGHT
-                                             + STATUS_WINDOW_HEIGHT, 0)
+                                             + STATUS_WINDOW_HEIGHT
+                                             + POMODORO_WINDOW_HEIGHT,
+                                             0)
 
         self.refresh_tasks()
 
@@ -163,7 +196,7 @@ def main(stdscr):
             'm': (windrawer.modify,),
             '!': (windrawer.custom_command,),
             'p': (toggle_timer, windrawer, pomodoro_timer),
-            's': (pomodoro_timer.reset,),
+            's': (stop_timer, windrawer, pomodoro_timer),
             'n': (next_phase, windrawer, pomodoro_timer),
             'y': (sync, windrawer.write_status),
             'q': (app_quit, windrawer),
