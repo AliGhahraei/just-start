@@ -67,11 +67,12 @@ class PomodoroTimer():
     def next_phase(self):
         self._stop_countdown()
         self.is_running = True
-        self._update_state()
 
         if self.state is State.WORK:
             self.work_count += 1
 
+
+        self._update_state()
         self._run()
 
     def reset(self):
