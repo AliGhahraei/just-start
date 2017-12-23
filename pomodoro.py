@@ -33,8 +33,10 @@ class PomodoroTimer():
         self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
+        self.write_status('Pomodoro timer stopped')
 
     def write_status(self, status):
+        self.written_status = status
         run(['notify-send', status])
         self.external_status_function(status)
 
@@ -76,7 +78,6 @@ class PomodoroTimer():
 
     def reset(self):
         self._stop_countdown()
-        self.write_status('Pomodoro timer stopped')
         self.__init__(self.external_status_function)
 
     def __enter__(self):

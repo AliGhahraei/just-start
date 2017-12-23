@@ -46,8 +46,7 @@ class WinDrawer():
     def __init__(self, stdscr):
         self.stdscr = stdscr
         self.password = None
-        self.draw_windows()
-        self.write_pomodoro_status('Pomodoro timer stopped')
+        self.draw_windows(None)
 
     def input_char(self):
         self.textbox_window.clear()
@@ -88,7 +87,7 @@ class WinDrawer():
             except ValueError:
                 ids = self.input_sequence("Please enter valid ids")
 
-    def draw_windows(self):
+    def draw_windows(self, pomodoro_timer):
         self.stdscr.refresh()
 
         MAX_Y, MAX_X = self.stdscr.getmaxyx()
@@ -115,6 +114,9 @@ class WinDrawer():
                                              + STATUS_WINDOW_HEIGHT
                                              + POMODORO_WINDOW_HEIGHT,
                                              0)
+
+        if pomodoro_timer is not None:
+            self.write_pomodoro_status(pomodoro_timer.written_status)
 
         self.refresh_tasks()
 
@@ -171,7 +173,7 @@ def main(stdscr):
     with PomodoroTimer(windrawer.write_pomodoro_status) as pomodoro_timer:
         # (func, args)
         task_actions = {
-            "KEY_RESIZE": (windrawer.draw_windows,),
+            "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
             'r': (windrawer.refresh_tasks,),
             'a': (windrawer.add,),
             'd': (windrawer.delete,),
