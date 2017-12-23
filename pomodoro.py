@@ -71,7 +71,6 @@ class PomodoroTimer():
         if self.state is State.WORK:
             self.work_count += 1
 
-
         self._update_state()
         self._run()
 
