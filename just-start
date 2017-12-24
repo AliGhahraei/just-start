@@ -37,6 +37,11 @@ def toggle_timer(windrawer, timer):
     timer.toggle()
 
 
+def stop_timer(windrawer, timer):
+    windrawer.manage_wifi(timer_running=False)
+    timer.reset()
+
+
 def next_phase(windrawer, timer):
     windrawer.manage_wifi(timer_running=True)
     timer.next_phase()
@@ -181,7 +186,7 @@ def main(stdscr):
             'm': (windrawer.modify,),
             '!': (windrawer.custom_command,),
             'p': (toggle_timer, windrawer, pomodoro_timer),
-            's': (pomodoro_timer.reset,),
+            's': (stop_timer, windrawer, pomodoro_timer),
             'n': (next_phase, windrawer, pomodoro_timer),
             'y': (sync, windrawer.write_status),
             'q': (app_quit, windrawer),
