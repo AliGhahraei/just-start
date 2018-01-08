@@ -23,12 +23,13 @@ class State(Enum):
 
 
 class PomodoroTimer():
-    def __init__(self, external_status_function):
+    def __init__(self, external_status_function, external_blocking_function):
         states = [State.WORK, State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
         states[-1] = State.LONG_REST
 
         self.POMODORO_CYCLE = cycle(states)
         self.external_status_function = external_status_function
+        self.external_blocking_function = external_blocking_function
         self.work_count = 0
         self._update_state()
         self.is_running = False
@@ -48,7 +49,9 @@ class PomodoroTimer():
             self.time_left -= elapsed_timedelta.seconds
 
             self.write_status('Paused')
+            self.external_blocking_function(blocked=True)
         else:
+            self.external_blocking_function(blocked=self.state is State.WORK)
             self._run()
 
         self.is_running = not self.is_running
@@ -74,17 +77,23 @@ class PomodoroTimer():
             self.work_count += 1
 
         self._update_state()
+
+        self.external_blocking_function(blocked=self.state is State.WORK)
+
         self._run()
 
     def reset(self):
         self._stop_countdown()
-        self.__init__(self.external_status_function)
+        self.external_blocking_function(blocked=True)
+        self.__init__(self.external_status_function,
+                      self.external_blocking_function)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._stop_countdown()
+        self.external_blocking_function(blocked=True)
 
     def _stop_countdown(self):
         if self.is_running:

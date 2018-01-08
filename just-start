@@ -1,14 +1,16 @@
 #!/usr/bin/env/python
 
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
+from os import environ
 from pexpect import spawn, EOF
 from subprocess import run, PIPE
 from sys import argv
 
-from pomodoro import PomodoroTimer
+from pomodoro import PomodoroTimer, State
 
 
 SYNC_MSG = 'Syncing task server...'
+BLOCKED_SITES = environ['BLOCKED_SITES'].split()
 
 
 def run_task(arg_list=[]):
@@ -51,6 +53,17 @@ class WinDrawer():
     def __init__(self, stdscr):
         self.stdscr = stdscr
         self.password = None
+
+        blocking_lines = '\\n'.join(
+            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
+             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
+             for blocked_site in BLOCKED_SITES])
+
+        self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
+                              f'sudo tee --append /etc/hosts > /dev/null"')
+
+        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
+
         self.draw_windows(None)
 
     def input_char(self):
@@ -158,24 +171,35 @@ class WinDrawer():
         command = self.input_sequence('Enter your command')
         run_task(command.split())
 
-    def manage_wifi(self, timer_running=False):
+    def run_sudo(self, command):
         if self.password is None:
-            self.password = self.input_sequence('Messing with wifi. Enter your'
+            self.password = self.input_sequence('About to run a command as '
+                                                'sudo. Enter your'
                                                 ' password').decode('utf-8')
 
-        if timer_running:
-            child = spawn('sudo systemctl start netctl-auto@wlp2s0')
-        else:
-            child = spawn('sudo systemctl stop netctl-auto@wlp2s0')
-
+        child = spawn(command)
         child.sendline(self.password)
         child.expect(EOF)
+
+    def manage_blocked_sites(self, blocked):
+        if blocked:
+            self.run_sudo(self.unblock_command)
+            self.run_sudo(self.block_command)
+        else:
+            self.run_sudo(self.unblock_command)
+
+    def manage_wifi(self, timer_running=False):
+        if timer_running:
+            self.run_sudo('sudo systemctl start netctl-auto@wlp2s0')
+        else:
+            self.run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
 
 
 def main(stdscr):
     sync()
     windrawer = WinDrawer(stdscr)
-    with PomodoroTimer(windrawer.write_pomodoro_status) as pomodoro_timer:
+    with PomodoroTimer(windrawer.write_pomodoro_status,
+                       windrawer.manage_blocked_sites) as pomodoro_timer:
         # (func, args)
         task_actions = {
             "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
