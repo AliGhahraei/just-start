@@ -6,7 +6,7 @@ from pexpect import spawn, EOF
 from subprocess import run, PIPE
 from sys import argv
 
-from pomodoro import PomodoroTimer, State
+from pomodoro import PomodoroTimer
 
 
 SYNC_MSG = 'Syncing task server...'
