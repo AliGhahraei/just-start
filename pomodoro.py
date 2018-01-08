@@ -51,8 +51,8 @@ class PomodoroTimer():
             self.write_status('Paused')
             self.external_blocking_function(blocked=True)
         else:
-            self.external_blocking_function(blocked=self.state is State.WORK)
             self._run()
+            self.external_blocking_function(blocked=self.state is State.WORK)
 
         self.is_running = not self.is_running
 
@@ -77,16 +77,15 @@ class PomodoroTimer():
             self.work_count += 1
 
         self._update_state()
+        self._run()
 
         self.external_blocking_function(blocked=self.state is State.WORK)
 
-        self._run()
-
     def reset(self):
         self._stop_countdown()
-        self.external_blocking_function(blocked=True)
         self.__init__(self.external_status_function,
                       self.external_blocking_function)
+        self.external_blocking_function(blocked=True)
 
     def __enter__(self):
         return self
