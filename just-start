@@ -257,8 +257,9 @@ def app_quit(windrawer):
     quit()
 
 
-try:
-    wrapper(main)
-except error:
-    print(f'An error occured while drawing {argv[0]}. My best guess is that '
-          f'the window was too small')
+if __name__ == '__main__':
+    try:
+        wrapper(main)
+    except error:
+        print(f'An error occured while drawing {argv[0]}. My best guess is'
+              f' that the window was too small')
