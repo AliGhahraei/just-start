@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
+from platform import system
 from subprocess import run
 from threading import Timer
 
@@ -38,7 +39,10 @@ class PomodoroTimer():
 
     def write_status(self, status):
         self.written_status = status
-        run(['notify-send', status])
+        if system() == 'Linux':
+            run(['notify-send', status])
+        else:
+            run(['osascript', '-e', f'display notification "{status}" with title "just-start"'])
         self.external_status_function(status)
 
     def toggle(self):

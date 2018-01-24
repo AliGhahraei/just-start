@@ -3,6 +3,7 @@
 from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from os.path import expanduser
 from pexpect import spawn, EOF
+from platform import system
 from subprocess import run, PIPE
 from sys import argv
 
@@ -200,10 +201,15 @@ class WinDrawer():
 
     def manage_wifi(self, timer_running=False):
         if timer_running:
-            self.run_sudo('sudo systemctl start netctl-auto@wlp2s0')
+            if system() == 'Linux':
+                self.run_sudo('sudo systemctl start netctl-auto@wlp2s0')
+            else:
+                self.run_sudo('networksetup -setairportpower en0 on')
         else:
-            self.run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
-
+            if system() == 'Linux':
+                self.run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
+            else:
+                self.run_sudo('networksetup -setairportpower en0 off')
 
 def main(stdscr):
     sync()
