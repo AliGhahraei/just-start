@@ -189,8 +189,12 @@ class WinDrawer():
 
     def run_sudo(self, command):
         child = spawn(command)
-        child.sendline(self.password)
-        child.expect(EOF)
+
+        try:
+            child.sendline(self.password)
+            child.expect(EOF)
+        except OSError:
+            pass
 
     def manage_blocked_sites(self, blocked):
         if blocked:
