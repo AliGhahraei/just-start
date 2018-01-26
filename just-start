@@ -76,7 +76,7 @@ class WinDrawer():
              for blocked_site in config['blocked_sites']])
 
         self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
-                              f'sudo tee --append /etc/hosts > /dev/null"')
+                              f'sudo tee -a /etc/hosts > /dev/null"')
 
         self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
 
