@@ -81,6 +81,7 @@ class WinDrawer():
         self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
 
         self.draw_windows(None)
+        self.refresh_tasks()
 
     def input_char(self):
         self.textbox_window.clear()
@@ -152,8 +153,6 @@ class WinDrawer():
         if pomodoro_timer is not None:
             self.write_pomodoro_status(pomodoro_timer.written_status)
 
-        self.refresh_tasks()
-
     def refresh_tasks(self):
         self.task_window.clear()
         tasks = run_task().stdout.decode('utf-8').split("\n")
@@ -220,23 +219,27 @@ def main(stdscr):
     windrawer = WinDrawer(stdscr, parse_config())
     with PomodoroTimer(windrawer.write_pomodoro_status,
                        windrawer.manage_blocked_sites) as pomodoro_timer:
+
         # (func, args)
-        task_actions = {
-            "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
-            'r': (windrawer.refresh_tasks,),
+        refreshing_actions = {
             'a': (windrawer.add,),
             'd': (windrawer.delete,),
             'c': (windrawer.complete,),
             'm': (windrawer.modify,),
             '!': (windrawer.custom_command,),
+            'y': (sync, windrawer.write_status),
+        }
+        non_refreshing_actions = {
+            "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
             'p': (toggle_timer, windrawer, pomodoro_timer),
             's': (stop_timer, windrawer, pomodoro_timer),
             'n': (next_phase, windrawer, pomodoro_timer),
-            'y': (sync, windrawer.write_status),
+            'r': (windrawer.refresh_tasks,),
             'q': (app_quit, windrawer),
         }
 
-        while True:
+        quit_requested = False
+        while not quit_requested:
             try:
                 windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete '
                                        'task, (c)omplete task, (m)odify, '
@@ -247,9 +250,14 @@ def main(stdscr):
                 read_char = windrawer.input_char()
 
                 try:
-                    action, *params = task_actions[read_char]
-                    action(*params)
-                    windrawer.refresh_tasks()
+                    try:
+                        action, *params = refreshing_actions[read_char]
+                        action(*params)
+                    except KeyError:
+                        action, *params = non_refreshing_actions[read_char]
+                        action(*params)
+                    else:
+                        windrawer.refresh_tasks()
                 except KeyboardInterrupt:
                     continue
                 except KeyError:
@@ -258,7 +266,9 @@ def main(stdscr):
                     windrawer.input_char()
 
             except KeyboardInterrupt:
-                app_quit(windrawer)
+                quit_requested = True
+
+        app_quit(windrawer)
 
 
 def app_quit(windrawer):
