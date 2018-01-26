@@ -80,8 +80,8 @@ class WinDrawer():
 
         self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
 
+        self.fetch_tasks()
         self.draw_windows(None)
-        self.refresh_tasks()
 
     def input_char(self):
         self.textbox_window.clear()
@@ -122,6 +122,17 @@ class WinDrawer():
             except ValueError:
                 ids = self.input_sequence("Please enter valid ids")
 
+    def write_tasks(self):
+        self.task_window.clear()
+
+        try:
+            for y, task in enumerate(self.tasks):
+                self.task_window.addstr(y, 1, task)
+        except error:
+            pass
+
+        self.task_window.refresh()
+
     def draw_windows(self, pomodoro_timer):
         self.stdscr.refresh()
 
@@ -153,17 +164,14 @@ class WinDrawer():
         if pomodoro_timer is not None:
             self.write_pomodoro_status(pomodoro_timer.written_status)
 
+        self.write_tasks()
+
+    def fetch_tasks(self):
+        self.tasks = run_task().stdout.decode('utf-8').split("\n")
+
     def refresh_tasks(self):
-        self.task_window.clear()
-        tasks = run_task().stdout.decode('utf-8').split("\n")
-
-        try:
-            for y, task in enumerate(tasks):
-                self.task_window.addstr(y, 1, task)
-        except error:
-            pass
-
-        self.task_window.refresh()
+        self.fetch_tasks()
+        self.write_tasks()
 
     def add(self):
         name = self.input_sequence("Enter the new task's data")
