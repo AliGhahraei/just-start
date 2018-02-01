@@ -63,7 +63,7 @@ class PomodoroTimer():
     def _run(self):
         self.start_datetime = datetime.now()
         self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
-                          f' so far). End time: {end_time(self.time_left)}')
+                          f' so far). End time: {end_time(self.time_left)} ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
                            self.next_phase)
