@@ -6,27 +6,26 @@ from subprocess import run
 from threading import Timer
 
 
-WORK_TIME = 45
-SHORT_REST_TIME = 15
-LONG_REST_TIME = 60
-CYCLES_BEFORE_LONG_REST = 3
-
-
 def end_time(time_left):
     end_time = datetime.now() + timedelta(seconds=time_left)
     return end_time.strftime('%H:%M')
 
 
-class State(Enum):
-    WORK = 'Work', WORK_TIME * 60
-    SHORT_REST = 'Short rest', SHORT_REST_TIME * 60
-    LONG_REST = 'LONG REST!!!',  LONG_REST_TIME * 60
-
-
 class PomodoroTimer():
-    def __init__(self, external_status_function, external_blocking_function):
-        states = [State.WORK, State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
-        states[-1] = State.LONG_REST
+    def __init__(self, external_status_function, external_blocking_function, config=None):
+        WORK_TIME = 45
+        SHORT_REST_TIME = 15
+        LONG_REST_TIME = 60
+        CYCLES_BEFORE_LONG_REST = 3
+
+        self.State = Enum('State', [
+            ('WORK', ('Work', WORK_TIME * 60)),
+            ('SHORT_REST', ('Short rest', SHORT_REST_TIME * 60)),
+            ('LONG_REST', ('LONG REST!!!',  LONG_REST_TIME * 60))
+        ])
+
+        states = [self.State.WORK, self.State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
+        states[-1] = self.State.LONG_REST
 
         self.POMODORO_CYCLE = cycle(states)
         self.external_status_function = external_status_function
@@ -56,7 +55,7 @@ class PomodoroTimer():
             self.external_blocking_function(blocked=True)
         else:
             self._run()
-            self.external_blocking_function(blocked=self.state is State.WORK)
+            self.external_blocking_function(blocked=self.state is self.State.WORK)
 
         self.is_running = not self.is_running
 
@@ -77,13 +76,13 @@ class PomodoroTimer():
         self._stop_countdown()
         self.is_running = True
 
-        if self.state is State.WORK:
+        if self.state is self.State.WORK:
             self.work_count += 1
 
         self._update_state()
         self._run()
 
-        self.external_blocking_function(blocked=self.state is State.WORK)
+        self.external_blocking_function(blocked=self.state is self.State.WORK)
 
     def reset(self):
         self._stop_countdown()
