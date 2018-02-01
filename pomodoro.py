@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from enum import Enum
 from itertools import cycle
 from platform import system
 from subprocess import run
 from threading import Timer
+from time import strptime
 
 
 def end_time(time_left):
@@ -12,11 +13,20 @@ def end_time(time_left):
 
 
 class PomodoroTimer():
-    def __init__(self, external_status_function, external_blocking_function, config=None):
-        WORK_TIME = 45
-        SHORT_REST_TIME = 15
-        LONG_REST_TIME = 60
-        CYCLES_BEFORE_LONG_REST = 3
+    def __init__(self, external_status_function, external_blocking_function, config):
+        self.config = config
+
+        is_at_work = (datetime.strptime(config['work']['start_time'], '%H:%M').time()
+                      <= datetime.now().time()
+                      <= (datetime.strptime(config['work']['end_time'], '%H:%M')).time())
+
+        duration_config = (config['work_duration'] if is_at_work else
+                           config['home_duration'])
+
+        WORK_TIME = duration_config['work']
+        SHORT_REST_TIME = duration_config['short_rest']
+        LONG_REST_TIME = duration_config['long_rest']
+        CYCLES_BEFORE_LONG_REST = duration_config['cycles_before_long_rest']
 
         self.State = Enum('State', [
             ('WORK', ('Work', WORK_TIME * 60)),
@@ -86,8 +96,8 @@ class PomodoroTimer():
 
     def reset(self):
         self._stop_countdown()
-        self.__init__(self.external_status_function,
-                      self.external_blocking_function)
+        self.__init__(self.external_status_function, self.external_blocking_function,
+                      self.config)
         self.external_blocking_function(blocked=True)
 
     def __enter__(self):
