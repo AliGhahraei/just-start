@@ -9,5 +9,5 @@ setup(
     author_email='aligf94@gmail.com',
     url='https://github.com/AliGhahraei/just-start',
     scripts=['just-start', 'pomodoro.py'],
-    install_requires=['pexpect']
+    install_requires=['pexpect', 'pyyaml']
 )
