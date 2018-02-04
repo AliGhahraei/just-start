@@ -213,11 +213,13 @@ class WinDrawer():
             else:
                 self.run_sudo('networksetup -setairportpower en0 off')
 
+
 def main(stdscr):
     config = parse_config()
     sync()
     windrawer = WinDrawer(stdscr, config)
-    with PomodoroTimer(windrawer.write_pomodoro_status, windrawer.manage_blocked_sites,
+    with PomodoroTimer(windrawer.write_pomodoro_status,
+                       windrawer.manage_blocked_sites,
                        config) as pomodoro_timer:
 
         # (func, args)

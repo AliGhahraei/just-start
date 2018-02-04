@@ -1,10 +1,9 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
 from platform import system
 from subprocess import run
 from threading import Timer
-from time import strptime
 
 
 def end_time(time_left):
@@ -13,15 +12,18 @@ def end_time(time_left):
 
 
 class PomodoroTimer():
-    def __init__(self, external_status_function, external_blocking_function, config):
+    def __init__(self, external_status_function, external_blocking_function,
+                 config):
         self.config = config
 
-        is_work_time = (datetime.strptime(config['work']['start_time'], '%H:%M').time()
-                     <= datetime.now().time()
-                     <= (datetime.strptime(config['work']['end_time'], '%H:%M')).time())
+        is_work_time = (datetime.strptime(config['work']['start_time'],
+                                          '%H:%M').time()
+                        <= datetime.now().time()
+                        <= (datetime.strptime(config['work']['end_time'],
+                                              '%H:%M')).time())
 
-        duration_config = (config['work_duration'] if datetime.now().weekday() < 5 and
-                           is_work_time else config['home_duration'])
+        duration_config = (config['work_duration'] if datetime.now().weekday()
+                           < 5 and is_work_time else config['home_duration'])
 
         WORK_TIME = duration_config['work']
         SHORT_REST_TIME = duration_config['short_rest']
@@ -34,7 +36,8 @@ class PomodoroTimer():
             ('LONG_REST', ('LONG REST!!!',  LONG_REST_TIME * 60))
         ])
 
-        states = [self.State.WORK, self.State.SHORT_REST] * CYCLES_BEFORE_LONG_REST
+        states = ([self.State.WORK, self.State.SHORT_REST]
+                  * CYCLES_BEFORE_LONG_REST)
         states[-1] = self.State.LONG_REST
 
         self.POMODORO_CYCLE = cycle(states)
@@ -51,7 +54,8 @@ class PomodoroTimer():
         if system() == 'Linux':
             run(['notify-send', status])
         else:
-            run(['osascript', '-e', f'display notification "{status}" with title "just-start"'])
+            run(['osascript', '-e', f'display notification "{status}" with'
+                 ' title "just-start"'])
         self.external_status_function(status)
 
     def toggle(self):
@@ -65,14 +69,16 @@ class PomodoroTimer():
             self.external_blocking_function(blocked=True)
         else:
             self._run()
-            self.external_blocking_function(blocked=self.state is self.State.WORK)
+            self.external_blocking_function(blocked=self.state
+                                            is self.State.WORK)
 
         self.is_running = not self.is_running
 
     def _run(self):
         self.start_datetime = datetime.now()
         self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
-                          f' so far). End time: {end_time(self.time_left)} ({int(self.time_left / 60)} mins)')
+                          f' so far). End time: {end_time(self.time_left)}'
+                          f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
                            self.next_phase)
@@ -96,8 +102,8 @@ class PomodoroTimer():
 
     def reset(self):
         self._stop_countdown()
-        self.__init__(self.external_status_function, self.external_blocking_function,
-                      self.config)
+        self.__init__(self.external_status_function,
+                      self.external_blocking_function, self.config)
         self.external_blocking_function(blocked=True)
 
     def __enter__(self):
