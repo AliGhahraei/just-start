@@ -16,12 +16,12 @@ class PomodoroTimer():
     def __init__(self, external_status_function, external_blocking_function, config):
         self.config = config
 
-        is_at_work = (datetime.strptime(config['work']['start_time'], '%H:%M').time()
-                      <= datetime.now().time()
-                      <= (datetime.strptime(config['work']['end_time'], '%H:%M')).time())
+        is_work_time = (datetime.strptime(config['work']['start_time'], '%H:%M').time()
+                     <= datetime.now().time()
+                     <= (datetime.strptime(config['work']['end_time'], '%H:%M')).time())
 
-        duration_config = (config['work_duration'] if is_at_work else
-                           config['home_duration'])
+        duration_config = (config['work_duration'] if datetime.now().weekday() < 5 and
+                           is_work_time else config['home_duration'])
 
         WORK_TIME = duration_config['work']
         SHORT_REST_TIME = duration_config['short_rest']
