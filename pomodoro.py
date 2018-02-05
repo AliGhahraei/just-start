@@ -97,7 +97,8 @@ class PomodoroTimer():
 
     def next_phase(self, timer_triggered=False, phases_skipped=1):
         if self.state is self.State.WORK:
-            if not self.config['productivity']['skip_enabled']:
+            if not timer_triggered and not (self.config['productivity']
+                                            ['skip_enabled']):
                 self.write_status('Sorry, please work 1 pomodoro to reenable'
                                   ' skipping')
                 return
