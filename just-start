@@ -14,6 +14,8 @@ from pomodoro import PomodoroTimer
 
 SYNC_MSG = 'Syncing task server...'
 
+CONFIG_LOCATION = '~/.config/just-start/preferences.yml'
+
 
 def run_task(arg_list=[]):
     return run(['task'] + arg_list, stdout=PIPE)
@@ -52,7 +54,7 @@ def next_phase(windrawer, timer):
 
 
 def parse_config():
-    with open(expanduser('~/.config/just-start/preferences.yml')) as f:
+    with open(expanduser(CONFIG_LOCATION)) as f:
         return safe_load(f)
 
 
@@ -220,7 +222,7 @@ def main(stdscr):
     windrawer = WinDrawer(stdscr, config)
     with PomodoroTimer(windrawer.write_pomodoro_status,
                        windrawer.manage_blocked_sites,
-                       config) as pomodoro_timer:
+                       config, CONFIG_LOCATION) as pomodoro_timer:
 
         # (func, args)
         refreshing_actions = {

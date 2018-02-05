@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
+from os.path import expanduser
 from platform import system
 from subprocess import run
 from threading import Timer
+
+import yaml
 
 
 def end_time(time_left):
@@ -13,8 +16,9 @@ def end_time(time_left):
 
 class PomodoroTimer():
     def __init__(self, external_status_function, external_blocking_function,
-                 config):
+                 config, config_location):
         self.config = config
+        self.config_location = config_location
 
         is_work_time = (datetime.strptime(config['work']['start_time'],
                                           '%H:%M').time()
@@ -81,21 +85,34 @@ class PomodoroTimer():
                           f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
-                           self.next_phase)
+                           self._timer_triggered_next_phase)
         self.timer.start()
 
     def _update_state(self):
         self.state = self.POMODORO_CYCLE.__next__()
         self.time_left = self.state.value[1]
 
-    def next_phase(self):
+    def _timer_triggered_next_phase(self):
+        self.next_phase(timer_triggered=True)
+
+    def next_phase(self, timer_triggered=False, phases_skipped=1):
+        if self.state is self.State.WORK:
+            if not self.config['productivity']['skip_enabled']:
+                self.write_status('Sorry, please work 1 pomodoro to reenable'
+                                  ' skipping')
+                return
+
+            self.work_count += 1
+
+            self.config['productivity']['skip_enabled'] = timer_triggered
+            with open(expanduser(self.config_location), 'w') as f:
+                yaml.dump(self.config, f, default_flow_style=False)
+
         self._stop_countdown()
         self.is_running = True
 
-        if self.state is self.State.WORK:
-            self.work_count += 1
-
-        self._update_state()
+        for _ in range(phases_skipped):
+            self._update_state()
         self._run()
 
         self.external_blocking_function(blocked=self.state is self.State.WORK)
@@ -103,7 +120,8 @@ class PomodoroTimer():
     def reset(self):
         self._stop_countdown()
         self.__init__(self.external_status_function,
-                      self.external_blocking_function, self.config)
+                      self.external_blocking_function, self.config,
+                      self.config_location)
         self.external_blocking_function(blocked=True)
 
     def __enter__(self):
