@@ -85,29 +85,33 @@ class PomodoroTimer():
                           f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
-                           self._timer_triggered_next_phase)
+                           self._timer_triggered_skip_phases)
         self.timer.start()
 
     def _update_state(self):
         self.state = self.POMODORO_CYCLE.__next__()
         self.time_left = self.state.value[1]
 
-    def _timer_triggered_next_phase(self):
-        self.next_phase(timer_triggered=True)
+    def _timer_triggered_skip_phases(self):
+        self.skip_phases(timer_triggered=True)
 
-    def next_phase(self, timer_triggered=False, phases_skipped=1):
+    def skip_phases(self, timer_triggered=False, phases_skipped=1):
         if self.state is self.State.WORK:
             if not timer_triggered and not (self.config['productivity']
-                                            ['skip_enabled']):
+                                            ['work_skip_enabled']):
                 self.write_status('Sorry, please work 1 pomodoro to reenable'
-                                  ' skipping')
-                return
+                                  ' work skipping')
+                return False
 
             self.work_count += 1
+            self.config['productivity']['work_skip_enabled'] = timer_triggered
 
-            self.config['productivity']['skip_enabled'] = timer_triggered
             with open(expanduser(self.config_location), 'w') as f:
                 yaml.dump(self.config, f, default_flow_style=False)
+        elif phases_skipped > 1:
+            self.write_status("Sorry, you can't skip more than 1 phase while"
+                              " not working")
+            return False
 
         self._stop_countdown()
         self.is_running = True
@@ -117,6 +121,8 @@ class PomodoroTimer():
         self._run()
 
         self.external_blocking_function(blocked=self.state is self.State.WORK)
+
+        return True
 
     def reset(self):
         self._stop_countdown()

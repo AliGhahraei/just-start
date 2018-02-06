@@ -48,9 +48,22 @@ def stop_timer(windrawer, timer):
     windrawer.manage_wifi(timer_running=False)
 
 
-def next_phase(windrawer, timer):
-    timer.next_phase()
-    windrawer.manage_wifi(timer_running=True)
+def skip_phases(windrawer, timer):
+    prompt = 'Enter how many phases you want to skip'
+    valid_phases = False
+
+    while not valid_phases:
+        try:
+            requested_phases = int(windrawer.input_sequence(prompt))
+            if requested_phases < 1:
+                raise ValueError
+        except ValueError:
+            prompt = 'Please enter a valid number of phases'
+        else:
+            valid_phases = True
+
+    if timer.skip_phases(phases_skipped=requested_phases):
+        windrawer.manage_wifi(timer_running=True)
 
 
 def parse_config():
@@ -237,7 +250,7 @@ def main(stdscr):
             "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
             'p': (toggle_timer, windrawer, pomodoro_timer),
             's': (stop_timer, windrawer, pomodoro_timer),
-            'n': (next_phase, windrawer, pomodoro_timer),
+            'k': (skip_phases, windrawer, pomodoro_timer),
             'r': (windrawer.refresh_tasks,),
             'q': (app_quit, windrawer),
         }
@@ -248,8 +261,9 @@ def main(stdscr):
                 windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete '
                                        'task, (c)omplete task, (m)odify, '
                                        '(!)custom command, (p)omodoro (toggle)'
-                                       ', (s)top pomodoro, (n)ext pomodoro '
-                                       'phase, s(y)nc server, (q)uit')
+                                       ', (s)top pomodoro, s(k)ip to a future'
+                                       ' pomodoro phase, s(y)nc server,'
+                                       ' (q)uit')
 
                 read_char = windrawer.input_char()
 
