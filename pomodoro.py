@@ -20,14 +20,9 @@ class PomodoroTimer():
         self.config = config
         self.config_location = config_location
 
-        is_work_time = (datetime.strptime(config['work']['start_time'],
-                                          '%H:%M').time()
-                        <= datetime.now().time()
-                        <= (datetime.strptime(config['work']['end_time'],
-                                              '%H:%M')).time())
-
-        duration_config = (config['work_duration'] if datetime.now().weekday()
-                           < 5 and is_work_time else config['home_duration'])
+        duration_config = (config['work_duration']
+                           if datetime.now().weekday() < 5 and
+                           self.is_work_time() else config['home_duration'])
 
         WORK_TIME = duration_config['work']
         SHORT_REST_TIME = duration_config['short_rest']
@@ -52,6 +47,14 @@ class PomodoroTimer():
         self.is_running = False
         self.start_datetime = self.timer = None
         self.write_status('Pomodoro timer stopped')
+
+    def is_work_time(self):
+        work_start = self.config['work']['start_time']
+        work_end = self.config['work']['end_time']
+
+        return (datetime.strptime(work_start, '%H:%M').time()
+                <= datetime.now().time()
+                <= (datetime.strptime(work_end, '%H:%M')).time())
 
     def write_status(self, status):
         self.written_status = status
@@ -82,7 +85,8 @@ class PomodoroTimer():
         self.start_datetime = datetime.now()
         self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
                           f' so far). End time: {end_time(self.time_left)}'
-                          f' ({int(self.time_left / 60)} mins)')
+                          f' ({int(self.time_left / 60)} mins). You are at'
+                          f' {"work" if self.is_work_time() else "home"}')
 
         self.timer = Timer(self.time_left,
                            self._timer_triggered_skip_phases)
