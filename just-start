@@ -258,12 +258,12 @@ def main(stdscr):
         quit_requested = False
         while not quit_requested:
             try:
-                windrawer.write_status('(r)efresh tasks, (a)dd task, (d)elete '
-                                       'task, (c)omplete task, (m)odify, '
-                                       '(!)custom command, (p)omodoro (toggle)'
-                                       ', (s)top pomodoro, s(k)ip to a future'
-                                       ' pomodoro phase, s(y)nc server,'
-                                       ' (q)uit')
+                windrawer.write_status(
+                    '(a)dd task, (c)omplete task, (d)elete task, s(k)ip to'
+                    ' another pomodoro phase, (m)odify task, (p)omodoro pause/'
+                    'resume, (q)uit, (r)efresh tasks, (s)top pomodoro, s(y)nc'
+                    ' server, (!) custom command'
+                )
 
                 read_char = windrawer.input_char()
 
