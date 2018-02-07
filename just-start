@@ -4,7 +4,7 @@ from curses import wrapper, echo, noecho, cbreak, nocbreak, newwin, error
 from os.path import expanduser
 from pexpect import spawn, EOF
 from platform import system
-from subprocess import run, PIPE
+from subprocess import run, PIPE, STDOUT
 from sys import argv
 
 from yaml import safe_load
@@ -18,12 +18,12 @@ CONFIG_LOCATION = '~/.config/just-start/preferences.yml'
 
 HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
                 ' another pomodoro phase, (m)odify task, (p)omodoro pause/'
-                ' resume, (q)uit, (r)efresh tasks, (s)top pomodoro, s(y)nc'
+                'resume, (q)uit, (r)efresh tasks, (s)top pomodoro, s(y)nc'
                 ' server, (!) custom command')
 
 
 def run_task(arg_list=[]):
-    return run(['task'] + arg_list, stdout=PIPE)
+    return run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT).stdout.decode('utf-8')
 
 
 def newborderedwin(height, width, start_y, start_x, title=''):
@@ -40,7 +40,7 @@ def newborderedwin(height, width, start_y, start_x, title=''):
 def sync(display_function=print):
     try:
         display_function(SYNC_MSG)
-        run_task(['sync'])
+        display_function(run_task(['sync']))
     except KeyboardInterrupt:
         pass
 
@@ -203,7 +203,7 @@ class WinDrawer():
         self.write_tasks()
 
     def fetch_tasks(self):
-        self.tasks = run_task().stdout.decode('utf-8').split("\n")
+        self.tasks = run_task().split("\n")
 
     def refresh_tasks(self):
         self.fetch_tasks()
@@ -211,24 +211,24 @@ class WinDrawer():
 
     def add(self):
         name = self.input_sequence("Enter the new task's data")
-        run_task(['add'] + name.split())
+        self.write_status(run_task(['add'] + name.split()))
 
     def delete(self):
         ids = self.input_taskids()
-        run_task([ids, 'delete', 'rc.confirmation=off'])
+        self.write_status(run_task([ids, 'delete', 'rc.confirmation=off']))
 
     def modify(self):
         ids = self.input_taskids()
         name = self.input_sequence("Enter the modified task's data")
-        run_task([ids, 'modify'] + name.split())
+        self.write_status(run_task([ids, 'modify'] + name.split()))
 
     def complete(self):
         ids = self.input_taskids()
-        run_task([ids, 'done'])
+        self.write_status(run_task([ids, 'done']))
 
     def custom_command(self):
         command = self.input_sequence('Enter your command')
-        run_task(command.split())
+        self.write_status(run_task(command.split()))
 
     def run_sudo(self, command):
         child = spawn(command)
