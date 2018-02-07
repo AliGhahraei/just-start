@@ -261,7 +261,7 @@ def main(stdscr):
             's': (stop_timer, windrawer, pomodoro_timer),
         }
 
-        windrawer.write_status('Welcome to just-start! h shows available'
+        windrawer.write_status('Welcome to just-start! pressing h shows available'
                                ' actions')
 
         quit_requested = False
