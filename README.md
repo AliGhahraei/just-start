@@ -10,7 +10,7 @@ focus and it can even enable and disable your wi-fi.
 Underneath, it's basically a wrapper for [Taskwarrior](https://taskwarrior.org/) with a timer
 implementing the [Pomodoro Technique](https://cirillocompany.de/pages/pomodoro-technique), a
 popular time management technique.
-It uses ncurses (so it's kind of like a graphical application, but in your terminal).
+It uses the [Ncurses](https://www.gnu.org/software/ncurses/) library (so it's kind of like a graphical application, but in your terminal).
 
 
 This app draws inspiration from [Omodoro](https://github.com/okraits/omodoro) and a bit from [Calcurse](http://calcurse.org/).
