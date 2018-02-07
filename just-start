@@ -245,20 +245,20 @@ def main(stdscr):
         # (func, args)
         refreshing_actions = {
             'a': (windrawer.add,),
-            'd': (windrawer.delete,),
             'c': (windrawer.complete,),
+            'd': (windrawer.delete,),
             'm': (windrawer.modify,),
-            '!': (windrawer.custom_command,),
             'y': (sync, windrawer.write_status),
+            '!': (windrawer.custom_command,),
         }
         non_refreshing_actions = {
             "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
-            'p': (toggle_timer, windrawer, pomodoro_timer),
-            's': (stop_timer, windrawer, pomodoro_timer),
             'h': (windrawer.write_status, HELP_MESSAGE),
             'k': (skip_phases, windrawer, pomodoro_timer),
-            'r': (windrawer.refresh_tasks,),
+            'p': (toggle_timer, windrawer, pomodoro_timer),
             'q': (app_quit, windrawer),
+            'r': (windrawer.refresh_tasks,),
+            's': (stop_timer, windrawer, pomodoro_timer),
         }
 
         windrawer.write_status('Welcome to just-start! h shows available'
