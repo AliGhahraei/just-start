@@ -16,6 +16,11 @@ SYNC_MSG = 'Syncing task server...'
 
 CONFIG_LOCATION = '~/.config/just-start/preferences.yml'
 
+HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
+                ' another pomodoro phase, (m)odify task, (p)omodoro pause/'
+                ' resume, (q)uit, (r)efresh tasks, (s)top pomodoro, s(y)nc'
+                ' server, (!) custom command')
+
 
 def run_task(arg_list=[]):
     return run(['task'] + arg_list, stdout=PIPE)
@@ -250,21 +255,18 @@ def main(stdscr):
             "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
             'p': (toggle_timer, windrawer, pomodoro_timer),
             's': (stop_timer, windrawer, pomodoro_timer),
+            'h': (windrawer.write_status, HELP_MESSAGE),
             'k': (skip_phases, windrawer, pomodoro_timer),
             'r': (windrawer.refresh_tasks,),
             'q': (app_quit, windrawer),
         }
 
+        windrawer.write_status('Welcome to just-start! h shows available'
+                               ' actions')
+
         quit_requested = False
         while not quit_requested:
             try:
-                windrawer.write_status(
-                    '(a)dd task, (c)omplete task, (d)elete task, s(k)ip to'
-                    ' another pomodoro phase, (m)odify task, (p)omodoro pause/'
-                    'resume, (q)uit, (r)efresh tasks, (s)top pomodoro, s(y)nc'
-                    ' server, (!) custom command'
-                )
-
                 read_char = windrawer.input_char()
 
                 try:
