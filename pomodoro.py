@@ -57,7 +57,6 @@ class PomodoroTimer():
                 <= (datetime.strptime(work_end, '%H:%M')).time())
 
     def write_status(self, status):
-        self.written_status = status
         if system() == 'Linux':
             run(['notify-send', status])
         else:

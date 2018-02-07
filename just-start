@@ -26,10 +26,12 @@ def run_task(arg_list=[]):
     return run(['task'] + arg_list, stdout=PIPE)
 
 
-def newborderedwin(height, width, start_y, start_x):
+def newborderedwin(height, width, start_y, start_x, title=''):
     borderedwindow = newwin(height, width, start_y, start_x)
     borderedwindow.clear()
     borderedwindow.border()
+    borderedwindow.move(0, 2)
+    borderedwindow.addstr(title)
     borderedwindow.refresh()
 
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
@@ -80,6 +82,9 @@ class WinDrawer():
     def __init__(self, stdscr, config):
         self.stdscr = stdscr
         self.password = config['password']
+        self.written_status = ''
+        self.written_pomodoro_status = ''
+        self.written_prompt = ''
 
         blocking_lines = '\\n'.join(
             [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
@@ -92,7 +97,8 @@ class WinDrawer():
         self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
 
         self.fetch_tasks()
-        self.draw_windows(None)
+        self.draw_windows()
+
 
     def input_char(self):
         self.textbox_window.clear()
@@ -102,14 +108,22 @@ class WinDrawer():
         self.status_window.clear()
         self.status_window.addstr(status)
         self.status_window.refresh()
+        self.written_status = status
 
     def write_pomodoro_status(self, status):
         self.pomodoro_window.clear()
         self.pomodoro_window.addstr(status)
         self.pomodoro_window.refresh()
+        self.written_pomodoro_status = status
+
+    def write_prompt(self, prompt):
+        self.prompt_window.clear()
+        self.prompt_window.addstr(prompt)
+        self.prompt_window.refresh()
+        self.written_prompt = prompt
 
     def input_sequence(self, status):
-        self.write_status(status + " and press Ctrl-Enter when done (or "
+        self.write_prompt(status + " and press Ctrl-Enter when done (or "
                           "Ctrl-C to cancel)")
         self.textbox_window.clear()
         echo()
@@ -144,36 +158,47 @@ class WinDrawer():
 
         self.task_window.refresh()
 
-    def draw_windows(self, pomodoro_timer):
+    def draw_windows(self):
         self.stdscr.refresh()
 
         MAX_Y, MAX_X = self.stdscr.getmaxyx()
-        STATUS_WINDOW_HEIGHT = 4
-        TEXTBOX_WINDOW_HEIGHT = 4
-        POMODORO_WINDOW_HEIGHT = 3
+        STATUS_WINDOW_HEIGHT = 7
+        POMODORO_WINDOW_HEIGHT = 7
+        PROMPT_WINDOW_HEIGHT = 3
+        TEXTBOX_WINDOW_HEIGHT = 3
         TASK_WINDOW_HEIGHT = (MAX_Y
                               - STATUS_WINDOW_HEIGHT
-                              - TEXTBOX_WINDOW_HEIGHT
-                              - POMODORO_WINDOW_HEIGHT)
+                              - PROMPT_WINDOW_HEIGHT
+                              - TEXTBOX_WINDOW_HEIGHT)
 
         self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
                                           0, 0)
-        self.pomodoro_window = newborderedwin(POMODORO_WINDOW_HEIGHT,
-                                              MAX_X - 1,
+        self.pomodoro_window = newborderedwin(POMODORO_WINDOW_HEIGHT, int(MAX_X / 2),
                                               TASK_WINDOW_HEIGHT,
-                                              0)
-        self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT, MAX_X - 1,
-                                            TASK_WINDOW_HEIGHT
-                                            + POMODORO_WINDOW_HEIGHT,
-                                            0)
-        self.textbox_window = newborderedwin(TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
-                                             TASK_WINDOW_HEIGHT
-                                             + STATUS_WINDOW_HEIGHT
-                                             + POMODORO_WINDOW_HEIGHT,
-                                             0)
+                                              int(MAX_X / 2),
+                                              'Pomodoro status')
+        self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT, int(MAX_X / 2),
+                                            TASK_WINDOW_HEIGHT,
+                                            0,
+                                            'App status')
 
-        if pomodoro_timer is not None:
-            self.write_pomodoro_status(pomodoro_timer.written_status)
+        self.prompt_window = newwin(PROMPT_WINDOW_HEIGHT - 2, MAX_X - 3,
+                                     TASK_WINDOW_HEIGHT
+                                     + STATUS_WINDOW_HEIGHT + 1,
+                                     1)
+        self.textbox_window = newwin(TEXTBOX_WINDOW_HEIGHT - 2, MAX_X - 3,
+                                     TASK_WINDOW_HEIGHT
+                                     + STATUS_WINDOW_HEIGHT
+                                     + PROMPT_WINDOW_HEIGHT,
+                                     1)
+        newborderedwin(PROMPT_WINDOW_HEIGHT + TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
+                       TASK_WINDOW_HEIGHT
+                       + STATUS_WINDOW_HEIGHT,
+                       0)
+
+        self.write_pomodoro_status(self.written_pomodoro_status)
+        self.write_status(self.written_status)
+        self.write_prompt(self.written_prompt)
 
         self.write_tasks()
 
@@ -252,7 +277,7 @@ def main(stdscr):
             '!': (windrawer.custom_command,),
         }
         non_refreshing_actions = {
-            "KEY_RESIZE": (windrawer.draw_windows, pomodoro_timer),
+            "KEY_RESIZE": (windrawer.draw_windows,),
             'h': (windrawer.write_status, HELP_MESSAGE),
             'k': (skip_phases, windrawer, pomodoro_timer),
             'p': (toggle_timer, windrawer, pomodoro_timer),
@@ -261,11 +286,10 @@ def main(stdscr):
             's': (stop_timer, windrawer, pomodoro_timer),
         }
 
-        windrawer.write_status('Welcome to just-start! pressing h shows available'
-                               ' actions')
-
         quit_requested = False
         while not quit_requested:
+            windrawer.write_prompt('Waiting for user. Pressing h shows available actions')
+
             try:
                 read_char = windrawer.input_char()
 
@@ -278,10 +302,11 @@ def main(stdscr):
                         action(*params)
                     else:
                         windrawer.refresh_tasks()
+
                 except KeyboardInterrupt:
                     continue
                 except KeyError:
-                    windrawer.write_status(f'Unknown action: "{read_char}". '
+                    windrawer.write_prompt(f'Unknown action: "{read_char}". '
                                            'Press any key to continue')
                     windrawer.input_char()
 
