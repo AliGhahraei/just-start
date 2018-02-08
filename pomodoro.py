@@ -88,17 +88,17 @@ class PomodoroTimer():
                           f' {"work" if self.is_work_time() else "home"}')
 
         self.timer = Timer(self.time_left,
-                           self._timer_triggered_skip_phases)
+                           self._timer_triggered_phase_advancement)
         self.timer.start()
 
     def _update_state(self):
         self.state = self.POMODORO_CYCLE.__next__()
         self.time_left = self.state.value[1]
 
-    def _timer_triggered_skip_phases(self):
-        self.skip_phases(timer_triggered=True)
+    def _timer_triggered_phase_advancement(self):
+        self.advance_phases(timer_triggered=True)
 
-    def skip_phases(self, timer_triggered=False, phases_skipped=1):
+    def advance_phases(self, timer_triggered=False, phases_skipped=1):
         if self.state is self.State.WORK:
             if not timer_triggered and not (self.config['productivity']
                                             ['work_skip_enabled']):
