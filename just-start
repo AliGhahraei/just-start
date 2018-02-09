@@ -307,8 +307,7 @@ def main(stdscr):
                 except KeyboardInterrupt:
                     continue
                 except KeyError:
-                    windrawer.write_prompt(f'Unknown action: "{read_char}". '
-                                           'Press any key to continue')
+                    windrawer.write_status(f'Unknown key: "{read_char}"')
                     windrawer.input_char()
 
             except KeyboardInterrupt:
