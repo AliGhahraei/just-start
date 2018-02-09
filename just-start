@@ -308,7 +308,6 @@ def main(stdscr):
                     continue
                 except KeyError:
                     windrawer.write_status(f'Unknown key: "{read_char}"')
-                    windrawer.input_char()
 
             except KeyboardInterrupt:
                 quit_requested = True
