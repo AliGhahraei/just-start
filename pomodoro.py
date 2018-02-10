@@ -9,8 +9,8 @@ from threading import Timer
 import yaml
 
 
-def end_time(time_left):
-    end_time = datetime.now() + timedelta(seconds=time_left)
+def end_time_from_now(seconds_left):
+    end_time = datetime.now() + timedelta(seconds=seconds_left)
     return end_time.strftime('%H:%M')
 
 
@@ -83,7 +83,7 @@ class PomodoroTimer():
     def _run(self):
         self.start_datetime = datetime.now()
         self.write_status(f'{self.state.value[0]} ({self.work_count} pomodoros'
-                          f' so far). End time: {end_time(self.time_left)}'
+                          f' so far). End time: {end_time_from_now(self.time_left)}'
                           f' ({int(self.time_left / 60)} mins). You are at'
                           f' {"work" if self.is_work_time() else "home"}')
 
