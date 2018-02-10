@@ -24,7 +24,8 @@ HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
                 ' server, (!) custom command')
 
 
-def run_task(arg_list=[]):
+def run_task(arg_list=None):
+    arg_list = arg_list or None
     task_output = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
     return task_output.stdout.decode('utf-8')
 
@@ -60,12 +61,11 @@ def skip_phases(windrawer, timer):
         except ValueError:
             pass
         else:
-            valid_phases = phases >= 1
+            if phases >= 1 and timer.advance_phases(phases_skipped=phases):
+                valid_phases = True
+                windrawer.manage_wifi(timer_running=True)
 
         prompt = 'Please enter a valid number of phases'
-
-    if timer.advance_phases(phases_skipped=phases):
-        windrawer.manage_wifi(timer_running=True)
 
 
 def parse_config():
@@ -73,7 +73,7 @@ def parse_config():
         return safe_load(f)
 
 
-class WinDrawer():
+class WinDrawer:
     def __init__(self, stdscr, config):
         self.stdscr = stdscr
         self.password = config['password']
@@ -275,12 +275,12 @@ def main(stdscr):
                        config, CONFIG_LOCATION) as pomodoro_timer:
 
         refreshing_actions = {
-            'a': (windrawer.add,),
-            'c': (windrawer.complete,),
-            'd': (windrawer.delete,),
-            'm': (windrawer.modify,),
-            'y': (windrawer.sync,),
-            '!': (windrawer.custom_command,),
+            'a': windrawer.add,
+            'c': windrawer.complete,
+            'd': windrawer.delete,
+            'm': windrawer.modify,
+            'y': windrawer.sync,
+            '!': windrawer.custom_command,
         }
         non_refreshing_actions = {
             "KEY_RESIZE": (windrawer.draw_windows,),
