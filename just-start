@@ -40,14 +40,6 @@ def newborderedwin(height, width, start_y, start_x, title=''):
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
 
-def sync(display_function=print):
-    try:
-        display_function(SYNC_MSG)
-        display_function(run_task(['sync']))
-    except KeyboardInterrupt:
-        pass
-
-
 def toggle_timer(windrawer, timer):
     timer.toggle()
     windrawer.manage_wifi(timer.is_running)
@@ -106,6 +98,14 @@ class WinDrawer():
         use_default_colors()
         for color in COLOR_WHITE, COLOR_GREEN, COLOR_RED:
             init_pair(color, color, -1)
+
+    def sync(self):
+        try:
+            self.write_status(SYNC_MSG)
+            self.write_status(run_task(['sync']))
+        except KeyboardInterrupt:
+            pass
+
     def input_char(self):
         self.textbox_window.clear()
         return self.textbox_window.getkey(*self.textbox_window.getyx())
@@ -268,19 +268,18 @@ class WinDrawer():
 
 def main(stdscr):
     config = parse_config()
-    sync()
     windrawer = WinDrawer(stdscr, config)
+    windrawer.sync()
     with PomodoroTimer(windrawer.write_pomodoro_status,
                        windrawer.manage_blocked_sites,
                        config, CONFIG_LOCATION) as pomodoro_timer:
 
-        # (func, args)
         refreshing_actions = {
             'a': (windrawer.add,),
             'c': (windrawer.complete,),
             'd': (windrawer.delete,),
             'm': (windrawer.modify,),
-            'y': (sync, windrawer.write_status),
+            'y': (windrawer.sync,),
             '!': (windrawer.custom_command,),
         }
         non_refreshing_actions = {
@@ -303,8 +302,7 @@ def main(stdscr):
 
                 try:
                     try:
-                        action, *params = refreshing_actions[read_char]
-                        action(*params)
+                        refreshing_actions[read_char]()
                     except KeyError:
                         action, *params = non_refreshing_actions[read_char]
                         action(*params)
@@ -324,7 +322,7 @@ def main(stdscr):
 
 
 def app_quit(windrawer):
-    sync(windrawer.write_status)
+    windrawer.sync()
     windrawer.manage_wifi()
     quit()
 
