@@ -16,19 +16,16 @@ def end_time_from_now(seconds_left):
     return end_time.strftime('%H:%M')
 
 
-def notify(status):
-    if system() == 'Linux':
-        run(['notify-send', status])
-    else:
-        run(['osascript', '-e', f'display notification "{status}" with title'
-                                f' "just-start"'])
+class PomodoroException(Exception):
+    pass
 
 
 class PomodoroTimer:
-    def __init__(self, external_blocking_function,
+    def __init__(self, external_status_function, external_blocking_function,
                  config, config_location):
         self.config = config
         self.config_location = config_location
+        self.external_status_function = external_status_function
 
         duration_config = (config['work_duration']
                            if datetime.now().weekday() < 5 and
@@ -55,9 +52,17 @@ class PomodoroTimer:
         self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
-        notify('Pomodoro timer stopped')
+        self.notify('Pomodoro timer stopped')
 
     def is_work_time(self):
+    def notify(self, status):
+        if system() == 'Linux':
+            run(['notify-send', status])
+        else:
+            run(['osascript', '-e',
+                 f'display notification "{status}" with title'
+                 f' "just-start"'])
+        self.external_status_function(status)
         work_start = self.config['work']['start_time']
         work_end = self.config['work']['end_time']
 
@@ -72,7 +77,7 @@ class PomodoroTimer:
             elapsed_timedelta = datetime.now() - self.start_datetime
             self.time_left -= elapsed_timedelta.seconds
 
-            notify('Paused')
+            self.notify('Paused')
             self.external_blocking_function(blocked=True)
         else:
             self._run()
@@ -83,10 +88,10 @@ class PomodoroTimer:
 
     def _run(self):
         self.start_datetime = datetime.now()
-        notify(f'{self.state.value[0]} ({self.work_count} pomodoros  so far).'
-               f' End time: {end_time_from_now(self.time_left)}'
-               f' ({int(self.time_left / 60)} mins). You are at'
-               f' {"work" if self.is_work_time() else "home"}')
+        self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
+                    f' far). End time: {end_time_from_now(self.time_left)}'
+                    f' ({int(self.time_left / 60)} mins). You are at'
+                    f' {"work" if self.user_is_at_work() else "home"}')
 
         self.timer = Timer(self.time_left,
                            self._timer_triggered_phase_advancement)
@@ -103,9 +108,8 @@ class PomodoroTimer:
         if self.state is self.state.WORK:
             if not timer_triggered and not (self.config['productivity']
                                             ['work_skip_enabled']):
-                notify('Sorry, please work 1 pomodoro to reenable work'
-                       ' skipping')
-                return False
+                raise PomodoroException('Sorry, please work 1 pomodoro to'
+                                        ' re-enable work skipping')
 
             self.work_count += 1
             self.config['productivity']['work_skip_enabled'] = timer_triggered
@@ -113,8 +117,8 @@ class PomodoroTimer:
             with open(expanduser(self.config_location), 'w') as f:
                 yaml.dump(self.config, f, default_flow_style=False)
         elif phases_skipped > 1:
-            notify("Sorry, you can't skip more than 1 phase while not working")
-            return False
+            raise PomodoroException("Sorry, you can't skip more than 1 phase"
+                                    " while not working")
 
         self._stop_countdown()
         self.is_running = True
@@ -125,11 +129,10 @@ class PomodoroTimer:
 
         self.external_blocking_function(blocked=self.state is self.state.WORK)
 
-        return True
-
     def reset(self):
         self._stop_countdown()
-        self.__init__(self.external_blocking_function, self.config,
+        self.__init__(self.external_status_function,
+                      self.external_blocking_function, self.config,
                       self.config_location)
         self.external_blocking_function(blocked=True)
 

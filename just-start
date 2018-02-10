@@ -11,7 +11,7 @@ from sys import argv
 
 from yaml import safe_load
 
-from pomodoro import PomodoroTimer
+from pomodoro import PomodoroTimer, PomodoroException
 
 
 SYNC_MSG = 'Syncing task server...'
@@ -304,15 +304,18 @@ def main(stdscr):
                     try:
                         refreshing_actions[read_char]()
                     except KeyError:
-                        action, *params = non_refreshing_actions[read_char]
-                        action(*params)
+                        try:
+                            action, *params = non_refreshing_actions[read_char]
+                            action(*params)
+                        except PomodoroException as exc:
+                            windrawer.write_status(str(exc), color=COLOR_RED)
                     else:
                         windrawer.refresh_tasks()
 
                 except KeyboardInterrupt:
                     continue
                 except KeyError:
-                    windrawer.write_status(f'Unknown key: "{read_char}"',
+                    windrawer.write_status(f'Unknown key action: "{read_char}"',
                                            color=COLOR_RED)
 
             except KeyboardInterrupt:
