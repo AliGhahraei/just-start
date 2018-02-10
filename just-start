@@ -81,6 +81,12 @@ class WinDrawer:
         self.status_color = COLOR_WHITE
         self.written_pomodoro_status = ''
         self.written_prompt = ''
+        self.tasks = ''
+        self.task_window = None
+        self.pomodoro_window = None
+        self.status_window = None
+        self.prompt_window = None
+        self.textbox_window = None
 
         blocking_lines = '\\n'.join(
             [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
@@ -168,40 +174,40 @@ class WinDrawer:
     def draw_windows(self):
         self.stdscr.refresh()
 
-        MAX_Y, MAX_X = self.stdscr.getmaxyx()
-        STATUS_WINDOW_HEIGHT = 7
-        POMODORO_WINDOW_HEIGHT = 7
-        PROMPT_WINDOW_HEIGHT = 3
-        TEXTBOX_WINDOW_HEIGHT = 3
-        TASK_WINDOW_HEIGHT = (MAX_Y
-                              - STATUS_WINDOW_HEIGHT
-                              - PROMPT_WINDOW_HEIGHT
-                              - TEXTBOX_WINDOW_HEIGHT)
+        max_y, max_x = self.stdscr.getmaxyx()
+        status_window_height = 7
+        pomodoro_window_height = 7
+        prompt_window_height = 3
+        textbox_window_height = 3
+        task_window_height = (max_y
+                              - status_window_height
+                              - prompt_window_height
+                              - textbox_window_height)
 
-        self.task_window = newborderedwin(TASK_WINDOW_HEIGHT, MAX_X - 1,
+        self.task_window = newborderedwin(task_window_height, max_x - 1,
                                           0, 0)
-        self.pomodoro_window = newborderedwin(POMODORO_WINDOW_HEIGHT,
-                                              int(MAX_X / 2),
-                                              TASK_WINDOW_HEIGHT,
-                                              int(MAX_X / 2),
+        self.pomodoro_window = newborderedwin(pomodoro_window_height,
+                                              int(max_x / 2),
+                                              task_window_height,
+                                              int(max_x / 2),
                                               'Pomodoro status')
-        self.status_window = newborderedwin(STATUS_WINDOW_HEIGHT,
-                                            int(MAX_X / 2),
-                                            TASK_WINDOW_HEIGHT,
+        self.status_window = newborderedwin(status_window_height,
+                                            int(max_x / 2),
+                                            task_window_height,
                                             0,
                                             'App status')
 
-        prompt_y = TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT + 1
-        self.prompt_window = newwin(PROMPT_WINDOW_HEIGHT - 2, MAX_X - 3,
+        prompt_y = task_window_height + status_window_height + 1
+        self.prompt_window = newwin(prompt_window_height - 2, max_x - 3,
                                     prompt_y, 1)
 
-        textbox_y = (TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT
-                     + PROMPT_WINDOW_HEIGHT)
-        self.textbox_window = newwin(TEXTBOX_WINDOW_HEIGHT - 2, MAX_X - 3,
+        textbox_y = (task_window_height + status_window_height
+                     + prompt_window_height)
+        self.textbox_window = newwin(textbox_window_height - 2, max_x - 3,
                                      textbox_y, 1)
 
-        newborderedwin(PROMPT_WINDOW_HEIGHT + TEXTBOX_WINDOW_HEIGHT, MAX_X - 1,
-                       TASK_WINDOW_HEIGHT + STATUS_WINDOW_HEIGHT, 0)
+        newborderedwin(prompt_window_height + textbox_window_height, max_x - 1,
+                       task_window_height + status_window_height, 0)
 
         self.write_pomodoro_status(self.written_pomodoro_status)
         self.write_status(self.written_status, color=self.status_color)
@@ -271,8 +277,8 @@ def main(stdscr):
     windrawer = WinDrawer(stdscr, config)
     windrawer.sync()
     with PomodoroTimer(windrawer.write_pomodoro_status,
-                       windrawer.manage_blocked_sites,
-                       config, CONFIG_LOCATION) as pomodoro_timer:
+                       windrawer.manage_blocked_sites, config,
+                       CONFIG_LOCATION) as pomodoro_timer:
 
         refreshing_actions = {
             'a': windrawer.add,

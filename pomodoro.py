@@ -27,9 +27,8 @@ class PomodoroTimer:
         self.config_location = config_location
         self.external_status_function = external_status_function
 
-        duration_config = (config['work_duration']
-                           if datetime.now().weekday() < 5 and
-                           self.is_work_time() else config['home_duration'])
+        duration_config = (config['work_duration'] if self.user_is_at_work()
+                           else config['home_duration'])
 
         work_time = duration_config['work']
         short_rest_time = duration_config['short_rest']
@@ -54,7 +53,6 @@ class PomodoroTimer:
         self.start_datetime = self.timer = None
         self.notify('Pomodoro timer stopped')
 
-    def is_work_time(self):
     def notify(self, status):
         if system() == 'Linux':
             run(['notify-send', status])
@@ -63,12 +61,16 @@ class PomodoroTimer:
                  f'display notification "{status}" with title'
                  f' "just-start"'])
         self.external_status_function(status)
+
+    def user_is_at_work(self):
         work_start = self.config['work']['start_time']
         work_end = self.config['work']['end_time']
 
-        return (datetime.strptime(work_start, '%H:%M').time()
+        return datetime.now().weekday() < 5 and (
+                datetime.strptime(work_start, '%H:%M').time()
                 <= datetime.now().time()
-                <= (datetime.strptime(work_end, '%H:%M')).time())
+                <= datetime.strptime(work_end, '%H:%M').time()
+        )
 
     def toggle(self):
         if self.is_running:
