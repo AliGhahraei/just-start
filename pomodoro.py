@@ -16,13 +16,14 @@ def end_time_from_now(seconds_left):
     return end_time.strftime('%H:%M')
 
 
-class PomodoroException(Exception):
+class PomodoroError(Exception):
     pass
 
 
 class PomodoroTimer:
     def __init__(self, external_status_function, external_blocking_function,
-                 config, config_location):
+                 config, config_location,
+                 show_external_stop_notification=False):
         self.config = config
         self.config_location = config_location
         self.external_status_function = external_status_function
@@ -51,15 +52,18 @@ class PomodoroTimer:
         self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
-        self.notify('Pomodoro timer stopped')
+        self.notify('Pomodoro timer stopped',
+                    desktop_stop_notification=show_external_stop_notification)
 
-    def notify(self, status):
-        if system() == 'Linux':
-            run(['notify-send', status])
-        else:
-            run(['osascript', '-e',
-                 f'display notification "{status}" with title'
-                 f' "just-start"'])
+    def notify(self, status, desktop_stop_notification=True):
+        if desktop_stop_notification:
+            if system() == 'Linux':
+                run(['notify-send', status])
+            else:
+                run(['osascript', '-e',
+                     f'display notification "{status}" with title'
+                     f' "just-start"'])
+
         self.external_status_function(status)
 
     def user_is_at_work(self):
@@ -110,8 +114,8 @@ class PomodoroTimer:
         if self.state is self.state.WORK:
             if not timer_triggered and not (self.config['productivity']
                                             ['work_skip_enabled']):
-                raise PomodoroException('Sorry, please work 1 pomodoro to'
-                                        ' re-enable work skipping')
+                raise PomodoroError('Sorry, please work 1 pomodoro to'
+                                    ' re-enable work skipping')
 
             self.work_count += 1
             self.config['productivity']['work_skip_enabled'] = timer_triggered
@@ -119,8 +123,8 @@ class PomodoroTimer:
             with open(expanduser(self.config_location), 'w') as f:
                 yaml.dump(self.config, f, default_flow_style=False)
         elif phases_skipped > 1:
-            raise PomodoroException("Sorry, you can't skip more than 1 phase"
-                                    " while not working")
+            raise PomodoroError("Sorry, you can't skip more than 1 phase"
+                                " while not working")
 
         self._stop_countdown()
         self.is_running = True
@@ -135,7 +139,8 @@ class PomodoroTimer:
         self._stop_countdown()
         self.__init__(self.external_status_function,
                       self.external_blocking_function, self.config,
-                      self.config_location)
+                      self.config_location,
+                      show_external_stop_notification=True)
         self.external_blocking_function(blocked=True)
 
     def __enter__(self):

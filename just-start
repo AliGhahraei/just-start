@@ -11,7 +11,9 @@ from sys import argv
 
 from yaml import safe_load
 
-from pomodoro import PomodoroTimer, PomodoroException
+from pomodoro import PomodoroTimer, PomodoroError
+
+from time import sleep
 
 
 SYNC_MSG = 'Syncing task server...'
@@ -24,10 +26,19 @@ HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
                 ' server, (!) custom command')
 
 
+class JustStartError(Exception):
+    pass
+
+
 def run_task(arg_list=None):
     arg_list = arg_list or []
-    task_output = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
-    return task_output.stdout.decode('utf-8')
+    completed_process = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
+    process_output = completed_process.stdout.decode('utf-8')
+
+    if completed_process.returncode != 0:
+        raise JustStartError(process_output)
+
+    return process_output
 
 
 def newborderedwin(height, width, start_y, start_x, title=''):
@@ -41,29 +52,30 @@ def newborderedwin(height, width, start_y, start_x, title=''):
     return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
 
-def toggle_timer(windrawer, timer):
+def toggle_timer(network_handler, timer):
     timer.toggle()
-    windrawer.manage_wifi(timer.is_running)
+    network_handler.manage_wifi(timer.is_running)
 
 
-def stop_timer(windrawer, timer):
+def stop_timer(network_handler, timer):
     timer.reset()
-    windrawer.manage_wifi(timer_running=False)
+    network_handler.manage_wifi(timer_running=False)
 
 
-def skip_phases(windrawer, timer):
+def skip_phases(prompt_handler, network_handler, timer):
     prompt = 'Enter how many phases you want to skip'
     valid_phases = False
 
     while not valid_phases:
         try:
-            phases = int(windrawer.input_sequence(prompt))
+            phases = int(prompt_handler.input_sequence(prompt))
         except ValueError:
             pass
         else:
-            if phases >= 1 and timer.advance_phases(phases_skipped=phases):
+            if phases >= 1:
+                timer.advance_phases(phases_skipped=phases)
                 valid_phases = True
-                windrawer.manage_wifi(timer_running=True)
+                network_handler.manage_wifi(timer_running=True)
 
         prompt = 'Please enter a valid number of phases'
 
@@ -73,37 +85,77 @@ def parse_config():
         return safe_load(f)
 
 
-class WinDrawer:
-    def __init__(self, stdscr, config):
+class WindowHandler:
+    def __init__(self, stdscr):
         self.stdscr = stdscr
-        self.password = config['password']
-        self.written_status = ''
-        self.status_color = COLOR_WHITE
-        self.written_pomodoro_status = ''
-        self.written_prompt = ''
-        self.tasks = ''
-        self.task_window = None
-        self.pomodoro_window = None
-        self.status_window = None
-        self.prompt_window = None
-        self.textbox_window = None
-
-        blocking_lines = '\\n'.join(
-            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
-             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
-             for blocked_site in config['blocked_sites']])
-
-        self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
-                              f'sudo tee -a /etc/hosts > /dev/null"')
-
-        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
-
-        self.fetch_tasks()
-        self.draw_windows()
 
         use_default_colors()
         for color in COLOR_WHITE, COLOR_GREEN, COLOR_RED:
             init_pair(color, color, -1)
+
+        self.task_window = None
+        self.tasks = ''
+
+        self.pomodoro_window = None
+        self.written_pomodoro_status = ''
+
+        self.status_window = None
+        self.written_status = ''
+        self.status_color = COLOR_WHITE
+
+        self.prompt_handler = None
+
+        self.draw_windows()
+
+    def draw_windows(self):
+        self.stdscr.refresh()
+
+        max_y, max_x = self.stdscr.getmaxyx()
+        status_window_height = 7
+        pomodoro_window_height = 7
+        prompt_window_height = 6
+        task_window_height = max_y - status_window_height - prompt_window_height
+
+        self.task_window = newborderedwin(task_window_height, max_x - 1, 0, 0)
+        self.refresh_tasks()
+
+        status_window_width = int(max_x / 2)
+        self.pomodoro_window = newborderedwin(pomodoro_window_height,
+                                              status_window_width,
+                                              task_window_height,
+                                              status_window_width,
+                                              'Pomodoro status')
+
+        self.status_window = newborderedwin(status_window_height,
+                                            status_window_width,
+                                            task_window_height,
+                                            0,
+                                            'App status')
+
+        self.write_pomodoro_status(self.written_pomodoro_status)
+        self.write_status(self.written_status, color=self.status_color)
+
+        prompt_y = task_window_height + status_window_height
+        self.prompt_handler = PromptHandler(
+            prompt_y, prompt_window_height, max_x - 1, self.stdscr,
+            self.status_window, self.write_status,
+            (self.prompt_handler.written_prompt
+             if self.prompt_handler is not None else '')
+        )
+
+    def write_status(self, status, color=COLOR_WHITE):
+        self.status_window.clear()
+        self.status_window.addstr(status, color_pair(color))
+        self.status_window.refresh()
+        self.written_status = status
+        self.status_color = color
+
+    def write_pomodoro_status(self, status):
+        self.status_window.clear()
+        self.pomodoro_window.clear()
+        self.pomodoro_window.addstr(status)
+        self.pomodoro_window.refresh()
+        self.written_pomodoro_status = status
 
     def sync(self):
         try:
@@ -112,39 +164,70 @@ class WinDrawer:
         except KeyboardInterrupt:
             pass
 
-    def input_char(self):
-        self.textbox_window.clear()
-        return self.textbox_window.getkey(*self.textbox_window.getyx())
+    def refresh_tasks(self):
+        self.tasks = run_task().split("\n")
+        self.task_window.clear()
 
-    def write_status(self, status, color=COLOR_GREEN):
-        self.status_window.clear()
-        self.status_window.addstr(status, color_pair(color))
-        self.status_window.refresh()
-        self.written_status = status
-        self.status_color = color
+        try:
+            for y, task in enumerate(self.tasks):
+                self.task_window.addstr(y, 1, task)
+        except error:
+            pass
 
-    def write_pomodoro_status(self, status):
-        self.pomodoro_window.clear()
-        self.pomodoro_window.addstr(status)
-        self.pomodoro_window.refresh()
-        self.written_pomodoro_status = status
+        self.task_window.refresh()
+
+
+class PromptHandler:
+    def __init__(self, prompt_y, prompt_height, prompt_width, stdscr,
+                 status_window, write_status, written_prompt):
+        self.stdscr = stdscr
+        self.status_window = status_window
+        self.write_status = write_status
+        self.prompt_y = prompt_y
+        self.prompt_width = prompt_width
+        self.prompt_height = prompt_height
+        self.written_prompt = written_prompt
+        self.prompt_color = COLOR_WHITE
+        self.prompt_window, self.input_window = self.draw_prompt_windows()
+
+    def draw_prompt_windows(self):
+        newborderedwin(self.prompt_height, self.prompt_width, self.prompt_y, 0)
+        inner_height = int((self.prompt_height - 2) / 2)
+
+        prompt_window = newwin(inner_height, self.prompt_width,
+                               self.prompt_y + 1, 1)
+
+        input_window = newwin(inner_height,  self.prompt_width,
+                              self.prompt_y + inner_height + 1, 1)
+
+        input_window.refresh()
+        prompt_window.refresh()
+
+        return prompt_window, input_window
 
     def write_prompt(self, prompt):
+        self.status_window.clear()
         self.prompt_window.clear()
         self.prompt_window.addstr(prompt)
         self.prompt_window.refresh()
         self.written_prompt = prompt
 
+    def input_char(self):
+        self.input_window.clear()
+        return self.input_window.getkey(
+            *self.input_window.getyx()
+        )
+
     def input_sequence(self, status):
         self.write_prompt(status + " and press Ctrl-Enter when done (or "
                           "Ctrl-C to cancel)")
-        self.textbox_window.clear()
+        self.input_window.clear()
         echo()
         nocbreak()
 
         try:
-            key_sequence = self.textbox_window.getstr(
-                *self.textbox_window.getyx())
+            key_sequence = self.input_window.getstr(
+                *self.input_window.getyx())
         finally:
             noecho()
             cbreak()
@@ -160,68 +243,6 @@ class WinDrawer:
             except ValueError:
                 ids = self.input_sequence("Please enter valid ids")
 
-    def write_tasks(self):
-        self.task_window.clear()
-
-        try:
-            for y, task in enumerate(self.tasks):
-                self.task_window.addstr(y, 1, task)
-        except error:
-            pass
-
-        self.task_window.refresh()
-
-    def draw_windows(self):
-        self.stdscr.refresh()
-
-        max_y, max_x = self.stdscr.getmaxyx()
-        status_window_height = 7
-        pomodoro_window_height = 7
-        prompt_window_height = 3
-        textbox_window_height = 3
-        task_window_height = (max_y
-                              - status_window_height
-                              - prompt_window_height
-                              - textbox_window_height)
-
-        self.task_window = newborderedwin(task_window_height, max_x - 1,
-                                          0, 0)
-        self.pomodoro_window = newborderedwin(pomodoro_window_height,
-                                              int(max_x / 2),
-                                              task_window_height,
-                                              int(max_x / 2),
-                                              'Pomodoro status')
-        self.status_window = newborderedwin(status_window_height,
-                                            int(max_x / 2),
-                                            task_window_height,
-                                            0,
-                                            'App status')
-
-        prompt_y = task_window_height + status_window_height + 1
-        self.prompt_window = newwin(prompt_window_height - 2, max_x - 3,
-                                    prompt_y, 1)
-
-        textbox_y = (task_window_height + status_window_height
-                     + prompt_window_height)
-        self.textbox_window = newwin(textbox_window_height - 2, max_x - 3,
-                                     textbox_y, 1)
-
-        newborderedwin(prompt_window_height + textbox_window_height, max_x - 1,
-                       task_window_height + status_window_height, 0)
-
-        self.write_pomodoro_status(self.written_pomodoro_status)
-        self.write_status(self.written_status, color=self.status_color)
-        self.write_prompt(self.written_prompt)
-
-        self.write_tasks()
-
-    def fetch_tasks(self):
-        self.tasks = run_task().split("\n")
-
-    def refresh_tasks(self):
-        self.fetch_tasks()
-        self.write_tasks()
-
     def add(self):
         name = self.input_sequence("Enter the new task's data")
         self.write_status(run_task(['add'] + name.split()))
@@ -233,7 +254,8 @@ class WinDrawer:
     def modify(self):
         ids = self.input_taskids()
         name = self.input_sequence("Enter the modified task's data")
-        self.write_status(run_task([ids, 'modify'] + name.split()))
+        self.write_status(run_task([ids, 'modify']
+                                   + name.split()))
 
     def complete(self):
         ids = self.input_taskids()
@@ -242,6 +264,20 @@ class WinDrawer:
     def custom_command(self):
         command = self.input_sequence('Enter your command')
         self.write_status(run_task(command.split()))
+
+
+class NetworkHandler:
+    def __init__(self, config):
+        self.password = config['password']
+
+        blocking_lines = '\\n'.join(
+            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
+             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
+             for blocked_site in config['blocked_sites']])
+
+        self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
+                              f'sudo tee -a /etc/hosts > /dev/null"')
+        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
 
     def run_sudo(self, command):
         child = spawn(command)
@@ -273,38 +309,48 @@ class WinDrawer:
 
 
 def main(stdscr):
+    stdscr.clear()
+
     config = parse_config()
-    windrawer = WinDrawer(stdscr, config)
-    windrawer.sync()
-    with PomodoroTimer(windrawer.write_pomodoro_status,
-                       windrawer.manage_blocked_sites, config,
+    window_handler = WindowHandler(stdscr)
+    network_handler = NetworkHandler(config)
+    try:
+        window_handler.sync()
+    except JustStartError as exc:
+        window_handler.write_status(str(exc), color=COLOR_RED)
+
+    with PomodoroTimer(window_handler.write_pomodoro_status,
+                       network_handler.manage_blocked_sites, config,
                        CONFIG_LOCATION) as pomodoro_timer:
 
         refreshing_actions = {
-            'a': windrawer.add,
-            'c': windrawer.complete,
-            'd': windrawer.delete,
-            'm': windrawer.modify,
-            'y': windrawer.sync,
-            '!': windrawer.custom_command,
+            'a': window_handler.prompt_handler.add,
+            'c': window_handler.prompt_handler.complete,
+            'd': window_handler.prompt_handler.delete,
+            'm': window_handler.prompt_handler.modify,
+            'y': window_handler.sync,
+            '!': window_handler.prompt_handler.custom_command,
         }
         non_refreshing_actions = {
-            "KEY_RESIZE": (windrawer.draw_windows,),
-            'h': (windrawer.write_status, HELP_MESSAGE),
-            'k': (skip_phases, windrawer, pomodoro_timer),
-            'p': (toggle_timer, windrawer, pomodoro_timer),
-            'q': (app_quit, windrawer),
-            'r': (windrawer.refresh_tasks,),
-            's': (stop_timer, windrawer, pomodoro_timer),
+            "KEY_RESIZE": (window_handler.draw_windows,),
+            'h': (window_handler.write_status, HELP_MESSAGE),
+            'k': (skip_phases, window_handler.prompt_handler, network_handler,
+                  pomodoro_timer),
+            'p': (toggle_timer, network_handler, pomodoro_timer),
+            'q': (app_quit, window_handler, network_handler),
+            'r': (window_handler.refresh_tasks,),
+            's': (stop_timer, network_handler, pomodoro_timer),
         }
 
-        quit_requested = False
-        while not quit_requested:
-            windrawer.write_prompt('Waiting for user. Pressing h shows'
-                                   ' available actions')
+        while True:
+            window_handler.prompt_handler.write_prompt('Waiting for user.'
+                                                       ' Pressing h shows'
+                                                       ' available actions')
 
             try:
-                read_char = windrawer.input_char()
+                read_char = window_handler.prompt_handler.input_char()
+                window_handler.write_status('')
+                sleep(0.1)
 
                 try:
                     try:
@@ -313,26 +359,32 @@ def main(stdscr):
                         try:
                             action, *params = non_refreshing_actions[read_char]
                             action(*params)
-                        except PomodoroException as exc:
-                            windrawer.write_status(str(exc), color=COLOR_RED)
+                        except (PomodoroError, JustStartError) as exc:
+                            window_handler.write_status(str(exc),
+                                                        color=COLOR_RED)
                     else:
-                        windrawer.refresh_tasks()
+                        window_handler.refresh_tasks()
 
                 except KeyboardInterrupt:
                     continue
                 except KeyError:
-                    windrawer.write_status(f'Unknown key action: "{read_char}"',
-                                           color=COLOR_RED)
+                    window_handler.write_status(f'Unknown key action:'
+                                                f' "{read_char}"',
+                                                color=COLOR_RED)
 
             except KeyboardInterrupt:
-                quit_requested = True
+                window_handler.write_status(f'Please use q to quit',
+                                            color=COLOR_RED)
+            except JustStartError as exc:
+                window_handler.write_status(str(exc), color=COLOR_RED)
 
-        app_quit(windrawer)
 
-
-def app_quit(windrawer):
-    windrawer.sync()
-    windrawer.manage_wifi()
+def app_quit(window_handler, network_handler):
+    try:
+        window_handler.sync()
+    except JustStartError as exc:
+        window_handler.write_status(str(exc), color=COLOR_RED)
+    network_handler.manage_wifi()
     quit()
 
 
