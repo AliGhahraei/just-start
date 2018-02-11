@@ -255,8 +255,7 @@ class PromptHandler:
     def modify(self):
         ids = self.input_taskids()
         name = self.input_sequence("Enter the modified task's data")
-        self.write_status(run_task([ids, 'modify']
-                                   + name.split()))
+        self.write_status(run_task([ids, 'modify'] + name.split()))
 
     def complete(self):
         ids = self.input_taskids()
