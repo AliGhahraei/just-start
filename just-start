@@ -8,7 +8,7 @@ from os.path import expanduser, join
 from pexpect import spawn, EOF
 from platform import system
 from subprocess import run, PIPE, STDOUT
-from sys import argv, exc_info
+from sys import argv
 from time import sleep
 
 from yaml import safe_load
