@@ -132,9 +132,6 @@ class WindowHandler:
                                             0,
                                             'App status')
 
-        self.write_pomodoro_status(self.written_pomodoro_status)
-        self.write_status(self.written_status, color=self.status_color)
-
         prompt_y = task_window_height + status_window_height
         self.prompt_handler = PromptHandler(
             prompt_y, prompt_window_height, max_x - 1, self.stdscr,
@@ -143,7 +140,11 @@ class WindowHandler:
              if self.prompt_handler is not None else '')
         )
 
+        self.write_pomodoro_status(self.written_pomodoro_status)
+        self.write_status(self.written_status, color=self.status_color)
+
     def write_status(self, status, color=COLOR_WHITE):
+        self.prompt_handler.write_prompt('')
         self.status_window.clear()
         self.status_window.addstr(status, color_pair(color))
         self.status_window.refresh()
