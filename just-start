@@ -84,7 +84,7 @@ def skip_phases(prompt_handler, network_handler, timer):
 
 
 def parse_config():
-    with open(expanduser(CONFIG_PATH)) as f:
+    with open(CONFIG_PATH) as f:
         return safe_load(f)
 
 
