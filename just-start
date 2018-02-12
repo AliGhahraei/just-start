@@ -106,7 +106,7 @@ class WindowHandler:
         self.written_status = ''
         self.status_color = COLOR_WHITE
 
-        self.prompt_handler = None
+        self.prompt_handler = PromptHandler(self.stdscr)
 
         self.draw_windows()
 
@@ -136,12 +136,9 @@ class WindowHandler:
                                             'App status')
 
         prompt_y = task_window_height + status_window_height
-        self.prompt_handler = PromptHandler(
-            prompt_y, prompt_window_height, max_x - 1, self.stdscr,
-            self.status_window, self.write_status,
-            (self.prompt_handler.written_prompt
-             if self.prompt_handler is not None else '')
-        )
+        self.prompt_handler.draw_prompt_windows(prompt_y, prompt_window_height,
+                                                max_x - 1, self.status_window,
+                                                self.write_status)
 
         self.write_pomodoro_status(self.written_pomodoro_status)
         self.write_status(self.written_status, color=self.status_color)
@@ -182,32 +179,29 @@ class WindowHandler:
 
 
 class PromptHandler:
-    def __init__(self, prompt_y, prompt_height, prompt_width, stdscr,
-                 status_window, write_status, written_prompt):
+    def __init__(self, stdscr):
         self.stdscr = stdscr
+        self.written_prompt = ''
+        self.prompt_color = COLOR_WHITE
+
+        self.status_window = self.write_status = self.prompt_window = None
+        self.input_window = None
+
+    def draw_prompt_windows(self, prompt_y, prompt_height, prompt_width,
+                            status_window, write_status):
+        newborderedwin(prompt_height, prompt_width, prompt_y, 0)
+        inner_height = int((prompt_height - 2) / 2)
+
+        self.prompt_window = newwin(inner_height, prompt_width, prompt_y + 1, 1)
+
+        self.input_window = newwin(inner_height,  prompt_width,
+                                   prompt_y + inner_height + 1, 1)
+
         self.status_window = status_window
         self.write_status = write_status
-        self.prompt_y = prompt_y
-        self.prompt_width = prompt_width
-        self.prompt_height = prompt_height
-        self.written_prompt = written_prompt
-        self.prompt_color = COLOR_WHITE
-        self.prompt_window, self.input_window = self.draw_prompt_windows()
 
-    def draw_prompt_windows(self):
-        newborderedwin(self.prompt_height, self.prompt_width, self.prompt_y, 0)
-        inner_height = int((self.prompt_height - 2) / 2)
-
-        prompt_window = newwin(inner_height, self.prompt_width,
-                               self.prompt_y + 1, 1)
-
-        input_window = newwin(inner_height,  self.prompt_width,
-                              self.prompt_y + inner_height + 1, 1)
-
-        input_window.refresh()
-        prompt_window.refresh()
-
-        return prompt_window, input_window
+        self.input_window.refresh()
+        self.prompt_window.refresh()
 
     def write_prompt(self, prompt, color=COLOR_WHITE):
         self.status_window.clear()
@@ -317,6 +311,7 @@ def main(stdscr):
 
     config = parse_config()
     window_handler = WindowHandler(stdscr)
+    prompt_handler = window_handler.prompt_handler
     network_handler = NetworkHandler(config)
     try:
         window_handler.sync()
@@ -328,18 +323,17 @@ def main(stdscr):
                        CONFIG_PATH) as pomodoro_timer:
 
         refreshing_actions = {
-            'a': window_handler.prompt_handler.add,
-            'c': window_handler.prompt_handler.complete,
-            'd': window_handler.prompt_handler.delete,
-            'm': window_handler.prompt_handler.modify,
+            'a': prompt_handler.add,
+            'c': prompt_handler.complete,
+            'd': prompt_handler.delete,
+            'm': prompt_handler.modify,
             'y': window_handler.sync,
-            '!': window_handler.prompt_handler.custom_command,
+            '!': prompt_handler.custom_command,
         }
         non_refreshing_actions = {
             "KEY_RESIZE": (window_handler.draw_windows,),
             'h': (window_handler.write_status, HELP_MESSAGE),
-            'k': (skip_phases, window_handler.prompt_handler, network_handler,
-                  pomodoro_timer),
+            'k': (skip_phases, prompt_handler, network_handler, pomodoro_timer),
             'p': (toggle_timer, network_handler, pomodoro_timer),
             'q': (app_quit, window_handler, network_handler),
             'r': (window_handler.refresh_tasks,),
@@ -347,12 +341,11 @@ def main(stdscr):
         }
 
         while True:
-            window_handler.prompt_handler.write_prompt('Waiting for user.'
-                                                       ' Pressing h shows'
-                                                       ' available actions')
+            prompt_handler.write_prompt('Waiting for user. Pressing h shows'
+                                        ' available actions')
 
             try:
-                read_char = window_handler.prompt_handler.input_char()
+                read_char = prompt_handler.input_char()
                 window_handler.write_status('')
                 sleep(0.1)
 
@@ -400,8 +393,8 @@ if __name__ == '__main__':
         basicConfig(filename=LOG_PATH)
         wrapper(main)
     except error as e:
-        print(f'An error occured while drawing {argv[0]}. My best guess is that'
-              f' the window was too small.', end=' ')
+        print(f'An error occurred while drawing {argv[0]}. My best guess is'
+              f' that the window was too small.', end=' ')
         log(e)
     except Exception as e:
         print(f'Unhandled error.', end=' ')
