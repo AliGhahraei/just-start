@@ -236,12 +236,14 @@ class PromptHandler:
         ids = self.input_sequence("Enter the task's ids")
 
         while True:
+            splitted_ids = ids.decode('utf-8').split(',')
             try:
-                list(map(int, ids))
-                return ids
+                list(map(int, splitted_ids))
             except ValueError:
                 ids = self.input_sequence("Please enter valid ids",
                                           color=COLOR_RED)
+            else:
+                return ids
 
     def add(self):
         name = self.input_sequence("Enter the new task's data")
