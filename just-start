@@ -124,7 +124,7 @@ class WindowHandler:
 
         status_window_width = int(max_x / 2)
         self.pomodoro_window = newborderedwin(pomodoro_window_height,
-                                              status_window_width,
+                                              status_window_width - 1,
                                               task_window_height,
                                               status_window_width,
                                               'Pomodoro status')
@@ -192,9 +192,10 @@ class PromptHandler:
         newborderedwin(prompt_height, prompt_width, prompt_y, 0)
         inner_height = int((prompt_height - 2) / 2)
 
-        self.prompt_window = newwin(inner_height, prompt_width, prompt_y + 1, 1)
+        self.prompt_window = newwin(inner_height, prompt_width - 2,
+                                    prompt_y + 1, 1)
 
-        self.input_window = newwin(inner_height,  prompt_width,
+        self.input_window = newwin(inner_height,  prompt_width - 2,
                                    prompt_y + inner_height + 1, 1)
 
         self.status_window = status_window
