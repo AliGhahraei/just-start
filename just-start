@@ -136,7 +136,7 @@ class WindowHandler:
                                                 self.write_status)
 
         self.pomodoro_window = newborderedwin(pomodoro_window_height,
-                                              max_x,
+                                              task_window_width,
                                               task_window_height,
                                               task_window_width,
                                               'Pomodoro status')
