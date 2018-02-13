@@ -114,31 +114,32 @@ class WindowHandler:
         self.stdscr.refresh()
 
         max_y, max_x = self.stdscr.getmaxyx()
-        status_window_height = 7
-        pomodoro_window_height = 7
-        prompt_window_height = 6
-        task_window_height = max_y - status_window_height - prompt_window_height
+        pomodoro_window_height = 5
+        task_window_height = max_y - pomodoro_window_height
+        task_window_width = int(max_x / 2)
 
-        self.task_window = newborderedwin(task_window_height, max_x - 1, 0, 0)
+        self.task_window = newborderedwin(task_window_height,
+                                          task_window_width, 0, 0)
         self.refresh_tasks()
 
-        status_window_width = int(max_x / 2)
-        self.pomodoro_window = newborderedwin(pomodoro_window_height,
-                                              status_window_width - 1,
-                                              task_window_height,
-                                              status_window_width,
-                                              'Pomodoro status')
-
-        self.status_window = newborderedwin(status_window_height,
-                                            status_window_width,
-                                            task_window_height,
+        self.status_window = newborderedwin(task_window_height,
+                                            task_window_width,
                                             0,
+                                            task_window_width,
                                             'App status')
 
-        prompt_y = task_window_height + status_window_height
-        self.prompt_handler.draw_prompt_windows(prompt_y, prompt_window_height,
-                                                max_x - 1, self.status_window,
+        prompt_y = task_window_height
+        self.prompt_handler.draw_prompt_windows(prompt_y,
+                                                pomodoro_window_height,
+                                                task_window_width,
+                                                self.status_window,
                                                 self.write_status)
+
+        self.pomodoro_window = newborderedwin(pomodoro_window_height,
+                                              max_x,
+                                              task_window_height,
+                                              task_window_width,
+                                              'Pomodoro status')
 
         self.write_pomodoro_status(self.written_pomodoro_status)
         self.write_status(self.written_status, color=self.status_color)
@@ -190,13 +191,12 @@ class PromptHandler:
     def draw_prompt_windows(self, prompt_y, prompt_height, prompt_width,
                             status_window, write_status):
         newborderedwin(prompt_height, prompt_width, prompt_y, 0)
-        inner_height = int((prompt_height - 2) / 2)
 
-        self.prompt_window = newwin(inner_height, prompt_width - 2,
+        self.prompt_window = newwin(1, prompt_width - 2,
                                     prompt_y + 1, 1)
 
-        self.input_window = newwin(inner_height,  prompt_width - 2,
-                                   prompt_y + inner_height + 1, 1)
+        self.input_window = newwin(prompt_height - 3,  prompt_width - 2,
+                                   prompt_y + 2, 1)
 
         self.status_window = status_window
         self.write_status = write_status
