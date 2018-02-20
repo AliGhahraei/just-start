@@ -22,12 +22,22 @@ class PomodoroError(Exception):
 
 class PomodoroTimer:
     def __init__(self, external_status_function, external_blocking_function,
-                 config, config_location,
+                 config, config_location, at_work_user_overridden=None,
                  show_external_stop_notification=False):
         self.config = config
         self.config_location = config_location
         self.external_status_function = external_status_function
+        self.at_work_user_overridden = at_work_user_overridden
+        self.state, self.POMODORO_CYCLE = self.get_state_and_cycle(config)
+        self.external_blocking_function = external_blocking_function
+        self.work_count = 0
+        self._update_state()
+        self.is_running = False
+        self.start_datetime = self.timer = None
+        self.notify('Pomodoro timer stopped',
+                    desktop_stop_notification=show_external_stop_notification)
 
+    def get_state_and_cycle(self, config):
         duration_config = (config['work_duration'] if self.user_is_at_work()
                            else config['home_duration'])
 
@@ -36,24 +46,17 @@ class PomodoroTimer:
         long_rest_time = duration_config['long_rest']
         cycles_before_long_rest = duration_config['cycles_before_long_rest']
 
-        self.state = Enum('state', [
+        state_enum = Enum('state', [
             ('WORK', ('Work', work_time * 60)),
             ('SHORT_REST', ('Short rest', short_rest_time * 60)),
-            ('LONG_REST', ('LONG REST!!!',  long_rest_time * 60))
+            ('LONG_REST', ('LONG REST!!!', long_rest_time * 60))
         ])
 
-        states = ([self.state.WORK, self.state.SHORT_REST]
+        states = ([state_enum.WORK, state_enum.SHORT_REST]
                   * cycles_before_long_rest)
-        states[-1] = self.state.LONG_REST
+        states[-1] = state_enum.LONG_REST
 
-        self.POMODORO_CYCLE = cycle(states)
-        self.external_blocking_function = external_blocking_function
-        self.work_count = 0
-        self._update_state()
-        self.is_running = False
-        self.start_datetime = self.timer = None
-        self.notify('Pomodoro timer stopped',
-                    desktop_stop_notification=show_external_stop_notification)
+        return state_enum, cycle(states)
 
     def notify(self, status, desktop_stop_notification=True):
         if desktop_stop_notification:
@@ -67,13 +70,18 @@ class PomodoroTimer:
         self.external_status_function(status)
 
     def user_is_at_work(self):
-        work_start = self.config['work']['start_time']
-        work_end = self.config['work']['end_time']
+        if self.at_work_user_overridden is not None:
+            at_work = self.at_work_user_overridden
+            self.at_work_user_overridden = None
+            return at_work
+
+        start_time = self.config['work']['start_time']
+        end_time = self.config['work']['end_time']
 
         return datetime.now().weekday() < 5 and (
-                datetime.strptime(work_start, '%H:%M').time()
+                datetime.strptime(start_time, '%H:%M').time()
                 <= datetime.now().time()
-                <= datetime.strptime(work_end, '%H:%M').time()
+                <= datetime.strptime(end_time, '%H:%M').time()
         )
 
     def toggle(self):
@@ -135,11 +143,12 @@ class PomodoroTimer:
 
         self.external_blocking_function(blocked=self.state is self.state.WORK)
 
-    def reset(self):
+    def reset(self, at_work_user_overridden=None):
         self._stop_countdown()
         self.__init__(self.external_status_function,
                       self.external_blocking_function, self.config,
                       self.config_location,
+                      at_work_user_overridden=at_work_user_overridden,
                       show_external_stop_notification=True)
         self.external_blocking_function(blocked=True)
 
