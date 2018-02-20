@@ -3,7 +3,7 @@
 from curses import (wrapper, echo, noecho, cbreak, nocbreak, newwin, error,
                     color_pair, init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN,
                     use_default_colors)
-from logging import error as log_error, basicConfig
+from logging import error as log_error, basicConfig as loggingConfig
 from os.path import expanduser, join
 from pexpect import spawn, EOF
 from platform import system
@@ -18,7 +18,7 @@ from pomodoro import PomodoroTimer, PomodoroError
 
 SYNC_MSG = 'Syncing task server...'
 
-ROOT_DIR = expanduser(join('.config', 'just-start'))
+ROOT_DIR = expanduser(join('~', '.config', 'just-start'))
 CONFIG_PATH = join(ROOT_DIR, 'preferences.yml')
 LOG_PATH = join(ROOT_DIR, 'log')
 
@@ -392,8 +392,9 @@ if __name__ == '__main__':
     def log(error_):
         log_error(f'{type(error_)}: {error_}')
         print(f'Log written at "{LOG_PATH}"')
+
     try:
-        basicConfig(filename=LOG_PATH)
+        loggingConfig(filename=LOG_PATH)
         wrapper(main)
     except error as e:
         print(f'An error occurred while drawing {argv[0]}. My best guess is'
