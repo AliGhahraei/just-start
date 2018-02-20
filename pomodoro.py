@@ -71,9 +71,9 @@ class PomodoroTimer:
 
     def user_is_at_work(self):
         if self.at_work_user_overridden is not None:
-            at_work = self.at_work_user_overridden
-            self.at_work_user_overridden = None
-            return at_work
+            # TODO: Implement strategy to invalidate this variable after a given
+            # TODO: time/condition
+            return self.at_work_user_overridden
 
         start_time = self.config['work']['start_time']
         end_time = self.config['work']['end_time']
