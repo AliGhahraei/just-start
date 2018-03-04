@@ -13,7 +13,7 @@ from typing import Callable, Dict, Optional, Tuple
 import yaml
 
 
-def end_time_from_now(seconds_left: int):
+def end_time_from_now(seconds_left: int) -> str:
     end_time = datetime.now() + timedelta(seconds=seconds_left)
     return end_time.strftime('%H:%M')
 
