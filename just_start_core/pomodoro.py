@@ -23,8 +23,8 @@ class PomodoroError(Exception):
 
 
 class PomodoroTimer:
-    def __init__(self, external_status_function: Callable[str],
-                 external_blocking_function: Callable[bool],
+    def __init__(self, external_status_function: Callable[[str], None],
+                 external_blocking_function: Callable[[bool], None],
                  config: Dict, config_location: str,
                  at_work_user_overridden: Optional[bool]=None,
                  show_external_stop_notification: bool=False):
