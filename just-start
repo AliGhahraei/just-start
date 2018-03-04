@@ -16,7 +16,7 @@ from time import sleep
 
 from yaml import safe_load
 
-from pomodoro import PomodoroTimer, PomodoroError
+from just_start_core.pomodoro import PomodoroTimer, PomodoroError
 
 
 SYNC_MSG = 'Syncing task server...'

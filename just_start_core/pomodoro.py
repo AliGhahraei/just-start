@@ -7,11 +7,13 @@ from os.path import expanduser
 from platform import system
 from subprocess import run
 from threading import Timer
+from types import TracebackType
+from typing import Callable, Dict, Optional, Tuple
 
 import yaml
 
 
-def end_time_from_now(seconds_left):
+def end_time_from_now(seconds_left: int):
     end_time = datetime.now() + timedelta(seconds=seconds_left)
     return end_time.strftime('%H:%M')
 
@@ -21,9 +23,11 @@ class PomodoroError(Exception):
 
 
 class PomodoroTimer:
-    def __init__(self, external_status_function, external_blocking_function,
-                 config, config_location, at_work_user_overridden=None,
-                 show_external_stop_notification=False):
+    def __init__(self, external_status_function: Callable[str],
+                 external_blocking_function: Callable[bool],
+                 config: Dict, config_location: str,
+                 at_work_user_overridden: Optional[bool]=None,
+                 show_external_stop_notification: bool=False):
         self.config = config
         self.config_location = config_location
         self.external_status_function = external_status_function
@@ -37,7 +41,7 @@ class PomodoroTimer:
         self.notify('Pomodoro timer stopped',
                     desktop_stop_notification=show_external_stop_notification)
 
-    def get_state_and_cycle(self, config):
+    def get_state_and_cycle(self, config: Dict) -> Tuple[Enum, cycle]:
         duration_config = (config['work_duration'] if self.user_is_at_work()
                            else config['home_duration'])
 
@@ -58,7 +62,7 @@ class PomodoroTimer:
 
         return state_enum, cycle(states)
 
-    def notify(self, status, desktop_stop_notification=True):
+    def notify(self, status: str, desktop_stop_notification: bool=True):
         if desktop_stop_notification:
             if system() == 'Linux':
                 run(['notify-send', status])
@@ -69,7 +73,7 @@ class PomodoroTimer:
 
         self.external_status_function(status)
 
-    def user_is_at_work(self):
+    def user_is_at_work(self) -> bool:
         if self.at_work_user_overridden is not None:
             # TODO: Implement strategy to invalidate this variable after a given
             # TODO: time/condition
@@ -84,7 +88,7 @@ class PomodoroTimer:
                 <= datetime.strptime(end_time, '%H:%M').time()
         )
 
-    def toggle(self):
+    def toggle(self) -> None:
         if self.is_running:
             self.timer.cancel()
 
@@ -100,7 +104,7 @@ class PomodoroTimer:
 
         self.is_running = not self.is_running
 
-    def _run(self):
+    def _run(self) -> None:
         self.start_datetime = datetime.now()
         self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
                     f' far). End time: {end_time_from_now(self.time_left)}'
@@ -111,14 +115,15 @@ class PomodoroTimer:
                            self._timer_triggered_phase_advancement)
         self.timer.start()
 
-    def _update_state(self):
+    def _update_state(self) -> None:
         self.state = self.POMODORO_CYCLE.__next__()
         self.time_left = self.state.value[1]
 
-    def _timer_triggered_phase_advancement(self):
+    def _timer_triggered_phase_advancement(self) -> None:
         self.advance_phases(timer_triggered=True)
 
-    def advance_phases(self, timer_triggered=False, phases_skipped=1):
+    def advance_phases(self, timer_triggered: bool=False,
+                       phases_skipped: int=1):
         if self.state is self.state.WORK:
             if not timer_triggered and not (self.config['productivity']
                                             ['work_skip_enabled']):
@@ -143,7 +148,7 @@ class PomodoroTimer:
 
         self.external_blocking_function(blocked=self.state is self.state.WORK)
 
-    def reset(self, at_work_user_overridden=None):
+    def reset(self, at_work_user_overridden: Optional[bool]=None):
         self._stop_countdown()
         self.__init__(self.external_status_function,
                       self.external_blocking_function, self.config,
@@ -152,13 +157,14 @@ class PomodoroTimer:
                       show_external_stop_notification=True)
         self.external_blocking_function(blocked=True)
 
-    def __enter__(self):
+    def __enter__(self) -> 'PomodoroTimer':
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception],
+                 traceback: Optional[TracebackType]):
         self._stop_countdown()
         self.external_blocking_function(blocked=True)
 
-    def _stop_countdown(self):
+    def _stop_countdown(self) -> None:
         if self.is_running:
             self.timer.cancel()
