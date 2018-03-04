@@ -436,7 +436,6 @@ def log(error_, message=''):
     log_error(f'{type(error_)}: {error_}')
     print(f'Log written to "{LOG_PATH}"')
 
-
     try:
         loggingConfig(filename=LOG_PATH)
     except FileNotFoundError:
