@@ -5,63 +5,21 @@ from curses import (wrapper, echo, noecho, cbreak, nocbreak, newwin, error,
                     use_default_colors)
 from functools import partial
 from logging import error as log_error, basicConfig as loggingConfig
-from os import getenv, makedirs
-from os.path import expanduser, join
+from os import makedirs
 from pexpect import spawn, EOF
 from platform import system
 from signal import signal, SIGTERM
-from subprocess import run, PIPE, STDOUT
 from sys import argv
 from time import sleep
 
 from yaml import safe_load
 
+from just_start_core.constants import (
+    PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, SYNC_MSG, HELP_MESSAGE, LOG_PATH)
 from just_start_core.pomodoro import PomodoroTimer, PomodoroError
-
-
-SYNC_MSG = 'Syncing task server...'
-
-CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
-                  'just-start')
-LOCAL_DIR = join(getenv('XDG_DATA_HOME',
-                        expanduser(join('~', '.local', 'share'))),
-                 'just-start')
-
-CONFIG_PATH = join(CONFIG_DIR, 'preferences.yml')
-LOG_PATH = join(LOCAL_DIR, 'log')
-
-
-HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
-                ' another pomodoro phase, (l)ocation change, (m)odify task,'
-                ' (p)omodoro pause/resume, (q)uit, (r)efresh tasks, (s)top'
-                ' pomodoro, s(y)nc server, (!) custom command')
-
-
-class JustStartError(Exception):
-    pass
-
-
-class TaskWarriorError(JustStartError):
-    pass
-
-
-class ConfigurationMissingError(JustStartError, FileNotFoundError):
-    pass
-
-
-class ActionError(JustStartError):
-    pass
-
-
-def run_task(arg_list=None):
-    arg_list = arg_list or []
-    completed_process = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
-    process_output = completed_process.stdout.decode('utf-8')
-
-    if completed_process.returncode != 0:
-        raise TaskWarriorError(process_output)
-
-    return process_output
+from just_start_core.just_start import (
+    ConfigurationMissingError, TaskWarriorError, run_task, JustStartError,
+    ActionError)
 
 
 def newborderedwin(height, width, start_y, start_x, title=''):
@@ -86,7 +44,7 @@ def reset_timer(network_handler, timer, at_work_user_overridden=None):
 
 
 def skip_phases(prompt_handler, network_handler, timer):
-    prompt = 'Enter how many phases you want to skip'
+    prompt = PHASE_SKIP_PROMPT
     valid_phases = False
 
     while not valid_phases:
