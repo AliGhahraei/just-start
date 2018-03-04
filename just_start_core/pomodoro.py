@@ -96,11 +96,10 @@ class PomodoroTimer:
             self.time_left -= elapsed_timedelta.seconds
 
             self.notify('Paused')
-            self.external_blocking_function(blocked=True)
+            self.external_blocking_function(True)
         else:
             self._run()
-            self.external_blocking_function(blocked=self.state
-                                            is self.state.WORK)
+            self.external_blocking_function(self.state is self.state.WORK)
 
         self.is_running = not self.is_running
 
@@ -146,7 +145,7 @@ class PomodoroTimer:
             self._update_state()
         self._run()
 
-        self.external_blocking_function(blocked=self.state is self.state.WORK)
+        self.external_blocking_function(self.state is self.state.WORK)
 
     def reset(self, at_work_user_overridden: Optional[bool]=None):
         self._stop_countdown()
@@ -155,7 +154,7 @@ class PomodoroTimer:
                       self.config_location,
                       at_work_user_overridden=at_work_user_overridden,
                       show_external_stop_notification=True)
-        self.external_blocking_function(blocked=True)
+        self.external_blocking_function(True)
 
     def __enter__(self) -> 'PomodoroTimer':
         return self
@@ -163,7 +162,7 @@ class PomodoroTimer:
     def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception],
                  traceback: Optional[TracebackType]):
         self._stop_countdown()
-        self.external_blocking_function(blocked=True)
+        self.external_blocking_function(True)
 
     def _stop_countdown(self) -> None:
         if self.is_running:
