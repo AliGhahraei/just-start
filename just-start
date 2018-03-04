@@ -18,9 +18,14 @@ from pomodoro import PomodoroTimer, PomodoroError
 
 SYNC_MSG = 'Syncing task server...'
 
-ROOT_DIR = expanduser(join('~', '.config', 'just-start'))
-CONFIG_PATH = join(ROOT_DIR, 'preferences.yml')
-LOG_PATH = join(ROOT_DIR, 'log')
+CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
+                  'just-start')
+LOCAL_DIR = join(getenv('XDG_DATA_HOME',
+                        expanduser(join('~', '.local', 'share'))),
+                 'just-start')
+
+CONFIG_PATH = join(CONFIG_DIR, 'preferences.yml')
+LOG_PATH = join(LOCAL_DIR, 'log')
 
 
 HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
