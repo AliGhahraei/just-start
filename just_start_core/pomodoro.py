@@ -62,7 +62,7 @@ class PomodoroTimer:
 
         return state_enum, cycle(states)
 
-    def notify(self, status: str, desktop_stop_notification: bool=True):
+    def notify(self, status: str, desktop_stop_notification: bool=True) -> None:
         if desktop_stop_notification:
             if system() == 'Linux':
                 run(['notify-send', status])
@@ -122,7 +122,7 @@ class PomodoroTimer:
         self.advance_phases(timer_triggered=True)
 
     def advance_phases(self, timer_triggered: bool=False,
-                       phases_skipped: int=1):
+                       phases_skipped: int=1) -> None:
         if self.state is self.state.WORK:
             if not timer_triggered and not (self.config['productivity']
                                             ['work_skip_enabled']):
@@ -147,7 +147,7 @@ class PomodoroTimer:
 
         self.external_blocking_function(self.state is self.state.WORK)
 
-    def reset(self, at_work_user_overridden: Optional[bool]=None):
+    def reset(self, at_work_user_overridden: Optional[bool]=None) -> None:
         self._stop_countdown()
         self.__init__(self.external_status_function,
                       self.external_blocking_function, self.config,
@@ -160,7 +160,7 @@ class PomodoroTimer:
         return self
 
     def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception],
-                 traceback: Optional[TracebackType]):
+                 traceback: Optional[TracebackType]) -> None:
         self._stop_countdown()
         self.external_blocking_function(True)
 
