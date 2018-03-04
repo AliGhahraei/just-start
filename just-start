@@ -3,11 +3,13 @@
 from curses import (wrapper, echo, noecho, cbreak, nocbreak, newwin, error,
                     color_pair, init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN,
                     use_default_colors)
+from functools import partial
 from logging import error as log_error, basicConfig as loggingConfig
 from os import getenv, makedirs
 from os.path import expanduser, join
 from pexpect import spawn, EOF
 from platform import system
+from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
 from sys import argv
 from time import sleep
@@ -39,13 +41,25 @@ class JustStartError(Exception):
     pass
 
 
+class TaskWarriorError(JustStartError):
+    pass
+
+
+class ConfigurationMissingError(JustStartError, FileNotFoundError):
+    pass
+
+
+class ActionError(JustStartError):
+    pass
+
+
 def run_task(arg_list=None):
     arg_list = arg_list or []
     completed_process = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:
-        raise JustStartError(process_output)
+        raise TaskWarriorError(process_output)
 
     return process_output
 
@@ -77,7 +91,7 @@ def skip_phases(prompt_handler, network_handler, timer):
 
     while not valid_phases:
         try:
-            phases = int(prompt_handler.input_string(prompt))
+            phases = int(prompt_handler.prompt_string(prompt))
         except ValueError:
             pass
         else:
@@ -90,8 +104,8 @@ def skip_phases(prompt_handler, network_handler, timer):
 
 
 def location_change(prompt_handler, network_handler, timer):
-    location = prompt_handler.input_string("Enter 'w' for work or anything else"
-                                           " for home")
+    location = prompt_handler.prompt_string("Enter 'w' for work or anything"
+                                            " else for home")
     at_work = location == 'w'
     reset_timer(network_handler, timer, at_work)
     toggle_timer(network_handler, timer)
@@ -180,9 +194,12 @@ class WindowHandler:
         self.written_pomodoro_status = status
 
     def sync(self):
+        self.write_status(SYNC_MSG)
+
         try:
-            self.write_status(SYNC_MSG)
             self.write_status(run_task(['sync']))
+        except TaskWarriorError as exc:
+            self.write_status(str(exc), color=COLOR_RED)
         except KeyboardInterrupt:
             pass
 
@@ -231,13 +248,14 @@ class PromptHandler:
         self.prompt_window.refresh()
         self.written_prompt = prompt
 
-    def input_char(self):
+    def prompt_char(self, status, color=COLOR_WHITE):
+        self.write_prompt(status, color=color)
         self.input_window.clear()
         return self.input_window.getkey(
             *self.input_window.getyx()
         )
 
-    def input_string(self, status, color=COLOR_WHITE):
+    def prompt_string(self, status, color=COLOR_WHITE):
         self.write_prompt(status + " and press Ctrl-Enter when done (or "
                           "Ctrl-C to cancel)", color=color)
         self.input_window.clear()
@@ -253,20 +271,20 @@ class PromptHandler:
         return key_sequence.decode('utf-8')
 
     def input_taskids(self):
-        ids = self.input_string("Enter the task's ids")
+        ids = self.prompt_string("Enter the task's ids")
 
         while True:
             splitted_ids = ids.split(',')
             try:
                 list(map(int, splitted_ids))
             except ValueError:
-                ids = self.input_string("Please enter valid ids",
-                                        color=COLOR_RED)
+                ids = self.prompt_string("Please enter valid ids",
+                                         color=COLOR_RED)
             else:
                 return ids
 
     def add(self):
-        name = self.input_string("Enter the new task's data")
+        name = self.prompt_string("Enter the new task's data")
         self.write_status(run_task(['add'] + name.split()))
 
     def delete(self):
@@ -275,7 +293,7 @@ class PromptHandler:
 
     def modify(self):
         ids = self.input_taskids()
-        name = self.input_string("Enter the modified task's data")
+        name = self.prompt_string("Enter the modified task's data")
         self.write_status(run_task([ids, 'modify'] + name.split()))
 
     def complete(self):
@@ -283,7 +301,7 @@ class PromptHandler:
         self.write_status(run_task([ids, 'done']))
 
     def custom_command(self):
-        command = self.input_string('Enter your command')
+        command = self.prompt_string('Enter your command')
         self.write_status(run_task(command.split()))
 
 
@@ -336,23 +354,23 @@ def main(stdscr):
     window_handler = WindowHandler(stdscr)
     prompt_handler = window_handler.prompt_handler
     network_handler = NetworkHandler(config)
-    try:
-        window_handler.sync()
-    except JustStartError as exc:
-        window_handler.write_status(str(exc), color=COLOR_RED)
+
+    signal(SIGTERM, partial(handler, window_handler, network_handler))
+
+    window_handler.sync()
+
+    refreshing_actions = {
+        'a': prompt_handler.add,
+        'c': prompt_handler.complete,
+        'd': prompt_handler.delete,
+        'm': prompt_handler.modify,
+        'y': window_handler.sync,
+        '!': prompt_handler.custom_command,
+    }
 
     with PomodoroTimer(window_handler.write_pomodoro_status,
                        network_handler.manage_blocked_sites, config,
                        CONFIG_PATH) as pomodoro_timer:
-
-        refreshing_actions = {
-            'a': prompt_handler.add,
-            'c': prompt_handler.complete,
-            'd': prompt_handler.delete,
-            'm': prompt_handler.modify,
-            'y': window_handler.sync,
-            '!': prompt_handler.custom_command,
-        }
         non_refreshing_actions = {
             "KEY_RESIZE": (window_handler.draw_windows,),
             'h': (window_handler.write_status, HELP_MESSAGE),
@@ -360,60 +378,64 @@ def main(stdscr):
             'l': (location_change, prompt_handler, network_handler,
                   pomodoro_timer),
             'p': (toggle_timer, network_handler, pomodoro_timer),
-            'q': (app_quit, window_handler, network_handler),
+            'q': (quit_gracefully, window_handler, network_handler),
             'r': (window_handler.refresh_tasks,),
             's': (reset_timer, network_handler, pomodoro_timer),
         }
 
         while True:
-            prompt_handler.write_prompt('Waiting for user. Pressing h shows'
-                                        ' available actions')
-
             try:
-                read_char = prompt_handler.input_char()
-                window_handler.write_status('')
-                sleep(0.1)
-
-                try:
-                    try:
-                        refreshing_actions[read_char]()
-                    except KeyError:
-                        try:
-                            action, *params = non_refreshing_actions[read_char]
-                            action(*params)
-                        except (PomodoroError, JustStartError) as exc:
-                            window_handler.write_status(str(exc),
-                                                        color=COLOR_RED)
-                    else:
-                        window_handler.refresh_tasks()
-
-                except KeyboardInterrupt:
-                    continue
-                except KeyError:
-                    window_handler.write_status(f'Unknown key action:'
-                                                f' "{read_char}"',
-                                                color=COLOR_RED)
-
-            except KeyboardInterrupt:
-                window_handler.write_status(f'Please use q to quit',
-                                            color=COLOR_RED)
-            except JustStartError as exc:
+                execute_user_action(prompt_handler, window_handler,
+                                    refreshing_actions, non_refreshing_actions)
+            except (JustStartError, PomodoroError) as exc:
                 window_handler.write_status(str(exc), color=COLOR_RED)
 
 
-def app_quit(window_handler, network_handler):
+def execute_user_action(prompt_handler, window_handler, refreshing_actions,
+                        non_refreshing_actions):
     try:
-        window_handler.sync()
-    except JustStartError as exc:
-        window_handler.write_status(str(exc), color=COLOR_RED)
+        read_char = prompt_handler.prompt_char('Waiting for user.'
+                                               ' Pressing h shows'
+                                               ' available actions')
+        window_handler.write_status('')
+        sleep(0.1)
+    except KeyboardInterrupt:
+        raise ActionError(f'No action was selected yet, but Ctrl+C was pressed'
+                          f'. Use q to quit')
+
+    try:
+        refreshing_actions[read_char]()
+    except KeyError:
+        try:
+            action, *params = non_refreshing_actions[read_char]
+            action(*params)
+        except KeyError:
+            raise ActionError(f'Unknown key action: "{read_char}"')
+        except KeyboardInterrupt:
+            # Cancel current action
+            pass
+    except KeyboardInterrupt:
+        # Cancel current action
+        pass
+    else:
+        window_handler.refresh_tasks()
+
+
+def handler(window_handler, network_handler, *_):
+    quit_gracefully(window_handler, network_handler)
+
+
+def quit_gracefully(window_handler, network_handler):
+    window_handler.sync()
     network_handler.manage_wifi()
     quit()
 
 
-if __name__ == '__main__':
-    def log(error_):
-        log_error(f'{type(error_)}: {error_}')
-        print(f'Log written at "{LOG_PATH}"')
+def log(error_, message=''):
+    print(message)
+    log_error(f'{type(error_)}: {error_}')
+    print(f'Log written to "{LOG_PATH}"')
+
 
     try:
         loggingConfig(filename=LOG_PATH)
@@ -423,10 +445,10 @@ if __name__ == '__main__':
 
     try:
         wrapper(main)
+    except ConfigurationMissingError as e:
+        print(str(e))
     except error as e:
-        print(f'An error occurred while drawing {argv[0]}. My best guess is'
-              f' that the window was too small.', end=' ')
-        log(e)
+        log(e, f'An error occurred while drawing {argv[0]}. My best guess is'
+               f' that the window was too small.')
     except Exception as e:
-        print(f'Unhandled error.', end=' ')
-        log(e)
+        log(e, f'Unhandled error.')
