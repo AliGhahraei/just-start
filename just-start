@@ -4,6 +4,7 @@ from curses import (wrapper, echo, noecho, cbreak, nocbreak, newwin, error,
                     color_pair, init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN,
                     use_default_colors)
 from logging import error as log_error, basicConfig as loggingConfig
+from os import getenv, makedirs
 from os.path import expanduser, join
 from pexpect import spawn, EOF
 from platform import system
