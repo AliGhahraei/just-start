@@ -97,8 +97,14 @@ def location_change(prompt_handler, network_handler, timer):
 
 
 def parse_config():
-    with open(CONFIG_PATH) as f:
-        return safe_load(f)
+    try:
+        with open(CONFIG_PATH) as f:
+            return safe_load(f)
+    except FileNotFoundError:
+        raise ConfigurationMissingError(
+            f"No config file at '{CONFIG_PATH}'. Check if it's really there"
+            f" (and its permissions) or create one if it's the first time you"
+            f" use this app")
 
 
 class WindowHandler:
@@ -410,6 +416,11 @@ if __name__ == '__main__':
 
     try:
         loggingConfig(filename=LOG_PATH)
+    except FileNotFoundError:
+        makedirs(LOCAL_DIR)
+        loggingConfig(filename=LOG_PATH)
+
+    try:
         wrapper(main)
     except error as e:
         print(f'An error occurred while drawing {argv[0]}. My best guess is'
