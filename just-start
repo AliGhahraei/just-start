@@ -7,7 +7,6 @@ from functools import partial
 from logging import error as log_error, basicConfig as loggingConfig
 from os import getenv, makedirs
 from os.path import expanduser, join
-from os import makedirs
 from pexpect import spawn, EOF
 from platform import system
 from signal import signal, SIGTERM
