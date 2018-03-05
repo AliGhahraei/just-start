@@ -1,94 +1,28 @@
 #!/usr/bin/env python3
 
-from curses import (wrapper, echo, noecho, cbreak, nocbreak, newwin, error,
-                    color_pair, init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN,
-                    use_default_colors)
-from functools import partial
-from logging import error as log_error, basicConfig as loggingConfig
-from os import makedirs
-from pexpect import spawn, EOF
-from platform import system
-from signal import signal, SIGTERM
+from curses import (
+    wrapper, echo, noecho, cbreak, nocbreak, newwin, error, color_pair,
+    init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN, use_default_colors)
 from sys import argv
-from time import sleep
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
-from yaml import safe_load
-
-from just_start_core.constants import (
-    PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, SYNC_MSG, HELP_MESSAGE, LOG_PATH)
-from just_start_core.pomodoro import PomodoroTimer, PomodoroError
 from just_start_core.just_start import (
-    ConfigurationMissingError, TaskWarriorError, run_task, JustStartError,
-    ActionError)
+    log_failure, start, GuiHandler, PromptHandler)
 
 
-def newborderedwin(height: int, width: int, start_y: int, start_x: int,
-                   title: str='') -> Any:
-    borderedwindow = newwin(height, width, start_y, start_x)
-    borderedwindow.clear()
-    borderedwindow.border()
-    borderedwindow.move(0, 2)
-    borderedwindow.addstr(title)
-    borderedwindow.refresh()
+class CursesGuiHandler(GuiHandler):
+    @staticmethod
+    def newborderedwin(height: int, width: int, start_y: int, start_x: int,
+                       title: str='') -> Any:
+        borderedwindow = newwin(height, width, start_y, start_x)
+        borderedwindow.clear()
+        borderedwindow.border()
+        borderedwindow.move(0, 2)
+        borderedwindow.addstr(title)
+        borderedwindow.refresh()
 
-    return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
+        return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
-
-def toggle_timer(network_handler: 'NetworkHandler',
-                 timer: PomodoroTimer) -> None:
-    timer.toggle()
-    network_handler.manage_wifi(timer.is_running)
-
-
-def reset_timer(network_handler: 'NetworkHandler', timer: PomodoroTimer,
-                at_work_user_overridden: Optional[bool]=None) -> None:
-    timer.reset(at_work_user_overridden=at_work_user_overridden)
-    network_handler.manage_wifi(timer_running=False)
-
-
-def skip_phases(prompt_handler: 'PromptHandler',
-                network_handler: 'NetworkHandler',
-                timer: PomodoroTimer) -> None:
-    prompt = PHASE_SKIP_PROMPT
-    valid_phases = False
-
-    while not valid_phases:
-        try:
-            phases = int(prompt_handler.prompt_string(prompt))
-        except ValueError:
-            pass
-        else:
-            if phases >= 1:
-                timer.advance_phases(phases_skipped=phases)
-                valid_phases = True
-                network_handler.manage_wifi(timer_running=True)
-
-        prompt = 'Please enter a valid number of phases'
-
-
-def location_change(prompt_handler: 'PromptHandler',
-                    network_handler: 'NetworkHandler',
-                    timer: PomodoroTimer) -> None:
-    location = prompt_handler.prompt_string("Enter 'w' for work or anything"
-                                            " else for home")
-    at_work = location == 'w'
-    reset_timer(network_handler, timer, at_work)
-    toggle_timer(network_handler, timer)
-
-
-def parse_config() -> Dict:
-    try:
-        with open(CONFIG_PATH) as f:
-            return safe_load(f)
-    except FileNotFoundError:
-        raise ConfigurationMissingError(
-            f"No config file at '{CONFIG_PATH}'. Check if it's really there"
-            f" (and its permissions) or create one if it's the first time you"
-            f" use this app")
-
-
-class WindowHandler:
     def __init__(self, stdscr: Any):
         self.stdscr = stdscr
 
@@ -97,7 +31,6 @@ class WindowHandler:
             init_pair(color, color, -1)
 
         self.task_window = None
-        self.tasks = ''
 
         self.pomodoro_window = None
         self.written_pomodoro_status = ''
@@ -106,11 +39,9 @@ class WindowHandler:
         self.written_status = ''
         self.status_color = COLOR_WHITE
 
-        self.prompt_handler = PromptHandler(self.stdscr)
+        self.prompt_handler = CursesPromptHandler(self.stdscr)
 
-        self.draw_windows()
-
-    def draw_windows(self) -> None:
+    def draw_gui(self) -> None:
         self.stdscr.refresh()
 
         max_y, max_x = self.stdscr.getmaxyx()
@@ -118,33 +49,35 @@ class WindowHandler:
         task_window_height = max_y - pomodoro_window_height
         task_window_width = int(max_x / 2)
 
-        self.task_window = newborderedwin(task_window_height,
-                                          task_window_width, 0, 0)
+        self.task_window = self.newborderedwin(task_window_height,
+                                               task_window_width, 0, 0)
         self.refresh_tasks()
 
-        self.status_window = newborderedwin(task_window_height,
-                                            task_window_width,
-                                            0,
-                                            task_window_width,
-                                            'App status')
+        self.status_window = self.newborderedwin(task_window_height,
+                                                 task_window_width,
+                                                 0,
+                                                 task_window_width,
+                                                 'App status')
 
         prompt_y = task_window_height
         self.prompt_handler.draw_prompt_windows(prompt_y,
                                                 pomodoro_window_height,
                                                 task_window_width,
-                                                self.status_window,
-                                                self.write_status)
+                                                self.status_window)
 
-        self.pomodoro_window = newborderedwin(pomodoro_window_height,
-                                              task_window_width,
-                                              task_window_height,
-                                              task_window_width,
-                                              'Pomodoro status')
+        self.pomodoro_window = self.newborderedwin(pomodoro_window_height,
+                                                   task_window_width,
+                                                   task_window_height,
+                                                   task_window_width,
+                                                   'Pomodoro status')
 
         self.write_pomodoro_status(self.written_pomodoro_status)
         self.write_status(self.written_status, color=self.status_color)
 
-    def write_status(self, status: str, color: int=COLOR_WHITE) -> None:
+    def write_error(self, error_msg: str):
+        self.write_status(error_msg, color=COLOR_RED)
+
+    def write_status(self, status: str, color=COLOR_WHITE) -> None:
         self.prompt_handler.write_prompt('')
         self.status_window.clear()
         self.status_window.addstr(status, color_pair(color))
@@ -159,22 +92,11 @@ class WindowHandler:
         self.pomodoro_window.refresh()
         self.written_pomodoro_status = status
 
-    def sync(self) -> None:
-        self.write_status(SYNC_MSG)
-
-        try:
-            self.write_status(run_task(['sync']))
-        except TaskWarriorError as exc:
-            self.write_status(str(exc), color=COLOR_RED)
-        except KeyboardInterrupt:
-            pass
-
     def refresh_tasks(self) -> None:
-        self.tasks = run_task().split("\n")
         self.task_window.clear()
 
         try:
-            for y, task in enumerate(self.tasks):
+            for y, task in enumerate(self.task_list):
                 self.task_window.addstr(y, 1, task)
         except error:
             pass
@@ -182,19 +104,18 @@ class WindowHandler:
         self.task_window.refresh()
 
 
-class PromptHandler:
+class CursesPromptHandler(PromptHandler):
     def __init__(self, stdscr: Any):
         self.stdscr = stdscr
-        self.written_prompt = ''
         self.prompt_color = COLOR_WHITE
 
-        self.status_window = self.write_status = self.prompt_window = None
+        self.status_window = self.prompt_window = None
         self.input_window = None
 
     def draw_prompt_windows(self, prompt_y: int, prompt_height: int,
-                            prompt_width: int, status_window: Any,
-                            write_status: Callable[[str], None]) -> None:
-        newborderedwin(prompt_height, prompt_width, prompt_y, 0)
+                            prompt_width: int, status_window: Any) -> None:
+        CursesGuiHandler.newborderedwin(prompt_height, prompt_width, prompt_y,
+                                        0)
 
         self.prompt_window = newwin(1, prompt_width - 2,
                                     prompt_y + 1, 1)
@@ -203,20 +124,18 @@ class PromptHandler:
                                    prompt_y + 2, 1)
 
         self.status_window = status_window
-        self.write_status = write_status
 
         self.input_window.refresh()
         self.prompt_window.refresh()
 
-    def write_prompt(self, prompt: str, color: int=COLOR_WHITE) -> None:
+    def write_prompt(self, prompt: str) -> None:
         self.status_window.clear()
         self.prompt_window.clear()
-        self.prompt_window.addstr(prompt, color_pair(color))
+        self.prompt_window.addstr(prompt)
         self.prompt_window.refresh()
-        self.written_prompt = prompt
 
     def prompt_char(self, status: str, color: int=COLOR_WHITE) -> str:
-        self.write_prompt(status, color=color)
+        self.write_prompt(status)
         self.input_window.clear()
         return self.input_window.getkey(
             *self.input_window.getyx()
@@ -224,7 +143,7 @@ class PromptHandler:
 
     def prompt_string(self, status: str, color: int=COLOR_WHITE) -> str:
         self.write_prompt(status + " and press Ctrl-Enter when done (or "
-                          "Ctrl-C to cancel)", color=color)
+                          "Ctrl-C to cancel)")
         self.input_window.clear()
 
         try:
@@ -237,193 +156,19 @@ class PromptHandler:
             cbreak()
         return key_sequence.decode('utf-8')
 
-    def input_taskids(self) -> str:
-        ids = self.prompt_string("Enter the task's ids")
-
-        while True:
-            splitted_ids = ids.split(',')
-            try:
-                list(map(int, splitted_ids))
-            except ValueError:
-                ids = self.prompt_string("Please enter valid ids",
-                                         color=COLOR_RED)
-            else:
-                return ids
-
-    def add(self) -> None:
-        name = self.prompt_string("Enter the new task's data")
-        self.write_status(run_task(['add'] + name.split()))
-
-    def delete(self) -> None:
-        ids = self.input_taskids()
-        self.write_status(run_task([ids, 'delete', 'rc.confirmation=off']))
-
-    def modify(self) -> None:
-        ids = self.input_taskids()
-        name = self.prompt_string("Enter the modified task's data")
-        self.write_status(run_task([ids, 'modify'] + name.split()))
-
-    def complete(self) -> None:
-        ids = self.input_taskids()
-        self.write_status(run_task([ids, 'done']))
-
-    def custom_command(self) -> None:
-        command = self.prompt_string('Enter your command')
-        self.write_status(run_task(command.split()))
-
-
-class NetworkHandler:
-    def __init__(self, config: Dict):
-        self.password = config['password']
-
-        blocking_lines = '\\n'.join(
-            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
-             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
-             for blocked_site in config['blocked_sites']])
-
-        self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
-                              f'sudo tee -a /etc/hosts > /dev/null"')
-        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
-
-    def run_sudo(self, command: str) -> None:
-        child = spawn(command)
-
-        try:
-            child.sendline(self.password)
-            child.expect(EOF)
-        except OSError:
-            pass
-
-    def manage_blocked_sites(self, blocked: bool) -> None:
-        if blocked:
-            self.run_sudo(self.unblock_command)
-            self.run_sudo(self.block_command)
-        else:
-            self.run_sudo(self.unblock_command)
-
-    def manage_wifi(self, timer_running: bool=False) -> None:
-        if timer_running:
-            if system() == 'Linux':
-                self.run_sudo('sudo systemctl start netctl-auto@wlp2s0')
-            else:
-                self.run_sudo('networksetup -setairportpower en0 on')
-        else:
-            if system() == 'Linux':
-                self.run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
-            else:
-                self.run_sudo('networksetup -setairportpower en0 off')
+    def prompt_string_error(self, error_msg: str) -> str:
+        return self.prompt_string(error_msg, color=COLOR_RED)
 
 
 def main(stdscr: Any) -> None:
-    try:
-        loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
-    except FileNotFoundError:
-        makedirs(LOCAL_DIR)
-        loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
-
-    config = parse_config()
-
     stdscr.clear()
-    window_handler = WindowHandler(stdscr)
-    prompt_handler = window_handler.prompt_handler
-    network_handler = NetworkHandler(config)
-
-    signal(SIGTERM, partial(signal_handler, window_handler, network_handler))
-
-    window_handler.sync()
-
-    refreshing_actions = {
-        'a': prompt_handler.add,
-        'c': prompt_handler.complete,
-        'd': prompt_handler.delete,
-        'm': prompt_handler.modify,
-        'y': window_handler.sync,
-        '!': prompt_handler.custom_command,
-    }
-
-    with PomodoroTimer(window_handler.write_pomodoro_status,
-                       network_handler.manage_blocked_sites, config,
-                       CONFIG_PATH) as pomodoro_timer:
-        non_refreshing_actions = {
-            "KEY_RESIZE": partial(window_handler.draw_windows),
-            'h': partial(window_handler.write_status, HELP_MESSAGE),
-            'k': partial(skip_phases, prompt_handler, network_handler,
-                         pomodoro_timer),
-            'l': partial(location_change, prompt_handler, network_handler,
-                         pomodoro_timer),
-            'p': partial(toggle_timer, network_handler, pomodoro_timer),
-            'q': partial(quit_gracefully, window_handler, network_handler),
-            'r': partial(window_handler.refresh_tasks),
-            's': partial(reset_timer, network_handler, pomodoro_timer),
-        }
-
-        while True:
-            try:
-                execute_user_action(prompt_handler, window_handler,
-                                    refreshing_actions, non_refreshing_actions)
-            except (JustStartError, PomodoroError) as exc:
-                window_handler.write_status(str(exc), color=COLOR_RED)
-
-
-FunctionDict = Dict[str, Callable[[], None]]
-
-
-def execute_user_action(prompt_handler: PromptHandler,
-                        window_handler: WindowHandler,
-                        refreshing_actions: FunctionDict,
-                        non_refreshing_actions: FunctionDict) -> None:
-    try:
-        read_char = prompt_handler.prompt_char('Waiting for user.'
-                                               ' Pressing h shows'
-                                               ' available actions')
-        window_handler.write_status('')
-        sleep(0.1)
-    except KeyboardInterrupt:
-        raise ActionError(f'No action was selected yet, but Ctrl+C was pressed'
-                          f'. Use q to quit')
-
-    try:
-        refreshing_actions[read_char]()
-    except KeyError:
-        try:
-            non_refreshing_actions[read_char]()
-        except KeyError:
-            raise ActionError(f'Unknown key action: "{read_char}"')
-        except KeyboardInterrupt:
-            # Cancel current action
-            pass
-    except KeyboardInterrupt:
-        # Cancel current action
-        pass
-    else:
-        window_handler.refresh_tasks()
-
-
-def signal_handler(window_handler: WindowHandler,
-                   network_handler: NetworkHandler, *_) -> None:
-    quit_gracefully(window_handler, network_handler)
-
-
-def quit_gracefully(window_handler: WindowHandler,
-                    network_handler: NetworkHandler) -> None:
-    window_handler.sync()
-    network_handler.manage_wifi()
-    quit()
-
-
-def log_failure(error_: Exception, message: str='') -> None:
-    print(message)
-    log_error(f'{type(error_)}: {error_}')
-    print(f'Log written to "{LOG_PATH}"')
-    quit(1)
+    gui_handler = CursesGuiHandler(stdscr)
+    start(gui_handler, gui_handler.prompt_handler)
 
 
 if __name__ == '__main__':
     try:
         wrapper(main)
-    except ConfigurationMissingError as e:
-        print(str(e))
-        quit(1)
     except error as e:
         log_failure(e, f'An error occurred while drawing {argv[0]}. My best'
                        f' guess is that the window was too small.')
