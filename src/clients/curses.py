@@ -6,7 +6,7 @@ from curses import (
 from sys import argv
 from typing import Any
 
-from core.just_start import (log_failure, start, GuiHandler, PromptHandler)
+from core import log_failure, start, GuiHandler, PromptHandler
 
 
 class CursesGuiHandler(GuiHandler):
@@ -159,17 +159,21 @@ class CursesPromptHandler(PromptHandler):
         return self.prompt_string(error_msg, color=COLOR_RED)
 
 
-def main(stdscr: Any) -> None:
+def main() -> None:
+    try:
+        wrapper(start_curses)
+    except error as e:
+        log_failure(e, f'An error occurred while drawing {argv[0]}. My best'
+                       f' guess is that the window was too small.')
+    except Exception as e:
+        log_failure(e, f'Unhandled error.')
+
+
+def start_curses(stdscr: Any) -> None:
     stdscr.clear()
     gui_handler = CursesGuiHandler(stdscr)
     start(gui_handler, gui_handler.prompt_handler)
 
 
 if __name__ == '__main__':
-    try:
-        wrapper(main)
-    except error as e:
-        log_failure(e, f'An error occurred while drawing {argv[0]}. My best'
-                       f' guess is that the window was too small.')
-    except Exception as e:
-        log_failure(e, f'Unhandled error.')
+    main()
