@@ -12,9 +12,8 @@ from sys import exit
 from pexpect import spawn, EOF
 from yaml import safe_load
 
-from .constants import SYNC_MSG
-from just_start_core.constants import (
-    PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, HELP_MESSAGE, LOG_PATH)
+from core.constants import (
+    SYNC_MSG, PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, HELP_MESSAGE, LOG_PATH)
 from pomodoro import PomodoroTimer, PomodoroError
 
 
