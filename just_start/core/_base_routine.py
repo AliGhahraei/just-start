@@ -12,9 +12,9 @@ from sys import exit
 from pexpect import spawn, EOF
 from yaml import safe_load
 
-from core.constants import (
+from just_start.core.constants import (
     SYNC_MSG, PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, HELP_MESSAGE, LOG_PATH)
-from pomodoro import PomodoroTimer, PomodoroError
+from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
 class JustStartError(Exception):

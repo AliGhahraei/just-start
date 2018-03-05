@@ -10,10 +10,9 @@ setup(
     url='https://github.com/AliGhahraei/just-start',
 
     install_requires=['pexpect', 'pyyaml'],
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
+    packages=find_packages(),
 
     entry_points={
-        'console_scripts': ['just-start = clients.curses:main'],
+        'console_scripts': ['just-start = just_start.clients.curses:main'],
     }
 )

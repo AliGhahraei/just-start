@@ -32,7 +32,7 @@ class PomodoroTimer:
         self.config_location = config_location
         self.external_status_function = external_status_function
         self.at_work_user_overridden = at_work_user_overridden
-        self.state, self.POMODORO_CYCLE = self.get_state_and_cycle(config)
+        self.state, self.POMODORO_CYCLE = self.get_state_and_cycle()
         self.external_blocking_function = external_blocking_function
         self.work_count = 0
         self._update_state()
@@ -41,9 +41,10 @@ class PomodoroTimer:
         self.notify('Pomodoro timer stopped',
                     desktop_stop_notification=show_external_stop_notification)
 
-    def get_state_and_cycle(self, config: Dict) -> Tuple[Enum, cycle]:
-        duration_config = (config['work_duration'] if self.user_is_at_work()
-                           else config['home_duration'])
+    def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
+        duration_config = (self.config['work_duration']
+                           if self.user_is_at_work()
+                           else self.config['home_duration'])
 
         work_time = duration_config['work']
         short_rest_time = duration_config['short_rest']

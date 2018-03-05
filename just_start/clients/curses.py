@@ -6,7 +6,7 @@ from curses import (
 from sys import argv
 from typing import Any
 
-from core import log_failure, start, GuiHandler, PromptHandler
+from just_start.core import log_failure, start, GuiHandler, PromptHandler
 
 
 class CursesGuiHandler(GuiHandler):
