@@ -48,6 +48,7 @@ def start(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
 
         network_handler = NetworkHandler(config)
         gui_handler.draw_gui()
+        gui_handler.refresh_tasks()
         signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
         gui_handler.sync_or_write_error()
 
@@ -78,6 +79,10 @@ def write_on_error(func: Callable):
 
 
 class GuiHandler(ABC):
+    def __init__(self) -> None:
+        self._pomodoro_status = ''
+        self._status = ''
+
     @property
     def task_list(self) -> List[str]:
         return run_task().split("\n")
@@ -130,7 +135,7 @@ class PromptHandler(ABC):
 
 
 class NetworkHandler:
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict) -> None:
         self.password = config['password']
 
         blocking_lines = '\\n'.join(

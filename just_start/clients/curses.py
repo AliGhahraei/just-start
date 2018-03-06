@@ -10,6 +10,19 @@ from just_start.core import log_failure, start, GuiHandler, PromptHandler
 
 
 class CursesGuiHandler(GuiHandler):
+    def __init__(self, stdscr: Any) -> None:
+        super().__init__()
+        self.stdscr = stdscr
+        self.task_window = None
+        self.pomodoro_window = None
+        self.status_window = None
+
+        use_default_colors()
+        for color in COLOR_WHITE, COLOR_GREEN, COLOR_RED:
+            init_pair(color, color, -1)
+
+        self.prompt_handler = CursesPromptHandler(self.stdscr)
+
     @staticmethod
     def newborderedwin(height: int, width: int, start_y: int, start_x: int,
                        title: str='') -> Any:
@@ -22,24 +35,6 @@ class CursesGuiHandler(GuiHandler):
 
         return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
-    def __init__(self, stdscr: Any):
-        self.stdscr = stdscr
-
-        use_default_colors()
-        for color in COLOR_WHITE, COLOR_GREEN, COLOR_RED:
-            init_pair(color, color, -1)
-
-        self.task_window = None
-
-        self.pomodoro_window = None
-        self.written_pomodoro_status = ''
-
-        self.status_window = None
-        self.written_status = ''
-        self.status_color = COLOR_WHITE
-
-        self.prompt_handler = CursesPromptHandler(self.stdscr)
-
     def draw_gui(self) -> None:
         self.stdscr.refresh()
 
@@ -50,7 +45,6 @@ class CursesGuiHandler(GuiHandler):
 
         self.task_window = self.newborderedwin(task_window_height,
                                                task_window_width, 0, 0)
-        self.refresh_tasks()
 
         self.status_window = self.newborderedwin(task_window_height,
                                                  task_window_width,
@@ -70,9 +64,6 @@ class CursesGuiHandler(GuiHandler):
                                                    task_window_width,
                                                    'Pomodoro status')
 
-        self.write_pomodoro_status(self.written_pomodoro_status)
-        self.write_status(self.written_status, color=self.status_color)
-
     def write_error(self, error_msg: str):
         self.write_status(error_msg, color=COLOR_RED)
 
@@ -82,7 +73,6 @@ class CursesGuiHandler(GuiHandler):
         self.status_window.addstr(status, color_pair(color))
         self.status_window.refresh()
         self.written_status = status
-        self.status_color = color
 
     def write_pomodoro_status(self, status: str) -> None:
         self.status_window.clear()
@@ -104,7 +94,7 @@ class CursesGuiHandler(GuiHandler):
 
 
 class CursesPromptHandler(PromptHandler):
-    def __init__(self, stdscr: Any):
+    def __init__(self, stdscr: Any) -> None:
         self.stdscr = stdscr
         self.prompt_color = COLOR_WHITE
 
