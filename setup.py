@@ -13,6 +13,6 @@ setup(
     packages=find_packages(),
 
     entry_points={
-        'console_scripts': ['just-start = just_start.clients.curses:main'],
+        'console_scripts': ['just-start = gui_clients.curses:main'],
     }
 )

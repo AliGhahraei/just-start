@@ -5,15 +5,15 @@ from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
+from sys import exit
 from time import sleep
 from typing import List, Optional, Dict, Callable, Any
-from sys import exit
 
 from pexpect import spawn, EOF
 from yaml import safe_load
 
-from just_start.core.constants import (
-    SYNC_MSG, PHASE_SKIP_PROMPT, CONFIG_PATH, LOCAL_DIR, HELP_MESSAGE, LOG_PATH)
+from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
+                        LOCAL_DIR, LOG_PATH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
@@ -25,20 +25,18 @@ class TaskWarriorError(JustStartError):
     pass
 
 
-class ConfigurationMissingError(JustStartError, FileNotFoundError):
-    pass
-
-
 class ActionError(JustStartError):
     pass
 
 
-def start(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
+def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
     try:
-        config = parse_config()
-    except ConfigurationMissingError as e:
-        print(str(e))
-        exit(1)
+        with open(CONFIG_PATH) as f:
+            config = safe_load(f)
+    except FileNotFoundError as e:
+        exit(f"{e}. Check if this configuration file is really there (and its"
+             f" permissions) or create one if it's the first time you use this"
+             f" program")
     else:
         try:
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
@@ -47,23 +45,11 @@ def start(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
 
         network_handler = NetworkHandler(config)
-        gui_handler.draw_gui()
-        gui_handler.refresh_tasks()
+        gui_handler.draw_gui_and_statuses()
         signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
         gui_handler.sync_or_write_error()
 
         action_loop(gui_handler, prompt_handler, network_handler, config)
-
-
-def parse_config() -> Dict:
-    try:
-        with open(CONFIG_PATH) as f:
-            return safe_load(f)
-    except FileNotFoundError:
-        raise ConfigurationMissingError(
-            f"No config file at '{CONFIG_PATH}'. Check if it's really there"
-            f" (and its permissions) or create one if it's the first time you"
-            f" use this app")
 
 
 def write_on_error(func: Callable):
@@ -86,6 +72,30 @@ class GuiHandler(ABC):
     @property
     def task_list(self) -> List[str]:
         return run_task().split("\n")
+
+    @property
+    def status(self) -> str:
+        return self._status
+
+    @status.setter
+    def status(self, status) -> None:
+        self.write_status(status)
+        self._status = status
+
+    @property
+    def pomodoro_status(self) -> str:
+        return self._pomodoro_status
+
+    @pomodoro_status.setter
+    def pomodoro_status(self, pomodoro_status) -> None:
+        self.write_pomodoro_status(pomodoro_status)
+        self._pomodoro_status = pomodoro_status
+
+    def draw_gui_and_statuses(self) -> None:
+        self.draw_gui()
+        self.refresh_tasks()
+        log_error(self.pomodoro_status)
+        self.write_pomodoro_status(self.pomodoro_status)
 
     @abstractmethod
     def draw_gui(self) -> None: pass
@@ -221,7 +231,7 @@ def action_loop(gui_handler: 'GuiHandler',
                        network_handler.manage_blocked_sites, config,
                        CONFIG_PATH) as pomodoro_timer:
         non_refreshing_actions = {
-            "KEY_RESIZE": partial(gui_handler.draw_gui),
+            "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
             'h': partial(gui_handler.write_status, HELP_MESSAGE),
             'k': partial(skip_phases, prompt_handler, network_handler,
                          pomodoro_timer),
@@ -330,8 +340,7 @@ def run_sudo(command: str, password: str) -> None:
 def log_failure(error_: Exception, message: str='') -> None:
     print(message)
     log_error(f'{type(error_)}: {error_}')
-    print(f'Log written to "{LOG_PATH}"')
-    exit(1)
+    exit(f'Log written to "{LOG_PATH}"')
 
 
 def run_task(arg_list: Optional[List[str]]=None) -> str:

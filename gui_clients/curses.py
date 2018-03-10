@@ -6,7 +6,8 @@ from curses import (
 from sys import argv
 from typing import Any
 
-from just_start.core import log_failure, start, GuiHandler, PromptHandler
+from just_start import (
+    log_failure, main as just_start_main, GuiHandler, PromptHandler)
 
 
 class CursesGuiHandler(GuiHandler):
@@ -72,14 +73,12 @@ class CursesGuiHandler(GuiHandler):
         self.status_window.clear()
         self.status_window.addstr(status, color_pair(color))
         self.status_window.refresh()
-        self.written_status = status
 
     def write_pomodoro_status(self, status: str) -> None:
         self.status_window.clear()
         self.pomodoro_window.clear()
         self.pomodoro_window.addstr(status)
         self.pomodoro_window.refresh()
-        self.written_pomodoro_status = status
 
     def refresh_tasks(self) -> None:
         self.task_window.clear()
@@ -162,7 +161,7 @@ def main() -> None:
 def start_curses(stdscr: Any) -> None:
     stdscr.clear()
     gui_handler = CursesGuiHandler(stdscr)
-    start(gui_handler, gui_handler.prompt_handler)
+    just_start_main(gui_handler, gui_handler.prompt_handler)
 
 
 if __name__ == '__main__':

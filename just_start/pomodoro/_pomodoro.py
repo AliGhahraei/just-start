@@ -12,6 +12,8 @@ from typing import Callable, Dict, Optional, Tuple
 
 import yaml
 
+from .constants import STOP_MESSAGE
+
 
 def end_time_from_now(seconds_left: int) -> str:
     end_time = datetime.now() + timedelta(seconds=seconds_left)
@@ -38,7 +40,7 @@ class PomodoroTimer:
         self._update_state()
         self.is_running = False
         self.start_datetime = self.timer = None
-        self.notify('Pomodoro timer stopped',
+        self.notify(STOP_MESSAGE,
                     desktop_stop_notification=show_external_stop_notification)
 
     def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
