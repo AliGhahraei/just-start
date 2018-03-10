@@ -54,7 +54,7 @@ class PomodoroTimer:
         cycles_before_long_rest = duration_config['cycles_before_long_rest']
 
         state_enum = Enum('state', [
-            ('WORK', ('Work', work_time * 60)),
+            ('WORK', ('SWITCH! (and work)', work_time * 60)),
             ('SHORT_REST', ('Short rest', short_rest_time * 60)),
             ('LONG_REST', ('LONG REST!!!', long_rest_time * 60))
         ])
