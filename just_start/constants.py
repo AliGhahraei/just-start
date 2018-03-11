@@ -18,3 +18,7 @@ HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
 SYNC_MSG = 'Syncing task server...'
+
+TRAY_ICON_WIDTH = 10
+TRAY_ICON_HEIGHT = 10
+TRAY_ICON_COLOR = 'red'

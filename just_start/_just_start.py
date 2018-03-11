@@ -10,10 +10,13 @@ from time import sleep
 from typing import List, Optional, Dict, Callable, Any
 
 from pexpect import spawn, EOF
+from PIL import Image
+from pystray import Icon
 from yaml import safe_load
 
 from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
-                        LOCAL_DIR, LOG_PATH)
+                        LOCAL_DIR, LOG_PATH, TRAY_ICON_COLOR, TRAY_ICON_HEIGHT,
+                        TRAY_ICON_WIDTH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
@@ -30,6 +33,22 @@ class ActionError(JustStartError):
 
 
 def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
+    icon = Icon('test name')
+    icon.icon = Image.new('RGB', (TRAY_ICON_WIDTH, TRAY_ICON_HEIGHT),
+                          TRAY_ICON_COLOR)
+    icon.gui_handler = gui_handler
+    icon.prompt_handler = prompt_handler
+    icon.run(init_config)
+    init_config(icon)
+
+
+def init_config(icon: Icon) -> None:
+    icon.visible = True
+    # noinspection PyUnresolvedReferences
+    gui_handler = icon.gui_handler
+    # noinspection PyUnresolvedReferences
+    prompt_handler = icon.prompt_handler
+
     try:
         with open(CONFIG_PATH) as f:
             config = safe_load(f)
