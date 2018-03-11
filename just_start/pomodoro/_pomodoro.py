@@ -15,7 +15,7 @@ import yaml
 from .constants import STOP_MESSAGE
 
 
-def end_time_from_now(seconds_left: int) -> str:
+def time_after_seconds(seconds_left: int) -> str:
     end_time = datetime.now() + timedelta(seconds=seconds_left)
     return end_time.strftime('%H:%M')
 
@@ -109,7 +109,7 @@ class PomodoroTimer:
     def _run(self) -> None:
         self.start_datetime = datetime.now()
         self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
-                    f' far). End time: {end_time_from_now(self.time_left)}'
+                    f' far). End time: {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins). You are at'
                     f' {"work" if self.user_is_at_work() else "home"}')
 
