@@ -39,9 +39,11 @@ def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
              f" program")
     else:
         try:
+            # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
         except FileNotFoundError:
             makedirs(LOCAL_DIR)
+            # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
 
         network_handler = NetworkHandler(config)
@@ -131,13 +133,13 @@ class PromptHandler(ABC):
     @abstractmethod
     def prompt_string_error(self, error_msg: str) -> str: pass
 
-    def input_taskids(self) -> str:
+    def input_task_ids(self) -> str:
         ids = self.prompt_string("Enter the task's ids")
 
         while True:
-            splitted_ids = ids.split(',')
+            split_ids = ids.split(',')
             try:
-                list(map(int, splitted_ids))
+                list(map(int, split_ids))
             except ValueError:
                 ids = self.prompt_string_error("Please enter valid ids")
             else:
@@ -148,6 +150,7 @@ class NetworkHandler:
     def __init__(self, config: Dict) -> None:
         self.password = config['password']
 
+        # noinspection SpellCheckingInspection
         blocking_lines = '\\n'.join(
             [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
              f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
@@ -167,16 +170,20 @@ class NetworkHandler:
     def manage_wifi(self, timer_running: bool=False) -> None:
         if timer_running:
             if system() == 'Linux':
+                # noinspection SpellCheckingInspection
                 run_sudo('sudo systemctl start netctl-auto@wlp2s0',
                          self.password)
             else:
+                # noinspection SpellCheckingInspection
                 run_sudo('networksetup -setairportpower en0 on',
                          self.password)
         else:
             if system() == 'Linux':
+                # noinspection SpellCheckingInspection
                 run_sudo('sudo systemctl stop netctl-auto@wlp2s0',
                          self.password)
             else:
+                # noinspection SpellCheckingInspection
                 run_sudo('networksetup -setairportpower en0 off',
                          self.password)
 
@@ -201,17 +208,17 @@ def action_loop(gui_handler: 'GuiHandler',
         gui_handler.write_status(run_task(['add'] + name.split()))
 
     def delete() -> None:
-        ids = prompt_handler.input_taskids()
+        ids = prompt_handler.input_task_ids()
         gui_handler.write_status(run_task([ids, 'delete',
                                            'rc.confirmation=off']))
 
     def modify() -> None:
-        ids = prompt_handler.input_taskids()
+        ids = prompt_handler.input_task_ids()
         name = prompt_handler.prompt_string("Enter the modified task's data")
         gui_handler.write_status(run_task([ids, 'modify'] + name.split()))
 
     def complete() -> None:
-        ids = prompt_handler.input_taskids()
+        ids = prompt_handler.input_task_ids()
         gui_handler.write_status(run_task([ids, 'done']))
 
     def custom_command() -> None:

@@ -11,6 +11,7 @@ from just_start import (
 
 
 class CursesGuiHandler(GuiHandler):
+    # noinspection SpellCheckingInspection
     def __init__(self, stdscr: Any) -> None:
         super().__init__()
         self.stdscr = stdscr
@@ -24,15 +25,16 @@ class CursesGuiHandler(GuiHandler):
 
         self.prompt_handler = CursesPromptHandler(self.stdscr)
 
+    # noinspection SpellCheckingInspection
     @staticmethod
     def newborderedwin(height: int, width: int, start_y: int, start_x: int,
                        title: str='') -> Any:
-        borderedwindow = newwin(height, width, start_y, start_x)
-        borderedwindow.clear()
-        borderedwindow.border()
-        borderedwindow.move(0, 2)
-        borderedwindow.addstr(title)
-        borderedwindow.refresh()
+        bordered_window = newwin(height, width, start_y, start_x)
+        bordered_window.clear()
+        bordered_window.border()
+        bordered_window.move(0, 2)
+        bordered_window.addstr(title)
+        bordered_window.refresh()
 
         return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
@@ -93,6 +95,7 @@ class CursesGuiHandler(GuiHandler):
 
 
 class CursesPromptHandler(PromptHandler):
+    # noinspection SpellCheckingInspection
     def __init__(self, stdscr: Any) -> None:
         self.stdscr = stdscr
         self.prompt_color = COLOR_WHITE
@@ -158,6 +161,7 @@ def main() -> None:
         log_failure(e, f'Unhandled error.')
 
 
+# noinspection SpellCheckingInspection
 def start_curses(stdscr: Any) -> None:
     stdscr.clear()
     gui_handler = CursesGuiHandler(stdscr)

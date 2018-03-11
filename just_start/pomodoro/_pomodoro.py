@@ -53,6 +53,7 @@ class PomodoroTimer:
         long_rest_time = duration_config['long_rest']
         cycles_before_long_rest = duration_config['cycles_before_long_rest']
 
+        # noinspection PyArgumentList
         state_enum = Enum('state', [
             ('WORK', ('SWITCH! (and work)', work_time * 60)),
             ('SHORT_REST', ('Short rest', short_rest_time * 60)),
@@ -70,6 +71,7 @@ class PomodoroTimer:
             if system() == 'Linux':
                 run(['notify-send', status])
             else:
+                # noinspection SpellCheckingInspection
                 run(['osascript', '-e',
                      f'display notification "{status}" with title'
                      f' "just-start"'])
@@ -78,8 +80,6 @@ class PomodoroTimer:
 
     def user_is_at_work(self) -> bool:
         if self.at_work_user_overridden is not None:
-            # TODO: Implement strategy to invalidate this variable after a given
-            # TODO: time/condition
             return self.at_work_user_overridden
 
         start_time = self.config['work']['start_time']

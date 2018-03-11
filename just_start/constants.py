@@ -10,6 +10,7 @@ CONFIG_DIR = join(
 CONFIG_PATH = join(CONFIG_DIR, 'preferences.yml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 
+# noinspection SpellCheckingInspection
 HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
                 ' another pomodoro phase, (l)ocation change, (m)odify task,'
                 ' (p)omodoro pause/resume, (q)uit, (r)efresh tasks, (s)top'
