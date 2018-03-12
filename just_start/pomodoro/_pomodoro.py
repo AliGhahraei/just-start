@@ -46,7 +46,7 @@ class PomodoroTimer:
 
     def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
         location = 'work' if self.user_is_at_work() else 'home'
-        location_config = self.config[location]
+        location_config = self.config['locations'][location]
 
         work_time = location_config['pomodoro_length']
         short_rest_time = location_config['short_rest']
@@ -83,9 +83,9 @@ class PomodoroTimer:
             return self.at_work_user_overridden
 
         return datetime.now().isoweekday() < 6 and (
-                as_time(self.config['work']['start_time'])
+                self.config['locations']['work']['start_time']
                 <= datetime.now().time()
-                <= as_time(self.config['work']['end_time']))
+                <= self.config['locations']['work']['end_time'])
 
     def toggle(self) -> None:
         if self.is_running:
