@@ -157,8 +157,6 @@ def main() -> None:
     except error as e:
         failure(e, f'An error occurred while drawing {argv[0]}. My best guess'
                    f' is that the window was too small.')
-    except Exception as e:
-        failure(e, f'Unhandled error.')
 
 
 # noinspection SpellCheckingInspection

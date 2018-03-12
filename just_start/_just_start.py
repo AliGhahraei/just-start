@@ -56,6 +56,8 @@ def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
         gui_handler.sync_or_write_error()
 
         action_loop(gui_handler, prompt_handler, network_handler, config)
+    except Exception as e:
+        failure(e, f'Unhandled error.')
 
 
 def write_on_error(func: Callable):
