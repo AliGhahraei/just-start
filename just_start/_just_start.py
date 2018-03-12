@@ -11,7 +11,7 @@ from time import sleep
 from typing import List, Optional, Dict, Callable, Any
 
 from pexpect import spawn, EOF
-from yaml import safe_load
+from toml import load
 
 from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
                         LOCAL_DIR, LOG_PATH)
@@ -37,7 +37,7 @@ def as_time(time_: str) -> time:
 def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
     try:
         with open(CONFIG_PATH) as f:
-            config = safe_load(f)
+            config = load(f)
     except FileNotFoundError as e:
         exit(f"{e}. Check if this configuration file is really there (and its"
              f" permissions) or create a new one")
@@ -151,13 +151,15 @@ class PromptHandler(ABC):
 
 class NetworkHandler:
     def __init__(self, config: Dict) -> None:
-        self.password = config['password']
+        self.password = config['general']['password']
+        blocked_sites = config['general']['blocked_sites']
+        blocking_ip = config['general']['blocking_ip']
 
         # noinspection SpellCheckingInspection
         blocking_lines = '\\n'.join(
-            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
-             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
-             for blocked_site in config['blocked_sites']])
+            [f'{blocking_ip}\\t{blocked_site}\\t#juststart\\n'
+             f'{blocking_ip}\\twww.{blocked_site}\\t#juststart'
+             for blocked_site in blocked_sites])
 
         self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
                               f'sudo tee -a /etc/hosts > /dev/null"')

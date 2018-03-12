@@ -10,9 +10,10 @@ from threading import Timer
 from types import TracebackType
 from typing import Callable, Dict, Optional, Tuple
 
-import yaml
+from toml import dump
 
 from .constants import STOP_MESSAGE
+from just_start import as_time
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -44,14 +45,13 @@ class PomodoroTimer:
                     desktop_stop_notification=show_external_stop_notification)
 
     def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
-        duration_config = (self.config['work_duration']
-                           if self.user_is_at_work()
-                           else self.config['home_duration'])
+        location = 'work' if self.user_is_at_work() else 'home'
+        location_config = self.config[location]
 
-        work_time = duration_config['work']
-        short_rest_time = duration_config['short_rest']
-        long_rest_time = duration_config['long_rest']
-        cycles_before_long_rest = duration_config['cycles_before_long_rest']
+        work_time = location_config['pomodoro_length']
+        short_rest_time = location_config['short_rest']
+        long_rest_time = location_config['long_rest']
+        cycles_before_long_rest = location_config['cycles_before_long_rest']
 
         # noinspection PyArgumentList
         state_enum = Enum('state', [
@@ -82,14 +82,10 @@ class PomodoroTimer:
         if self.at_work_user_overridden is not None:
             return self.at_work_user_overridden
 
-        start_time = self.config['work']['start_time']
-        end_time = self.config['work']['end_time']
-
-        return datetime.now().weekday() < 5 and (
-                datetime.strptime(start_time, '%H:%M').time()
+        return datetime.now().isoweekday() < 6 and (
+                as_time(self.config['work']['start_time'])
                 <= datetime.now().time()
-                <= datetime.strptime(end_time, '%H:%M').time()
-        )
+                <= as_time(self.config['work']['end_time']))
 
     def toggle(self) -> None:
         if self.is_running:
@@ -136,7 +132,7 @@ class PomodoroTimer:
             self.config['productivity']['work_skip_enabled'] = timer_triggered
 
             with open(expanduser(self.config_location), 'w') as f:
-                yaml.dump(self.config, f, default_flow_style=False)
+                dump(self.config, f)
         elif phases_skipped > 1:
             raise PomodoroError("Sorry, you can't skip more than 1 phase"
                                 " while not working")
