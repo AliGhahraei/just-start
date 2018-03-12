@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from datetime import time, datetime
 from functools import partial, wraps
-from logging import error as log_error, basicConfig as loggingConfig
+from logging import critical, basicConfig as loggingConfig
 from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
@@ -29,14 +30,17 @@ class ActionError(JustStartError):
     pass
 
 
+def as_time(time_: str) -> time:
+    return datetime.strptime(time_, '%H:%M').time()
+
+
 def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
     try:
         with open(CONFIG_PATH) as f:
             config = safe_load(f)
     except FileNotFoundError as e:
         exit(f"{e}. Check if this configuration file is really there (and its"
-             f" permissions) or create one if it's the first time you use this"
-             f" program")
+             f" permissions) or create a new one")
     else:
         try:
             # noinspection SpellCheckingInspection
@@ -96,7 +100,6 @@ class GuiHandler(ABC):
     def draw_gui_and_statuses(self) -> None:
         self.draw_gui()
         self.refresh_tasks()
-        log_error(self.pomodoro_status)
         self.write_pomodoro_status(self.pomodoro_status)
 
     @abstractmethod

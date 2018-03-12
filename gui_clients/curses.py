@@ -7,7 +7,7 @@ from sys import argv
 from typing import Any
 
 from just_start import (
-    log_failure, main as just_start_main, GuiHandler, PromptHandler)
+    failure, main as just_start_main, GuiHandler, PromptHandler)
 
 
 class CursesGuiHandler(GuiHandler):
@@ -155,10 +155,10 @@ def main() -> None:
     try:
         wrapper(start_curses)
     except error as e:
-        log_failure(e, f'An error occurred while drawing {argv[0]}. My best'
-                       f' guess is that the window was too small.')
+        failure(e, f'An error occurred while drawing {argv[0]}. My best guess'
+                   f' is that the window was too small.')
     except Exception as e:
-        log_failure(e, f'Unhandled error.')
+        failure(e, f'Unhandled error.')
 
 
 # noinspection SpellCheckingInspection

@@ -4,9 +4,8 @@ from os.path import expanduser, join
 LOCAL_DIR = join(getenv('XDG_DATA_HOME',
                         expanduser(join('~', '.local', 'share'))),
                  'just-start')
-CONFIG_DIR = join(
-    getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
-    'just-start')
+CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
+                  'just-start')
 CONFIG_PATH = join(CONFIG_DIR, 'preferences.yml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 
