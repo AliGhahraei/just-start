@@ -347,9 +347,10 @@ def run_sudo(command: str, password: str) -> None:
         pass
 
 
-def log_failure(error_: Exception, message: str='') -> None:
-    print(message)
-    log_error(f'{type(error_)}: {error_}')
+def failure(error_: Exception, message: Any='',
+            display_message: Callable[Any]=print) -> None:
+    display_message(message)
+    critical(f'{type(error_)}: {error_}')
     exit(f'Log written to "{LOG_PATH}"')
 
 
