@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import time, datetime
 from functools import partial, wraps
-from logging import critical, basicConfig as loggingConfig
+from logging import critical, warning, basicConfig as loggingConfig
 from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
@@ -18,6 +18,61 @@ from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
+def validate_list(list_: List):
+    if not isinstance(list_, list):
+        raise ValueError(f'Not a list: "{list_}"')
+    return list_
+
+
+def validate_bool(bool_: bool):
+    if not isinstance(bool_, bool):
+        raise ValueError(f'Not a list: "{bool_}"')
+    return bool_
+
+
+def validate_str(str_: str):
+    if not isinstance(str_, str):
+        raise ValueError(f'Not a string: "{str_}"')
+    return str_
+
+
+def validate_time(time_str: str) -> time:
+    validate_str(time_str)
+    return datetime.strptime(time_str, '%H:%M').time()
+
+
+def validate_positive_int(int_: int):
+    if not isinstance(int_, int) or int_ < 1:
+        raise ValueError(f'Non-positive integer: "{int_}"')
+    return int_
+
+
+VALID_CONFIG = {
+    'general': {
+        'password': ('', validate_str),
+        'blocked_sites': ([], validate_list),
+        'blocking_ip': ('127.0.0.1', validate_str),
+    },
+    'productivity': {
+        'work_skip_enabled': (False, validate_bool),
+    },
+    'work': {
+        'start': (validate_time('09:00'), validate_time),
+        'end': (validate_time('18:00'), validate_time),
+        'pomodoro_length': (25, validate_positive_int),
+        'short_rest': (5, validate_positive_int),
+        'long_rest': (15, validate_positive_int),
+        'cycles_before_long_rest': (4, validate_positive_int),
+    },
+    'home': {
+        'pomodoro_length': (25, validate_positive_int),
+        'short_rest': (5, validate_positive_int),
+        'long_rest': (15, validate_positive_int),
+        'cycles_before_long_rest': (4, validate_positive_int),
+    },
+}
+
+
 class JustStartError(Exception):
     pass
 
@@ -30,18 +85,8 @@ class ActionError(JustStartError):
     pass
 
 
-def as_time(time_: str) -> time:
-    return datetime.strptime(time_, '%H:%M').time()
-
-
 def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
     try:
-        with open(CONFIG_PATH) as f:
-            config = load(f)
-    except FileNotFoundError as e:
-        exit(f"{e}. Check if this configuration file is really there (and its"
-             f" permissions) or create a new one")
-    else:
         try:
             # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
@@ -49,6 +94,23 @@ def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
             makedirs(LOCAL_DIR)
             # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
+
+        try:
+            config = load(CONFIG_PATH)
+        except FileNotFoundError as e:
+            warning(f"{e}. Check if this configuration file is really there"
+                    f" (and its permissions) or create a new one")
+            config = {}
+
+        value_errors = []
+        for section_name, section_content in VALID_CONFIG.items():
+            try:
+                validate_config_section(config, section_name, section_content)
+            except ValueError as e:
+                value_errors.append(f'{e} (in {section_name})')
+        if value_errors:
+            value_errors = '\n'.join([error for error in value_errors])
+            exit(f'Wrong configuration file:\n{value_errors}')
 
         network_handler = NetworkHandler(config)
         gui_handler.draw_gui_and_statuses()
@@ -193,6 +255,22 @@ class NetworkHandler:
                 # noinspection SpellCheckingInspection
                 run_sudo('networksetup -setairportpower en0 off',
                          self.password)
+
+
+def validate_config_section(config: Dict, section_name: str,
+                            section_content: Dict) -> None:
+    try:
+        config[section_name]
+    except KeyError:
+        config[section_name] = section_content
+    else:
+        for field_name, field_content in section_content.items():
+            default, validator = field_content
+            try:
+                config[section_name][field_name] = validator(
+                    config[section_name][field_name])
+            except KeyError:
+                config[section_name][field_name] = default
 
 
 def _signal_handler(gui_handler: GuiHandler,
@@ -352,10 +430,11 @@ def run_sudo(command: str, password: str) -> None:
 
 
 def failure(error_: Exception, message: Any='',
-            display_message: Callable[Any]=print) -> None:
+            display_message: Callable[[Any], None]=print) -> None:
     display_message(message)
     critical(f'{type(error_)}: {error_}')
-    exit(f'Log written to "{LOG_PATH}"')
+    display_message(f'Log written to "{LOG_PATH}"')
+    raise error_
 
 
 def run_task(arg_list: Optional[List[str]]=None) -> str:

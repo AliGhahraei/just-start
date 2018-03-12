@@ -13,7 +13,6 @@ from typing import Callable, Dict, Optional, Tuple
 from toml import dump
 
 from .constants import STOP_MESSAGE
-from just_start import as_time
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -46,7 +45,7 @@ class PomodoroTimer:
 
     def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
         location = 'work' if self.user_is_at_work() else 'home'
-        location_config = self.config['locations'][location]
+        location_config = self.config[location]
 
         work_time = location_config['pomodoro_length']
         short_rest_time = location_config['short_rest']
@@ -83,9 +82,9 @@ class PomodoroTimer:
             return self.at_work_user_overridden
 
         return datetime.now().isoweekday() < 6 and (
-                self.config['locations']['work']['start_time']
+                self.config['work']['start']
                 <= datetime.now().time()
-                <= self.config['locations']['work']['end_time'])
+                <= self.config['work']['end'])
 
     def toggle(self) -> None:
         if self.is_running:

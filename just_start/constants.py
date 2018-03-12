@@ -6,7 +6,7 @@ LOCAL_DIR = join(getenv('XDG_DATA_HOME',
                  'just-start')
 CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
                   'just-start')
-CONFIG_PATH = join(CONFIG_DIR, 'preferences.yml')
+CONFIG_PATH = join(CONFIG_DIR, 'preferences.toml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 
 # noinspection SpellCheckingInspection
