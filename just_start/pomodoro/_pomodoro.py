@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-
+import shelve
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
-from os.path import expanduser
 from platform import system
 from subprocess import run
 from threading import Timer
 from types import TracebackType
 from typing import Callable, Dict, Optional, Tuple
 
-from toml import dump
-
+from just_start.constants import PERSISTENT_PATH
 from .constants import STOP_MESSAGE
 
 
@@ -27,11 +25,9 @@ class PomodoroError(Exception):
 class PomodoroTimer:
     def __init__(self, external_status_function: Callable[[str], None],
                  external_blocking_function: Callable[[bool], None],
-                 config: Dict, config_location: str,
-                 at_work_user_overridden: Optional[bool]=None,
+                 config: Dict, at_work_user_overridden: Optional[bool]=None,
                  show_external_stop_notification: bool=False):
         self.config = config
-        self.config_location = config_location
         self.external_status_function = external_status_function
         self.at_work_user_overridden = at_work_user_overridden
         self.state, self.POMODORO_CYCLE = self.get_state_and_cycle()
@@ -122,16 +118,18 @@ class PomodoroTimer:
     def advance_phases(self, timer_triggered: bool=False,
                        phases_skipped: int=1) -> None:
         if self.state is self.state.WORK:
-            if not timer_triggered and not (self.config['productivity']
-                                            ['work_skip_enabled']):
-                raise PomodoroError('Sorry, please work 1 pomodoro to'
-                                    ' re-enable work skipping')
+            with shelve.open(PERSISTENT_PATH) as db:
+                try:
+                    skip_enabled = db['skip_enabled']
+                except KeyError:
+                    db['skip_enabled'] = skip_enabled = False
 
-            self.work_count += 1
-            self.config['productivity']['work_skip_enabled'] = timer_triggered
+                if not timer_triggered and not skip_enabled:
+                    raise PomodoroError('Sorry, please work 1 pomodoro to'
+                                        ' re-enable work skipping')
 
-            with open(expanduser(self.config_location), 'w') as f:
-                dump(self.config, f)
+                self.work_count += 1
+                db['skip_enabled'] = timer_triggered
         elif phases_skipped > 1:
             raise PomodoroError("Sorry, you can't skip more than 1 phase"
                                 " while not working")
@@ -149,7 +147,6 @@ class PomodoroTimer:
         self._stop_countdown()
         self.__init__(self.external_status_function,
                       self.external_blocking_function, self.config,
-                      self.config_location,
                       at_work_user_overridden=at_work_user_overridden,
                       show_external_stop_notification=True)
         self.external_blocking_function(True)

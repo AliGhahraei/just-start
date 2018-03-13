@@ -38,6 +38,10 @@ def validate_str(str_: str):
 
 def validate_time(time_str: str) -> time:
     validate_str(time_str)
+    return as_time(time_str)
+
+
+def as_time(time_str):
     return datetime.strptime(time_str, '%H:%M').time()
 
 
@@ -53,12 +57,9 @@ VALID_CONFIG = {
         'blocked_sites': ([], validate_list),
         'blocking_ip': ('127.0.0.1', validate_str),
     },
-    'productivity': {
-        'work_skip_enabled': (False, validate_bool),
-    },
     'work': {
-        'start': (validate_time('09:00'), validate_time),
-        'end': (validate_time('18:00'), validate_time),
+        'start': (as_time('09:00'), validate_time),
+        'end': (as_time('18:00'), validate_time),
         'pomodoro_length': (25, validate_positive_int),
         'short_rest': (5, validate_positive_int),
         'long_rest': (15, validate_positive_int),
@@ -320,8 +321,8 @@ def action_loop(gui_handler: 'GuiHandler',
     }
 
     with PomodoroTimer(gui_handler.write_pomodoro_status,
-                       network_handler.manage_blocked_sites, config,
-                       CONFIG_PATH) as pomodoro_timer:
+                       network_handler.manage_blocked_sites,
+                       config) as pomodoro_timer:
         non_refreshing_actions = {
             "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
             'h': partial(gui_handler.write_status, HELP_MESSAGE),
