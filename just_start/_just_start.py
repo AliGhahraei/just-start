@@ -421,13 +421,14 @@ def execute_user_action(prompt_handler: PromptHandler,
 
 
 def run_sudo(command: str, password: str) -> None:
-    child = spawn(command)
+    if password:
+        child = spawn(command)
 
-    try:
-        child.sendline(password)
-        child.expect(EOF)
-    except OSError:
-        pass
+        try:
+            child.sendline(password)
+            child.expect(EOF)
+        except OSError:
+            pass
 
 
 def failure(error_: Exception, message: Any='',
