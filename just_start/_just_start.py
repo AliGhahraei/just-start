@@ -187,8 +187,8 @@ class GuiHandler(ABC):
         self.sync()
 
     def sync(self) -> None:
-        self.write_status(SYNC_MSG)
-        self.write_status(run_task(['sync']))
+        self.status = SYNC_MSG
+        self.status = run_task(['sync'])
 
 
 class PromptHandler(ABC):
@@ -291,25 +291,24 @@ def action_loop(gui_handler: 'GuiHandler',
                 network_handler: 'NetworkHandler', config: Dict):
     def add() -> None:
         name = prompt_handler.prompt_string("Enter the new task's data")
-        gui_handler.write_status(run_task(['add'] + name.split()))
+        gui_handler.status = run_task(['add'] + name.split())
 
     def delete() -> None:
         ids = prompt_handler.input_task_ids()
-        gui_handler.write_status(run_task([ids, 'delete',
-                                           'rc.confirmation=off']))
+        gui_handler.status = run_task([ids, 'delete', 'rc.confirmation=off'])
 
     def modify() -> None:
         ids = prompt_handler.input_task_ids()
         name = prompt_handler.prompt_string("Enter the modified task's data")
-        gui_handler.write_status(run_task([ids, 'modify'] + name.split()))
+        gui_handler.status = run_task([ids, 'modify'] + name.split())
 
     def complete() -> None:
         ids = prompt_handler.input_task_ids()
-        gui_handler.write_status(run_task([ids, 'done']))
+        gui_handler.status = run_task([ids, 'done'])
 
     def custom_command() -> None:
         command = prompt_handler.prompt_string('Enter your command')
-        gui_handler.write_status(run_task(command.split()))
+        gui_handler.status = run_task(command.split())
 
     refreshing_actions = {
         'a': add,
@@ -320,12 +319,17 @@ def action_loop(gui_handler: 'GuiHandler',
         '!': custom_command,
     }
 
-    with PomodoroTimer(gui_handler.write_pomodoro_status,
-                       network_handler.manage_blocked_sites,
+    def pomodoro_status(status):
+        gui_handler.pomodoro_status = status
+
+    with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
                        config) as pomodoro_timer:
+        def update_status(message):
+            gui_handler.status = message
+
         non_refreshing_actions = {
             "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
-            'h': partial(gui_handler.write_status, HELP_MESSAGE),
+            'h': partial(update_status, HELP_MESSAGE),
             'k': partial(skip_phases, prompt_handler, network_handler,
                          pomodoro_timer),
             'l': partial(location_change, prompt_handler, network_handler,
@@ -397,7 +401,7 @@ def execute_user_action(prompt_handler: PromptHandler,
         read_char = prompt_handler.prompt_char('Waiting for user.'
                                                ' Pressing h shows'
                                                ' available actions')
-        gui_handler.write_status('')
+        gui_handler.status = ''
         sleep(0.1)
     except KeyboardInterrupt:
         raise ActionError(f'No action was selected yet, but Ctrl+C was pressed'
