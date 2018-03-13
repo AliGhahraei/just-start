@@ -99,10 +99,12 @@ class PomodoroTimer:
 
     def _run(self) -> None:
         self.start_datetime = datetime.now()
+        now = self.start_datetime.time().strftime('%H:%M')
         self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
-                    f' far). End time: {time_after_seconds(self.time_left)}'
-                    f' ({int(self.time_left / 60)} mins). You are at'
-                    f' {"work" if self.user_is_at_work() else "home"}')
+                    f' far at {"work" if self.user_is_at_work() else "home"}).'
+                    f'\nStart time: {now}. End time:'
+                    f' {time_after_seconds(self.time_left)}'
+                    f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
                            self._timer_triggered_phase_advancement)
