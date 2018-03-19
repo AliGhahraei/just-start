@@ -18,37 +18,36 @@ from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
-def validate_list(list_: List):
-    if not isinstance(list_, list):
-        raise ValueError(f'Not a list: "{list_}"')
-    return list_
+def validate_type(object_: Any, type_: type) -> Any:
+    if not isinstance(object_, type_):
+        raise TypeError(f'Not a {type_.__name__}')
+    return object_
 
 
-def validate_bool(bool_: bool):
-    if not isinstance(bool_, bool):
-        raise ValueError(f'Not a list: "{bool_}"')
-    return bool_
-
-
-def validate_str(str_: str):
-    if not isinstance(str_, str):
-        raise ValueError(f'Not a string: "{str_}"')
-    return str_
-
-
-def validate_time(time_str: str) -> time:
-    validate_str(time_str)
-    return as_time(time_str)
-
-
-def as_time(time_str):
-    return datetime.strptime(time_str, '%H:%M').time()
-
-
-def validate_positive_int(int_: int):
-    if not isinstance(int_, int) or int_ < 1:
+def validate_positive_int(int_: Any) -> int:
+    if validate_type(int_, int) < 1:
         raise ValueError(f'Non-positive integer: "{int_}"')
     return int_
+
+
+def validate_list(list_: Any) -> list:
+    return validate_type(list_, list)
+
+
+def validate_bool(bool_: Any) -> bool:
+    return validate_type(bool_, bool)
+
+
+def validate_time(time_str: Any) -> time:
+    return as_time(validate_str(time_str))
+
+
+def validate_str(str_: Any) -> str:
+    return validate_type(str_, str)
+
+
+def as_time(time_str: str) -> time:
+    return datetime.strptime(time_str, '%H:%M').time()
 
 
 VALID_CONFIG = {
@@ -445,9 +444,9 @@ def failure(error_: Exception, message: Any='',
     raise error_
 
 
-def run_task(arg_list: Optional[List[str]]=None) -> str:
-    arg_list = arg_list or []
-    completed_process = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
+def run_task(args: Optional[List[str]]=None) -> str:
+    args = args or ['-BLOCKED']
+    completed_process = run(['task'] + args, stdout=PIPE, stderr=STDOUT)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:
