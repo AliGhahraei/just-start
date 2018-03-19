@@ -11,6 +11,7 @@ setup(
 
     install_requires=['pexpect', 'toml'],
     packages=find_packages(),
+    python_requires='>=3.6',
 
     entry_points={
         'console_scripts': ['just-start = gui_clients.curses:main'],

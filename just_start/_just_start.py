@@ -220,15 +220,17 @@ class NetworkHandler:
         blocked_sites = config['general']['blocked_sites']
         blocking_ip = config['general']['blocking_ip']
 
+        app_specific_comment = '# just-start'
         # noinspection SpellCheckingInspection
         blocking_lines = '\\n'.join(
-            [f'{blocking_ip}\\t{blocked_site}\\t#juststart\\n'
-             f'{blocking_ip}\\twww.{blocked_site}\\t#juststart'
+            [f'{blocking_ip}\\t{blocked_site}\\t{app_specific_comment}\\n'
+             f'{blocking_ip}\\twww.{blocked_site}\\t{app_specific_comment}'
              for blocked_site in blocked_sites])
 
         self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
                               f'sudo tee -a /etc/hosts > /dev/null"')
-        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
+        self.unblock_command = (f"sudo sed -i '' '/^.*{app_specific_comment}$"
+                                f"/d /etc/hosts")
 
     def manage_blocked_sites(self, blocked: bool) -> None:
         if blocked:
