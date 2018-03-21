@@ -229,7 +229,7 @@ class NetworkHandler:
         self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
                               f'sudo tee -a /etc/hosts > /dev/null"')
         self.unblock_command = (f"sudo sed -i '' '/^.*{app_specific_comment}$"
-                                f"/d /etc/hosts")
+                                f"/d' /etc/hosts")
 
     def manage_blocked_sites(self, blocked: bool) -> None:
         if blocked:
