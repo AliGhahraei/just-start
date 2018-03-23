@@ -1,3 +1,3 @@
-from ._just_start import log_failure, main, GuiHandler, PromptHandler
+from ._just_start import *
 
-__all__ = ['log_failure', 'main', 'GuiHandler', 'PromptHandler']
+__all__ = ['failure', 'main', 'GuiHandler', 'PromptHandler']

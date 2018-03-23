@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from datetime import time, datetime
 from functools import partial, wraps
-from logging import error as log_error, basicConfig as loggingConfig
+from logging import critical, warning, basicConfig as loggingConfig
 from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
@@ -12,12 +13,67 @@ from typing import List, Optional, Dict, Callable, Any
 from pexpect import spawn, EOF
 from PIL import Image
 from pystray import Icon
-from yaml import safe_load
+from toml import load
 
 from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
                         LOCAL_DIR, LOG_PATH, TRAY_ICON_COLOR, TRAY_ICON_HEIGHT,
                         TRAY_ICON_WIDTH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
+
+
+def validate_type(object_: Any, type_: type) -> Any:
+    if not isinstance(object_, type_):
+        raise TypeError(f'Not a {type_.__name__}')
+    return object_
+
+
+def validate_positive_int(int_: Any) -> int:
+    if validate_type(int_, int) < 1:
+        raise ValueError(f'Non-positive integer: "{int_}"')
+    return int_
+
+
+def validate_list(list_: Any) -> list:
+    return validate_type(list_, list)
+
+
+def validate_bool(bool_: Any) -> bool:
+    return validate_type(bool_, bool)
+
+
+def validate_time(time_str: Any) -> time:
+    return as_time(validate_str(time_str))
+
+
+def validate_str(str_: Any) -> str:
+    return validate_type(str_, str)
+
+
+def as_time(time_str: str) -> time:
+    return datetime.strptime(time_str, '%H:%M').time()
+
+
+VALID_CONFIG = {
+    'general': {
+        'password': ('', validate_str),
+        'blocked_sites': ([], validate_list),
+        'blocking_ip': ('127.0.0.1', validate_str),
+    },
+    'work': {
+        'start': (as_time('09:00'), validate_time),
+        'end': (as_time('18:00'), validate_time),
+        'pomodoro_length': (25, validate_positive_int),
+        'short_rest': (5, validate_positive_int),
+        'long_rest': (15, validate_positive_int),
+        'cycles_before_long_rest': (4, validate_positive_int),
+    },
+    'home': {
+        'pomodoro_length': (25, validate_positive_int),
+        'short_rest': (5, validate_positive_int),
+        'long_rest': (15, validate_positive_int),
+        'cycles_before_long_rest': (4, validate_positive_int),
+    },
+}
 
 
 class JustStartError(Exception):
@@ -50,13 +106,6 @@ def init_config(icon: Icon) -> None:
     prompt_handler = icon.prompt_handler
 
     try:
-        with open(CONFIG_PATH) as f:
-            config = safe_load(f)
-    except FileNotFoundError as e:
-        exit(f"{e}. Check if this configuration file is really there (and its"
-             f" permissions) or create one if it's the first time you use this"
-             f" program")
-    else:
         try:
             # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
@@ -65,12 +114,31 @@ def init_config(icon: Icon) -> None:
             # noinspection SpellCheckingInspection
             loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
 
+        try:
+            config = load(CONFIG_PATH)
+        except FileNotFoundError as e:
+            warning(f"{e}. Check if this configuration file is really there"
+                    f" (and its permissions) or create a new one")
+            config = {}
+
+        value_errors = []
+        for section_name, section_content in VALID_CONFIG.items():
+            try:
+                validate_config_section(config, section_name, section_content)
+            except ValueError as e:
+                value_errors.append(f'{e} (in {section_name})')
+        if value_errors:
+            value_errors = '\n'.join([error for error in value_errors])
+            exit(f'Wrong configuration file:\n{value_errors}')
+
         network_handler = NetworkHandler(config)
         gui_handler.draw_gui_and_statuses()
         signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
         gui_handler.sync_or_write_error()
 
         action_loop(gui_handler, prompt_handler, network_handler, config)
+    except Exception as e:
+        failure(e, f'Unhandled error.')
 
 
 def write_on_error(func: Callable):
@@ -115,7 +183,6 @@ class GuiHandler(ABC):
     def draw_gui_and_statuses(self) -> None:
         self.draw_gui()
         self.refresh_tasks()
-        log_error(self.pomodoro_status)
         self.write_pomodoro_status(self.pomodoro_status)
 
     @abstractmethod
@@ -138,8 +205,8 @@ class GuiHandler(ABC):
         self.sync()
 
     def sync(self) -> None:
-        self.write_status(SYNC_MSG)
-        self.write_status(run_task(['sync']))
+        self.status = SYNC_MSG
+        self.status = run_task(['sync'])
 
 
 class PromptHandler(ABC):
@@ -167,17 +234,21 @@ class PromptHandler(ABC):
 
 class NetworkHandler:
     def __init__(self, config: Dict) -> None:
-        self.password = config['password']
+        self.password = config['general']['password']
+        blocked_sites = config['general']['blocked_sites']
+        blocking_ip = config['general']['blocking_ip']
 
+        app_specific_comment = '# just-start'
         # noinspection SpellCheckingInspection
         blocking_lines = '\\n'.join(
-            [f'127.0.0.1\\t{blocked_site}\\t#juststart\\n'
-             f'127.0.0.1\\twww.{blocked_site}\\t#juststart'
-             for blocked_site in config['blocked_sites']])
+            [f'{blocking_ip}\\t{blocked_site}\\t{app_specific_comment}\\n'
+             f'{blocking_ip}\\twww.{blocked_site}\\t{app_specific_comment}'
+             for blocked_site in blocked_sites])
 
         self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
                               f'sudo tee -a /etc/hosts > /dev/null"')
-        self.unblock_command = 'sudo sed -i -e /#juststart$/d /etc/hosts'
+        self.unblock_command = (f"sudo sed -i '' '/^.*{app_specific_comment}$"
+                                f"/d' /etc/hosts")
 
     def manage_blocked_sites(self, blocked: bool) -> None:
         if blocked:
@@ -207,6 +278,22 @@ class NetworkHandler:
                          self.password)
 
 
+def validate_config_section(config: Dict, section_name: str,
+                            section_content: Dict) -> None:
+    try:
+        config[section_name]
+    except KeyError:
+        config[section_name] = section_content
+    else:
+        for field_name, field_content in section_content.items():
+            default, validator = field_content
+            try:
+                config[section_name][field_name] = validator(
+                    config[section_name][field_name])
+            except KeyError:
+                config[section_name][field_name] = default
+
+
 def _signal_handler(gui_handler: GuiHandler,
                     network_handler: NetworkHandler, *_) -> None:
     _quit_gracefully(gui_handler, network_handler)
@@ -224,25 +311,24 @@ def action_loop(gui_handler: 'GuiHandler',
                 network_handler: 'NetworkHandler', config: Dict):
     def add() -> None:
         name = prompt_handler.prompt_string("Enter the new task's data")
-        gui_handler.write_status(run_task(['add'] + name.split()))
+        gui_handler.status = run_task(['add'] + name.split())
 
     def delete() -> None:
         ids = prompt_handler.input_task_ids()
-        gui_handler.write_status(run_task([ids, 'delete',
-                                           'rc.confirmation=off']))
+        gui_handler.status = run_task([ids, 'delete', 'rc.confirmation=off'])
 
     def modify() -> None:
         ids = prompt_handler.input_task_ids()
         name = prompt_handler.prompt_string("Enter the modified task's data")
-        gui_handler.write_status(run_task([ids, 'modify'] + name.split()))
+        gui_handler.status = run_task([ids, 'modify'] + name.split())
 
     def complete() -> None:
         ids = prompt_handler.input_task_ids()
-        gui_handler.write_status(run_task([ids, 'done']))
+        gui_handler.status = run_task([ids, 'done'])
 
     def custom_command() -> None:
         command = prompt_handler.prompt_string('Enter your command')
-        gui_handler.write_status(run_task(command.split()))
+        gui_handler.status = run_task(command.split())
 
     refreshing_actions = {
         'a': add,
@@ -253,12 +339,17 @@ def action_loop(gui_handler: 'GuiHandler',
         '!': custom_command,
     }
 
-    with PomodoroTimer(gui_handler.write_pomodoro_status,
-                       network_handler.manage_blocked_sites, config,
-                       CONFIG_PATH) as pomodoro_timer:
+    def pomodoro_status(status):
+        gui_handler.pomodoro_status = status
+
+    with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
+                       config) as pomodoro_timer:
+        def update_status(message):
+            gui_handler.status = message
+
         non_refreshing_actions = {
             "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
-            'h': partial(gui_handler.write_status, HELP_MESSAGE),
+            'h': partial(update_status, HELP_MESSAGE),
             'k': partial(skip_phases, prompt_handler, network_handler,
                          pomodoro_timer),
             'l': partial(location_change, prompt_handler, network_handler,
@@ -330,7 +421,7 @@ def execute_user_action(prompt_handler: PromptHandler,
         read_char = prompt_handler.prompt_char('Waiting for user.'
                                                ' Pressing h shows'
                                                ' available actions')
-        gui_handler.write_status('')
+        gui_handler.status = ''
         sleep(0.1)
     except KeyboardInterrupt:
         raise ActionError(f'No action was selected yet, but Ctrl+C was pressed'
@@ -354,24 +445,27 @@ def execute_user_action(prompt_handler: PromptHandler,
 
 
 def run_sudo(command: str, password: str) -> None:
-    child = spawn(command)
+    if password:
+        child = spawn(command)
 
-    try:
-        child.sendline(password)
-        child.expect(EOF)
-    except OSError:
-        pass
-
-
-def log_failure(error_: Exception, message: str='') -> None:
-    print(message)
-    log_error(f'{type(error_)}: {error_}')
-    exit(f'Log written to "{LOG_PATH}"')
+        try:
+            child.sendline(password)
+            child.expect(EOF)
+        except OSError:
+            pass
 
 
-def run_task(arg_list: Optional[List[str]]=None) -> str:
-    arg_list = arg_list or []
-    completed_process = run(['task'] + arg_list, stdout=PIPE, stderr=STDOUT)
+def failure(error_: Exception, message: Any='',
+            display_message: Callable[[Any], None]=print) -> None:
+    display_message(message)
+    critical(f'{type(error_)}: {error_}')
+    display_message(f'Log written to "{LOG_PATH}"')
+    raise error_
+
+
+def run_task(args: Optional[List[str]]=None) -> str:
+    args = args or ['-BLOCKED']
+    completed_process = run(['task'] + args, stdout=PIPE, stderr=STDOUT)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:
