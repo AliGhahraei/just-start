@@ -223,7 +223,7 @@ class GuiHandler:
 
     def draw_gui_and_statuses(self) -> None:
         draw_gui()
-        refresh_tasks(task_list_())
+        refresh()
         write_pomodoro_status(self.pomodoro_status)
 
     @write_on_error
@@ -233,6 +233,10 @@ class GuiHandler:
     def sync(self) -> None:
         self.status = SYNC_MSG
         self.status = run_task('sync')
+
+
+def refresh() -> None:
+    refresh_tasks(task_list_())
 
 
 def input_task_ids() -> str:
@@ -371,7 +375,7 @@ def action_loop(gui_handler: 'GuiHandler',
             'l': partial(location_change, network_handler, pomodoro_timer),
             'p': partial(toggle_timer, network_handler, pomodoro_timer),
             'q': partial(_quit_gracefully, gui_handler, network_handler),
-            'r': partial(refresh_tasks, task_list_()),
+            'r': refresh,
             's': partial(reset_timer, network_handler, pomodoro_timer),
         }
 
@@ -451,7 +455,7 @@ def execute_user_action(gui_handler: GuiHandler,
         # Cancel current action
         pass
     else:
-        refresh_tasks(task_list_())
+        refresh()
 
 
 def run_sudo(command: str, password: str) -> None:
@@ -466,16 +470,10 @@ def run_sudo(command: str, password: str) -> None:
 
 
 def run_task(*args) -> str:
-    if args:
-        completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
-    else:
-        # Bare next report is needed to refresh TaskWarrior
-        run(['task'], stdout=PIPE, stderr=STDOUT)
-
-        completed_process = run(['task', '-BLOCKED'], stdout=PIPE,
-                                stderr=STDOUT)
-
+    args = args or ['-BLOCKED']
+    completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
     process_output = completed_process.stdout.decode('utf-8')
+
     if completed_process.returncode != 0:
         raise TaskWarriorError(process_output)
 
