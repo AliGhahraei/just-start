@@ -100,8 +100,8 @@ class PomodoroTimer:
     def _run(self) -> None:
         self.start_datetime = datetime.now()
         now = self.start_datetime.time().strftime('%H:%M')
-        self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
-                    f' far at {"work" if self.user_is_at_work() else "home"}).'
+        self.notify(f'{self.state.value[0]} - {self.work_count} pomodoros so'
+                    f' far at {"work" if self.user_is_at_work() else "home"}.'
                     f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
 
