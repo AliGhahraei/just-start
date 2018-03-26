@@ -455,10 +455,16 @@ def run_sudo(command: str, password: str) -> None:
 
 
 def run_task(*args) -> str:
-    args = args or ['-BLOCKED']
-    completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
-    process_output = completed_process.stdout.decode('utf-8')
+    if args:
+        completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
+    else:
+        # Bare next report is needed to refresh TaskWarrior
+        run(['task'], stdout=PIPE, stderr=STDOUT)
 
+        completed_process = run(['task', '-BLOCKED'], stdout=PIPE,
+                                stderr=STDOUT)
+
+    process_output = completed_process.stdout.decode('utf-8')
     if completed_process.returncode != 0:
         raise TaskWarriorError(process_output)
 
