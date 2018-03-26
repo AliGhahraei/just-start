@@ -50,7 +50,7 @@ class PomodoroTimer:
 
         # noinspection PyArgumentList
         state_enum = Enum('state', [
-            ('WORK', ('SWITCH! (and work)', work_time * 60)),
+            ('WORK', ('Work and switch tasks', work_time * 60)),
             ('SHORT_REST', ('Short break', short_rest_time * 60)),
             ('LONG_REST', ('LONG BREAK!!!', long_rest_time * 60))
         ])
