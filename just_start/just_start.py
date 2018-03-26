@@ -134,35 +134,45 @@ def write_on_error(func: Callable):
     return wrapper
 
 
+CLIENT_FUNCTIONS = set()
+
+
+def _register(function_: Callable) -> Callable:
+    CLIENT_FUNCTIONS.add(function_.__name__)
+    return function_
+
+
+@_register
 def draw_gui() -> None: pass
 
 
+@_register
 def write_status(status: str) -> None: print(status)
 
 
+@_register
 def write_error(error_msg: str) -> None: print(error_msg)
 
 
+@_register
 def write_pomodoro_status(status: str) -> None: print(status)
 
 
 # noinspection PyUnusedLocal
+@_register
 def refresh_tasks(task_list) -> None: pass
 
 
+@_register
 def prompt_char(prompt: str) -> str: return input(prompt)
 
 
+@_register
 def prompt_string(prompt: str) -> str: return input(prompt)
 
 
+@_register
 def prompt_string_error(prompt: str) -> str: return input(prompt)
-
-
-CLIENT_FUNCTIONS = {function_.__name__ for function_ in (
-    draw_gui, write_status, write_error, write_pomodoro_status, refresh_tasks,
-    prompt_char, prompt_string, prompt_string_error
-)}
 
 
 def client(user_function: Union[Callable, str]):
