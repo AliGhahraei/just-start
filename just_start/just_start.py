@@ -15,7 +15,7 @@ from toml import load
 
 from .constants import (
     SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
-    LOG_PATH, CONFIRMATION_OFF)
+    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
@@ -320,12 +320,13 @@ def action_loop(gui_handler: 'GuiHandler',
 
     def delete() -> None:
         ids = input_task_ids()
-        gui_handler.status = run_task(CONFIRMATION_OFF, ids, 'delete')
+        gui_handler.status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
+                                      'delete')
 
     def modify() -> None:
         ids = input_task_ids()
         name = prompt_string("Enter the modified task's data")
-        gui_handler.status = run_task(CONFIRMATION_OFF, ids, 'modify',
+        gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
                                       *name.split())
 
     def complete() -> None:
