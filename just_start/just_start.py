@@ -369,14 +369,14 @@ def action_loop(gui_handler: 'GuiHandler',
             gui_handler.status = message
 
         non_refreshing_actions = {
-            "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
-            'h': partial(update_status, HELP_MESSAGE),
-            'k': partial(skip_phases, network_handler, pomodoro_timer),
-            'l': partial(location_change, network_handler, pomodoro_timer),
-            'p': partial(toggle_timer, network_handler, pomodoro_timer),
-            'q': partial(_quit_gracefully, gui_handler, network_handler),
-            'r': refresh,
-            's': partial(reset_timer, network_handler, pomodoro_timer),
+            "KEY_RESIZE": lambda: gui_handler.draw_gui_and_statuses(),
+            'h': lambda: update_status(HELP_MESSAGE),
+            'k': lambda: skip_phases(network_handler, pomodoro_timer),
+            'l': lambda: location_change(network_handler, pomodoro_timer),
+            'p': lambda: toggle_timer(network_handler, pomodoro_timer),
+            'q': lambda: _quit_gracefully(gui_handler, network_handler),
+            'r': lambda: refresh(),
+            's': lambda: reset_timer(network_handler, pomodoro_timer),
         }
 
         while True:
