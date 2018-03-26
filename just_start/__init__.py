@@ -1,2 +1,2 @@
 # noinspection PyUnresolvedReferences
-from ._just_start import main, client, logger
+from .just_start import main, client, logger

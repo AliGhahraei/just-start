@@ -1,2 +1,2 @@
 # noinspection PyUnresolvedReferences
-from ._pomodoro import PomodoroTimer, PomodoroError
+from .pomodoro import PomodoroTimer, PomodoroError
