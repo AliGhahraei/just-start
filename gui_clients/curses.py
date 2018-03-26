@@ -4,26 +4,32 @@ from curses import (
     wrapper, echo, noecho, cbreak, nocbreak, newwin, error, color_pair,
     init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN, use_default_colors)
 from sys import argv
+from traceback import format_exc
 from typing import Any
 
-from just_start import (
-    failure, main as just_start_main, GuiHandler, PromptHandler)
+from just_start import main as just_start_main, client, logger
 
 
-class CursesGuiHandler(GuiHandler):
+class CursesClient:
     # noinspection SpellCheckingInspection
-    def __init__(self, stdscr: Any) -> None:
-        super().__init__()
-        self.stdscr = stdscr
+    def __init__(self) -> None:
+        self._stdscr = None
         self.task_window = None
         self.pomodoro_window = None
         self.status_window = None
+        self.prompt_window = None
+        self.input_window = None
 
+    @property
+    def stdscr(self) -> None:
+        return self._stdscr
+
+    @stdscr.setter
+    def stdscr(self, value) -> None:
+        self._stdscr = value
         use_default_colors()
         for color in COLOR_WHITE, COLOR_GREEN, COLOR_RED:
             init_pair(color, color, -1)
-
-        self.prompt_handler = CursesPromptHandler(self.stdscr)
 
     # noinspection SpellCheckingInspection
     @staticmethod
@@ -38,75 +44,9 @@ class CursesGuiHandler(GuiHandler):
 
         return newwin(height - 2, width - 2, start_y + 1, start_x + 1)
 
-    def draw_gui(self) -> None:
-        self.stdscr.refresh()
-
-        max_y, max_x = self.stdscr.getmaxyx()
-        pomodoro_window_height = 5
-        task_window_height = max_y - pomodoro_window_height
-        task_window_width = int(max_x / 2)
-
-        self.task_window = self.newborderedwin(task_window_height,
-                                               task_window_width, 0, 0)
-
-        self.status_window = self.newborderedwin(task_window_height,
-                                                 task_window_width,
-                                                 0,
-                                                 task_window_width,
-                                                 'App status')
-
-        prompt_y = task_window_height
-        self.prompt_handler.draw_prompt_windows(prompt_y,
-                                                pomodoro_window_height,
-                                                task_window_width,
-                                                self.status_window)
-
-        self.pomodoro_window = self.newborderedwin(pomodoro_window_height,
-                                                   task_window_width,
-                                                   task_window_height,
-                                                   task_window_width,
-                                                   'Pomodoro status')
-
-    def write_error(self, error_msg: str):
-        self.write_status(error_msg, color=COLOR_RED)
-
-    def write_status(self, status: str, color=COLOR_WHITE) -> None:
-        self.prompt_handler.write_prompt('')
-        self.status_window.clear()
-        self.status_window.addstr(status, color_pair(color))
-        self.status_window.refresh()
-
-    def write_pomodoro_status(self, status: str) -> None:
-        self.status_window.clear()
-        self.pomodoro_window.clear()
-        self.pomodoro_window.addstr(status)
-        self.pomodoro_window.refresh()
-
-    def refresh_tasks(self) -> None:
-        self.task_window.clear()
-
-        try:
-            for y, task in enumerate(self.task_list):
-                self.task_window.addstr(y, 1, task)
-        except error:
-            pass
-
-        self.task_window.refresh()
-
-
-class CursesPromptHandler(PromptHandler):
-    # noinspection SpellCheckingInspection
-    def __init__(self, stdscr: Any) -> None:
-        self.stdscr = stdscr
-        self.prompt_color = COLOR_WHITE
-
-        self.status_window = self.prompt_window = None
-        self.input_window = None
-
     def draw_prompt_windows(self, prompt_y: int, prompt_height: int,
                             prompt_width: int, status_window: Any) -> None:
-        CursesGuiHandler.newborderedwin(prompt_height, prompt_width, prompt_y,
-                                        0)
+        curses.newborderedwin(prompt_height, prompt_width, prompt_y, 0)
 
         self.prompt_window = newwin(1, prompt_width - 2,
                                     prompt_y + 1, 1)
@@ -119,52 +59,124 @@ class CursesPromptHandler(PromptHandler):
         self.input_window.refresh()
         self.prompt_window.refresh()
 
-    def write_prompt(self, prompt: str) -> None:
+    def write_prompt(self, prompt: str, color: int=COLOR_WHITE) -> None:
         self.status_window.clear()
         self.prompt_window.clear()
-        self.prompt_window.addstr(prompt)
+        self.prompt_window.addstr(prompt, color)
         self.prompt_window.refresh()
 
-    def prompt_char(self, status: str, color: int=COLOR_WHITE) -> str:
-        self.write_prompt(status)
-        self.input_window.clear()
-        return self.input_window.getkey(
-            *self.input_window.getyx()
-        )
 
-    def prompt_string(self, status: str, color: int=COLOR_WHITE) -> str:
-        self.write_prompt(status + " and press Ctrl-Enter when done (or "
-                          "Ctrl-C to cancel)")
-        self.input_window.clear()
-
-        try:
-            echo()
-            nocbreak()
-            key_sequence = self.input_window.getstr(
-                *self.input_window.getyx())
-        finally:
-            noecho()
-            cbreak()
-        return key_sequence.decode('utf-8')
-
-    def prompt_string_error(self, error_msg: str) -> str:
-        return self.prompt_string(error_msg, color=COLOR_RED)
+curses = CursesClient()
 
 
 def main() -> None:
     try:
         wrapper(start_curses)
-    except error as e:
-        failure(e, f'An error occurred while drawing {argv[0]}. My best guess'
-                   f' is that the window was too small.')
+    except error:
+        logger.critical(format_exc())
+        exit(f'An error occurred while drawing {argv[0]}. The window was'
+             f' probably too small.')
 
 
 # noinspection SpellCheckingInspection
 def start_curses(stdscr: Any) -> None:
     stdscr.clear()
-    gui_handler = CursesGuiHandler(stdscr)
-    just_start_main(gui_handler, gui_handler.prompt_handler)
+    curses.stdscr = stdscr
+    just_start_main()
 
 
 if __name__ == '__main__':
     main()
+
+
+@client
+def draw_gui() -> None:
+    curses.stdscr.refresh()
+
+    max_y, max_x = curses.stdscr.getmaxyx()
+    pomodoro_window_height = 5
+    task_window_height = max_y - pomodoro_window_height
+    task_window_width = int(max_x / 2)
+
+    curses.task_window = curses.newborderedwin(task_window_height,
+                                               task_window_width, 0, 0)
+
+    curses.status_window = curses.newborderedwin(task_window_height,
+                                                 task_window_width,
+                                                 0,
+                                                 task_window_width,
+                                                 'App status')
+
+    prompt_y = task_window_height
+    curses.draw_prompt_windows(prompt_y,
+                               pomodoro_window_height,
+                               task_window_width,
+                               curses.status_window)
+
+    curses.pomodoro_window = curses.newborderedwin(pomodoro_window_height,
+                                                   task_window_width,
+                                                   task_window_height,
+                                                   task_window_width,
+                                                   'Pomodoro status')
+
+
+@client
+def write_error(error_msg: str):
+    write_status(error_msg, color=COLOR_RED)
+
+
+@client
+def write_status(status: str, color=COLOR_WHITE) -> None:
+    curses.write_prompt('')
+    curses.status_window.clear()
+    curses.status_window.addstr(status, color_pair(color))
+    curses.status_window.refresh()
+
+
+@client
+def write_pomodoro_status(status: str) -> None:
+    curses.status_window.clear()
+    curses.pomodoro_window.clear()
+    curses.pomodoro_window.addstr(status)
+    curses.pomodoro_window.refresh()
+
+
+@client
+def refresh_tasks(task_list) -> None:
+    curses.task_window.clear()
+
+    try:
+        for y, task in enumerate(task_list):
+            curses.task_window.addstr(y, 1, task)
+    except error:
+        pass
+
+    curses.task_window.refresh()
+
+
+@client
+def prompt_char(status: str, color: int=COLOR_WHITE) -> str:
+    curses.write_prompt(status, color)
+    curses.input_window.clear()
+    return curses.input_window.getkey(*curses.input_window.getyx())
+
+
+@client
+def prompt_string(status: str, color: int=COLOR_WHITE) -> str:
+    curses.write_prompt(f"{status} and press Ctrl-Enter when done (or Ctrl-C"
+                        f" to cancel)", color)
+    curses.input_window.clear()
+
+    try:
+        echo()
+        nocbreak()
+        key_sequence = curses.input_window.getstr(*curses.input_window.getyx())
+    finally:
+        noecho()
+        cbreak()
+    return key_sequence.decode('utf-8')
+
+
+@client
+def prompt_string_error(error_msg: str) -> str:
+    return prompt_string(error_msg, color=COLOR_RED)

@@ -1,3 +1,2 @@
-from ._just_start import *
-
-__all__ = ['failure', 'main', 'GuiHandler', 'PromptHandler']
+# noinspection PyUnresolvedReferences
+from ._just_start import main, client, logger
