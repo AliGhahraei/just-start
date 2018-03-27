@@ -9,7 +9,7 @@ setup(
     author_email='aligf94@gmail.com',
     url='https://github.com/AliGhahraei/just-start',
 
-    install_requires=['pexpect', 'toml', 'pyyaml', 'pystray', 'Pillow'],
+    install_requires=['pexpect', 'toml'],
     packages=find_packages(),
     python_requires='>=3.6',
 

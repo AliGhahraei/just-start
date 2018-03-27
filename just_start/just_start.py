@@ -11,15 +11,12 @@ from traceback import format_exc
 from typing import List, Optional, Dict, Callable, Any, Union
 
 from pexpect import spawn, EOF
-from PIL import Image
-from pystray import Icon
 from toml import load
 
 from .client_decorators import CLIENT_DECORATORS
 from .constants import (
     SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
-    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF, TRAY_ICON_COLOR,
-    TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH)
+    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
@@ -135,13 +132,6 @@ def client(user_function: Union[Callable, str]):
 
     local_function_name = user_function
     return decorator
-
-
-def systray():
-    icon = Icon('test name')
-    icon.icon = Image.new('RGB', (TRAY_ICON_WIDTH, TRAY_ICON_HEIGHT),
-                          TRAY_ICON_COLOR)
-    icon.run(_main)
 
 
 def main(client_main) -> Callable:
