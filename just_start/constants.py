@@ -22,3 +22,6 @@ SYNC_MSG = 'Syncing task server...'
 TRAY_ICON_WIDTH = 10
 TRAY_ICON_HEIGHT = 10
 TRAY_ICON_COLOR = 'red'
+
+RECURRENCE_OFF = 'rc.recurrence.confirmation=off'
+CONFIRMATION_OFF = 'rc.confirmation=off'

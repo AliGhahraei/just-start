@@ -1,24 +1,37 @@
-from abc import ABC, abstractmethod
 from datetime import time, datetime
 from functools import partial, wraps
-from logging import critical, warning, basicConfig as loggingConfig
+from logging import getLogger, FileHandler, Formatter
 from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
 from sys import exit
 from time import sleep
-from typing import List, Optional, Dict, Callable, Any
+from traceback import format_exc
+from typing import List, Optional, Dict, Callable, Any, Union
 
 from pexpect import spawn, EOF
 from PIL import Image
 from pystray import Icon
 from toml import load
 
-from .constants import (SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH,
-                        LOCAL_DIR, LOG_PATH, TRAY_ICON_COLOR, TRAY_ICON_HEIGHT,
-                        TRAY_ICON_WIDTH)
+from .client_decorators import CLIENT_DECORATORS
+from .constants import (
+    SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
+    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF, TRAY_ICON_COLOR,
+    TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
+
+
+logger = getLogger('just_start')
+try:
+    file_handler = FileHandler(LOG_PATH)
+except FileNotFoundError:
+    makedirs(LOCAL_DIR)
+    file_handler = FileHandler(LOG_PATH)
+
+logger.addHandler(file_handler)
+file_handler.setFormatter(Formatter('%(asctime)s\n%(message)s'))
 
 
 def validate_type(object_: Any, type_: type) -> Any:
@@ -88,57 +101,82 @@ class ActionError(JustStartError):
     pass
 
 
-def main(gui_handler: 'GuiHandler', prompt_handler: 'PromptHandler') -> None:
+class Client(dict):
+    def __init__(self) -> None:
+        super().__init__()
+        self._functions = {}
+
+    def __setitem__(self, key: str, value: Callable):
+        self._functions[key] = value
+
+    def __getitem__(self, item: str):
+        return self._functions[item]
+
+    def __getattr__(self, item: str) -> Callable:
+        return self[item]
+
+
+_client = Client()
+
+
+def client(user_function: Union[Callable, str]):
+    local_function_name = None
+
+    def decorator(user_function_: Callable) -> Callable:
+        if local_function_name not in CLIENT_DECORATORS:
+            raise ValueError(f'{local_function_name} is not a valid client'
+                             f' function')
+        _client[local_function_name] = user_function_
+        return user_function_
+
+    if callable(user_function):
+        local_function_name = user_function.__name__
+        return decorator(user_function)
+
+    local_function_name = user_function
+    return decorator
+
+
+def systray():
     icon = Icon('test name')
     icon.icon = Image.new('RGB', (TRAY_ICON_WIDTH, TRAY_ICON_HEIGHT),
                           TRAY_ICON_COLOR)
-    icon.gui_handler = gui_handler
-    icon.prompt_handler = prompt_handler
-    icon.run(init_config)
-    init_config(icon)
+    icon.run(_main)
 
 
-def init_config(icon: Icon) -> None:
-    icon.visible = True
-    # noinspection PyUnresolvedReferences
-    gui_handler = icon.gui_handler
-    # noinspection PyUnresolvedReferences
-    prompt_handler = icon.prompt_handler
+def main(client_main) -> Callable:
+    @wraps(client_main)
+    def wrapper(*args, **kwargs) -> None:
+        client_main(*args, **kwargs)
 
+        _main()
+    return wrapper
+
+
+def _main() -> None:
     try:
+        config = load(CONFIG_PATH)
+    except FileNotFoundError:
+        logger.warning(format_exc())
+        config = {}
+
+    value_errors = []
+    for section_name, section_content in VALID_CONFIG.items():
         try:
-            # noinspection SpellCheckingInspection
-            loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
-        except FileNotFoundError:
-            makedirs(LOCAL_DIR)
-            # noinspection SpellCheckingInspection
-            loggingConfig(filename=LOG_PATH, format='%(asctime)s %(message)s')
+            validate_config_section(config, section_name, section_content)
+        except ValueError as e:
+            value_errors.append(f'{e} (in {section_name})')
+    if value_errors:
+        value_errors = '\n'.join([error for error in value_errors])
+        exit(f'Wrong configuration file:\n{value_errors}')
 
-        try:
-            config = load(CONFIG_PATH)
-        except FileNotFoundError as e:
-            warning(f"{e}. Check if this configuration file is really there"
-                    f" (and its permissions) or create a new one")
-            config = {}
+    network_handler = NetworkHandler(config)
+    gui_handler = GuiHandler()
+    gui_handler.draw_gui_and_statuses()
+    signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
+    gui_handler.sync_or_write_error()
 
-        value_errors = []
-        for section_name, section_content in VALID_CONFIG.items():
-            try:
-                validate_config_section(config, section_name, section_content)
-            except ValueError as e:
-                value_errors.append(f'{e} (in {section_name})')
-        if value_errors:
-            value_errors = '\n'.join([error for error in value_errors])
-            exit(f'Wrong configuration file:\n{value_errors}')
-
-        network_handler = NetworkHandler(config)
-        gui_handler.draw_gui_and_statuses()
-        signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
-        gui_handler.sync_or_write_error()
-
-        action_loop(gui_handler, prompt_handler, network_handler, config)
-    except Exception as e:
-        failure(e, f'Unhandled error.')
+    action_loop(gui_handler, network_handler, config)
 
 
 def write_on_error(func: Callable):
@@ -147,20 +185,19 @@ def write_on_error(func: Callable):
         try:
             func(*args, **kwargs)
         except TaskWarriorError as e:
-            self = args[0]
-            self.write_error(str(e))
+            _client.write_error(str(e))
 
     return wrapper
 
 
-class GuiHandler(ABC):
+def task_list_() -> List[str]:
+    return run_task().split("\n")
+
+
+class GuiHandler:
     def __init__(self) -> None:
         self._pomodoro_status = ''
         self._status = ''
-
-    @property
-    def task_list(self) -> List[str]:
-        return run_task().split("\n")
 
     @property
     def status(self) -> str:
@@ -168,7 +205,7 @@ class GuiHandler(ABC):
 
     @status.setter
     def status(self, status) -> None:
-        self.write_status(status)
+        _client.write_status(status)
         self._status = status
 
     @property
@@ -177,28 +214,13 @@ class GuiHandler(ABC):
 
     @pomodoro_status.setter
     def pomodoro_status(self, pomodoro_status) -> None:
-        self.write_pomodoro_status(pomodoro_status)
+        _client.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
 
     def draw_gui_and_statuses(self) -> None:
-        self.draw_gui()
-        self.refresh_tasks()
-        self.write_pomodoro_status(self.pomodoro_status)
-
-    @abstractmethod
-    def draw_gui(self) -> None: pass
-
-    @abstractmethod
-    def write_status(self, status: str) -> None: pass
-
-    @abstractmethod
-    def write_error(self, error_msg: str) -> None: pass
-
-    @abstractmethod
-    def write_pomodoro_status(self, status: str) -> None: pass
-
-    @abstractmethod
-    def refresh_tasks(self) -> None: pass
+        _client.draw_gui()
+        refresh()
+        _client.write_pomodoro_status(self.pomodoro_status)
 
     @write_on_error
     def sync_or_write_error(self) -> None:
@@ -206,30 +228,24 @@ class GuiHandler(ABC):
 
     def sync(self) -> None:
         self.status = SYNC_MSG
-        self.status = run_task(['sync'])
+        self.status = run_task('sync')
 
 
-class PromptHandler(ABC):
-    @abstractmethod
-    def prompt_char(self, status: str) -> str: pass
+def refresh() -> None:
+    _client.refresh_tasks(task_list_())
 
-    @abstractmethod
-    def prompt_string(self, status: str) -> str: pass
 
-    @abstractmethod
-    def prompt_string_error(self, error_msg: str) -> str: pass
+def input_task_ids() -> str:
+    ids = _client.prompt_string("Enter the task's ids")
 
-    def input_task_ids(self) -> str:
-        ids = self.prompt_string("Enter the task's ids")
-
-        while True:
-            split_ids = ids.split(',')
-            try:
-                list(map(int, split_ids))
-            except ValueError:
-                ids = self.prompt_string_error("Please enter valid ids")
-            else:
-                return ids
+    while True:
+        split_ids = ids.split(',')
+        try:
+            list(map(int, split_ids))
+        except ValueError:
+            ids = _client.prompt_string_error("Please enter valid ids")
+        else:
+            return ids
 
 
 class NetworkHandler:
@@ -307,28 +323,29 @@ def _quit_gracefully(gui_handler: GuiHandler,
 
 
 def action_loop(gui_handler: 'GuiHandler',
-                prompt_handler: PromptHandler,
                 network_handler: 'NetworkHandler', config: Dict):
     def add() -> None:
-        name = prompt_handler.prompt_string("Enter the new task's data")
-        gui_handler.status = run_task(['add'] + name.split())
+        name = _client.prompt_string("Enter the new task's data")
+        gui_handler.status = run_task('add', *name.split())
 
     def delete() -> None:
-        ids = prompt_handler.input_task_ids()
-        gui_handler.status = run_task([ids, 'delete', 'rc.confirmation=off'])
+        ids = input_task_ids()
+        gui_handler.status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
+                                      'delete')
 
     def modify() -> None:
-        ids = prompt_handler.input_task_ids()
-        name = prompt_handler.prompt_string("Enter the modified task's data")
-        gui_handler.status = run_task([ids, 'modify'] + name.split())
+        ids = input_task_ids()
+        name = _client.prompt_string("Enter the modified task's data")
+        gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
+                                      *name.split())
 
     def complete() -> None:
-        ids = prompt_handler.input_task_ids()
-        gui_handler.status = run_task([ids, 'done'])
+        ids = input_task_ids()
+        gui_handler.status = run_task(ids, 'done')
 
     def custom_command() -> None:
-        command = prompt_handler.prompt_string('Enter your command')
-        gui_handler.status = run_task(command.split())
+        command = _client.prompt_string('Enter your command')
+        gui_handler.status = run_task(*command.split())
 
     refreshing_actions = {
         'a': add,
@@ -339,44 +356,41 @@ def action_loop(gui_handler: 'GuiHandler',
         '!': custom_command,
     }
 
-    def pomodoro_status(status):
+    def pomodoro_status(status: str):
         gui_handler.pomodoro_status = status
 
     with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
                        config) as pomodoro_timer:
-        def update_status(message):
+        def update_status(message: str):
             gui_handler.status = message
 
         non_refreshing_actions = {
-            "KEY_RESIZE": partial(gui_handler.draw_gui_and_statuses),
-            'h': partial(update_status, HELP_MESSAGE),
-            'k': partial(skip_phases, prompt_handler, network_handler,
-                         pomodoro_timer),
-            'l': partial(location_change, prompt_handler, network_handler,
-                         pomodoro_timer),
-            'p': partial(toggle_timer, network_handler, pomodoro_timer),
-            'q': partial(_quit_gracefully, gui_handler, network_handler),
-            'r': partial(gui_handler.refresh_tasks),
-            's': partial(reset_timer, network_handler, pomodoro_timer),
+            "KEY_RESIZE": lambda: gui_handler.draw_gui_and_statuses(),
+            'h': lambda: update_status(HELP_MESSAGE),
+            'k': lambda: skip_phases(network_handler, pomodoro_timer),
+            'l': lambda: location_change(network_handler, pomodoro_timer),
+            'p': lambda: toggle_timer(network_handler, pomodoro_timer),
+            'q': lambda: _quit_gracefully(gui_handler, network_handler),
+            'r': lambda: refresh(),
+            's': lambda: reset_timer(network_handler, pomodoro_timer),
         }
 
         while True:
             try:
-                execute_user_action(prompt_handler, gui_handler,
-                                    refreshing_actions, non_refreshing_actions)
+                execute_user_action(gui_handler, refreshing_actions,
+                                    non_refreshing_actions)
             except (JustStartError, PomodoroError) as exc:
-                gui_handler.write_error(str(exc))
+                _client.write_error(str(exc))
 
 
-def skip_phases(prompt_handler: PromptHandler,
-                network_handler: 'NetworkHandler',
+def skip_phases(network_handler: 'NetworkHandler',
                 timer: PomodoroTimer) -> None:
     prompt = PHASE_SKIP_PROMPT
     valid_phases = False
 
     while not valid_phases:
         try:
-            phases = int(prompt_handler.prompt_string(prompt))
+            phases = int(_client.prompt_string(prompt))
         except ValueError:
             pass
         else:
@@ -400,11 +414,10 @@ def reset_timer(network_handler: 'NetworkHandler', timer: PomodoroTimer,
     network_handler.manage_wifi(timer_running=False)
 
 
-def location_change(prompt_handler: PromptHandler,
-                    network_handler: 'NetworkHandler',
+def location_change(network_handler: 'NetworkHandler',
                     timer: PomodoroTimer) -> None:
-    location = prompt_handler.prompt_string("Enter 'w' for work or anything"
-                                            " else for home")
+    location = _client.prompt_string("Enter 'w' for work or anything else for"
+                                     " home")
     at_work = location == 'w'
     reset_timer(network_handler, timer, at_work)
     toggle_timer(network_handler, timer)
@@ -413,14 +426,12 @@ def location_change(prompt_handler: PromptHandler,
 FunctionDict = Dict[str, Callable[[], None]]
 
 
-def execute_user_action(prompt_handler: PromptHandler,
-                        gui_handler: GuiHandler,
+def execute_user_action(gui_handler: GuiHandler,
                         refreshing_actions: FunctionDict,
                         non_refreshing_actions: FunctionDict) -> None:
     try:
-        read_char = prompt_handler.prompt_char('Waiting for user.'
-                                               ' Pressing h shows'
-                                               ' available actions')
+        read_char = _client.prompt_char('Waiting for user. Pressing h shows'
+                                        ' available actions')
         gui_handler.status = ''
         sleep(0.1)
     except KeyboardInterrupt:
@@ -441,7 +452,7 @@ def execute_user_action(prompt_handler: PromptHandler,
         # Cancel current action
         pass
     else:
-        gui_handler.refresh_tasks()
+        refresh()
 
 
 def run_sudo(command: str, password: str) -> None:
@@ -455,17 +466,9 @@ def run_sudo(command: str, password: str) -> None:
             pass
 
 
-def failure(error_: Exception, message: Any='',
-            display_message: Callable[[Any], None]=print) -> None:
-    display_message(message)
-    critical(f'{type(error_)}: {error_}')
-    display_message(f'Log written to "{LOG_PATH}"')
-    raise error_
-
-
-def run_task(args: Optional[List[str]]=None) -> str:
+def run_task(*args) -> str:
     args = args or ['-BLOCKED']
-    completed_process = run(['task'] + args, stdout=PIPE, stderr=STDOUT)
+    completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:

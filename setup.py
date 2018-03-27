@@ -14,6 +14,6 @@ setup(
     python_requires='>=3.6',
 
     entry_points={
-        'console_scripts': ['just-start = gui_clients.curses:main'],
+        'console_scripts': ['just-start = just_start_curses:main'],
     }
 )

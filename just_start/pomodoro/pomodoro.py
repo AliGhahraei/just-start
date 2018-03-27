@@ -50,9 +50,9 @@ class PomodoroTimer:
 
         # noinspection PyArgumentList
         state_enum = Enum('state', [
-            ('WORK', ('SWITCH! (and work)', work_time * 60)),
-            ('SHORT_REST', ('Short rest', short_rest_time * 60)),
-            ('LONG_REST', ('LONG REST!!!', long_rest_time * 60))
+            ('WORK', ('Work and switch tasks', work_time * 60)),
+            ('SHORT_REST', ('Short break', short_rest_time * 60)),
+            ('LONG_REST', ('LONG BREAK!!!', long_rest_time * 60))
         ])
 
         states = ([state_enum.WORK, state_enum.SHORT_REST]
@@ -100,10 +100,9 @@ class PomodoroTimer:
     def _run(self) -> None:
         self.start_datetime = datetime.now()
         now = self.start_datetime.time().strftime('%H:%M')
-        self.notify(f'{self.state.value[0]} ({self.work_count} pomodoros so'
-                    f' far at {"work" if self.user_is_at_work() else "home"}).'
-                    f'\nStart time: {now}. End time:'
-                    f' {time_after_seconds(self.time_left)}'
+        self.notify(f'{self.state.value[0]} - {self.work_count} pomodoros so'
+                    f' far at {"work" if self.user_is_at_work() else "home"}.'
+                    f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left,
