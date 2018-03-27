@@ -69,26 +69,6 @@ class CursesClient:
 curses = CursesClient()
 
 
-def main() -> None:
-    try:
-        wrapper(start_curses)
-    except error:
-        logger.critical(format_exc())
-        exit(f'An error occurred while drawing {argv[0]}. The window was'
-             f' probably too small.')
-
-
-# noinspection SpellCheckingInspection
-@just_start_main
-def start_curses(stdscr: Any) -> None:
-    stdscr.clear()
-    curses.stdscr = stdscr
-
-
-if __name__ == '__main__':
-    main()
-
-
 @client
 def draw_gui() -> None:
     curses.stdscr.refresh()
@@ -180,3 +160,23 @@ def prompt_string(status: str, color: int=COLOR_WHITE) -> str:
 @client
 def prompt_string_error(error_msg: str) -> str:
     return prompt_string(error_msg, color=COLOR_RED)
+
+
+def main() -> None:
+    try:
+        wrapper(start_curses)
+    except error:
+        logger.critical(format_exc())
+        exit(f'An error occurred while drawing {argv[0]}. The window was'
+             f' probably too small.')
+
+
+# noinspection SpellCheckingInspection
+@just_start_main
+def start_curses(stdscr: Any) -> None:
+    stdscr.clear()
+    curses.stdscr = stdscr
+
+
+if __name__ == '__main__':
+    main()

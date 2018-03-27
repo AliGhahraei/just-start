@@ -5,7 +5,7 @@ from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
-from sys import exit, modules
+from sys import exit
 from time import sleep
 from traceback import format_exc
 from typing import List, Optional, Dict, Callable, Any, Union
@@ -98,7 +98,22 @@ class ActionError(JustStartError):
     pass
 
 
-REGISTERED_CLIENT_FUNCTIONS = {}
+class Client(dict):
+    def __init__(self) -> None:
+        super().__init__()
+        self._functions = {}
+
+    def __setitem__(self, key: str, value: Callable):
+        self._functions[key] = value
+
+    def __getitem__(self, item: str):
+        return self._functions[item]
+
+    def __getattr__(self, item: str) -> Callable:
+        return self[item]
+
+
+_client = Client()
 
 
 def client(user_function: Union[Callable, str]):
@@ -106,11 +121,9 @@ def client(user_function: Union[Callable, str]):
 
     def decorator(user_function_: Callable) -> Callable:
         if local_function_name not in CLIENT_DECORATORS:
-            raise ValueError(
-                f'{local_function_name} is not a valid client function')
-
-        user_function_name = user_function_.__name__
-        REGISTERED_CLIENT_FUNCTIONS[local_function_name] = user_function_name
+            raise ValueError(f'{local_function_name} is not a valid client'
+                             f' function')
+        _client[local_function_name] = user_function_
         return user_function_
 
     if callable(user_function):
@@ -121,49 +134,12 @@ def client(user_function: Union[Callable, str]):
     return decorator
 
 
-class Client(dict):
-    def __init__(self) -> None:
-        super().__init__()
-        self._functions = None
-
-    @property
-    def functions(self) -> Dict[str, Callable]:
-        return self._functions
-
-    @functions.setter
-    def functions(self, value: Dict):
-        self._functions = value
-
-    def __getattr__(self, item: str) -> Callable:
-        return self._functions[item]
-
-
-_client = Client()
-
-
-def main(client_main_or_module) -> Callable:
-    registering_module = None
-
-    def decorator(client_main: Callable):
-        @wraps(client_main)
-        def wrapper(*args, **kwargs) -> None:
-            client_main(*args, **kwargs)
-
-            user_functions = {}
-            for local_name, func_name in REGISTERED_CLIENT_FUNCTIONS.items():
-                user_function = getattr(registering_module, func_name)
-                user_functions[local_name] = user_function
-            _client.functions = user_functions
-
-            _main()
-        return wrapper
-
-    if callable(client_main_or_module):
-        registering_module = modules[client_main_or_module.__module__]
-        return decorator(client_main_or_module)
-
-    registering_module = client_main_or_module
-    return decorator
+def main(client_main) -> Callable:
+    @wraps(client_main)
+    def wrapper(*args, **kwargs) -> None:
+        client_main(*args, **kwargs)
+        _main()
+    return wrapper
 
 
 def _main() -> None:
