@@ -3,6 +3,7 @@ import shelve
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
+from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run
 from threading import Timer
@@ -18,6 +19,12 @@ def time_after_seconds(seconds_left: int) -> str:
     return end_time.strftime('%H:%M')
 
 
+class Phases(Enum):
+    WORK = 'Work and switch tasks'
+    SHORT_REST = 'Short break'
+    LONG_REST = 'LONG BREAK!!!'
+
+
 class PomodoroError(Exception):
     pass
 
@@ -30,7 +37,7 @@ class PomodoroTimer:
         self.config = config
         self.external_status_function = external_status_function
         self.at_work_user_overridden = at_work_user_overridden
-        self.state, self.POMODORO_CYCLE = self.get_state_and_cycle()
+        self.PHASE_DURATION, self.POMODORO_CYCLE = self.get_duration_and_cycle()
         self.external_blocking_function = external_blocking_function
         self.work_count = 0
         self._update_state()
@@ -39,27 +46,21 @@ class PomodoroTimer:
         self.notify(STOP_MESSAGE,
                     desktop_stop_notification=show_external_stop_notification)
 
-    def get_state_and_cycle(self) -> Tuple[Enum, cycle]:
+    def get_duration_and_cycle(self) -> Tuple[Dict, cycle]:
         location = 'work' if self.user_is_at_work() else 'home'
         location_config = self.config[location]
 
-        work_time = location_config['pomodoro_length']
-        short_rest_time = location_config['short_rest']
-        long_rest_time = location_config['long_rest']
+        durations = (duration * 60 for duration in (
+            location_config['pomodoro_length'], location_config['short_rest'],
+            location_config['long_rest']))
+        # noinspection PyTypeChecker
+        phase_duration = dict(zip(Phases, durations))
+
         cycles_before_long_rest = location_config['cycles_before_long_rest']
+        states = [Phases.WORK, Phases.SHORT_REST] * cycles_before_long_rest
+        states[-1] = Phases.LONG_REST
 
-        # noinspection PyArgumentList
-        state_enum = Enum('state', [
-            ('WORK', ('Work and switch tasks', work_time * 60)),
-            ('SHORT_REST', ('Short break', short_rest_time * 60)),
-            ('LONG_REST', ('LONG BREAK!!!', long_rest_time * 60))
-        ])
-
-        states = ([state_enum.WORK, state_enum.SHORT_REST]
-                  * cycles_before_long_rest)
-        states[-1] = state_enum.LONG_REST
-
-        return state_enum, cycle(states)
+        return phase_duration, cycle(states)
 
     def notify(self, status: str, desktop_stop_notification: bool=True) -> None:
         if desktop_stop_notification:
@@ -100,7 +101,7 @@ class PomodoroTimer:
     def _run(self) -> None:
         self.start_datetime = datetime.now()
         now = self.start_datetime.time().strftime('%H:%M')
-        self.notify(f'{self.state.value[0]} - {self.work_count} pomodoros so'
+        self.notify(f'{self.state.value} - {self.work_count} pomodoros so'
                     f' far at {"work" if self.user_is_at_work() else "home"}.'
                     f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
@@ -110,8 +111,8 @@ class PomodoroTimer:
         self.timer.start()
 
     def _update_state(self) -> None:
-        self.state = self.POMODORO_CYCLE.__next__()
-        self.time_left = self.state.value[1]
+        self.state = next(self.POMODORO_CYCLE)
+        self.time_left = self.PHASE_DURATION[self.state]
 
     def _timer_triggered_phase_advancement(self) -> None:
         self.advance_phases(timer_triggered=True)
@@ -119,7 +120,7 @@ class PomodoroTimer:
     def advance_phases(self, timer_triggered: bool=False,
                        phases_skipped: int=1) -> None:
         if self.state is self.state.WORK:
-            with shelve.open(PERSISTENT_PATH) as db:
+            with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
                 try:
                     skip_enabled = db['skip_enabled']
                 except KeyError:

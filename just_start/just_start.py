@@ -1,7 +1,9 @@
+import shelve
 from datetime import time, datetime
 from functools import partial, wraps
 from logging import getLogger, FileHandler, Formatter
 from os import makedirs
+from pickle import HIGHEST_PROTOCOL
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
@@ -16,7 +18,7 @@ from toml import load
 from .client_decorators import CLIENT_DECORATORS
 from .constants import (
     SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
-    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF)
+    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
@@ -163,10 +165,17 @@ def _main() -> None:
     network_handler = NetworkHandler(config)
     gui_handler = GuiHandler()
     gui_handler.draw_gui_and_statuses()
-    signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler))
-    gui_handler.sync_or_write_error()
 
-    action_loop(gui_handler, network_handler, config)
+    def pomodoro_status(status: str):
+        gui_handler.pomodoro_status = status
+
+    with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
+                       config) as pomodoro_timer:
+        signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler,
+                                pomodoro_timer))
+        gui_handler.sync_or_write_error()
+
+        action_loop(gui_handler, network_handler, pomodoro_timer)
 
 
 def write_on_error(func: Callable):
@@ -301,19 +310,25 @@ def validate_config_section(config: Dict, section_name: str,
 
 
 def _signal_handler(gui_handler: GuiHandler,
-                    network_handler: NetworkHandler, *_) -> None:
-    _quit_gracefully(gui_handler, network_handler)
+                    network_handler: NetworkHandler,
+                    pomodoro_timer: PomodoroTimer, *_) -> None:
+    _quit_gracefully(gui_handler, network_handler, pomodoro_timer)
 
 
 def _quit_gracefully(gui_handler: GuiHandler,
-                     network_handler: NetworkHandler) -> None:
+                     network_handler: NetworkHandler,
+                     pomodoro_timer: PomodoroTimer) -> None:
     gui_handler.sync_or_write_error()
     network_handler.manage_wifi()
+
+    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+        db['pomodoro_cycle'] = pomodoro_timer.POMODORO_CYCLE
     exit()
 
 
 def action_loop(gui_handler: 'GuiHandler',
-                network_handler: 'NetworkHandler', config: Dict):
+                network_handler: 'NetworkHandler',
+                pomodoro_timer: PomodoroTimer):
     def add() -> None:
         name = _client.prompt_string("Enter the new task's data")
         gui_handler.status = run_task('add', *name.split())
@@ -346,31 +361,27 @@ def action_loop(gui_handler: 'GuiHandler',
         '!': custom_command,
     }
 
-    def pomodoro_status(status: str):
-        gui_handler.pomodoro_status = status
+    def update_status(message: str):
+        gui_handler.status = message
 
-    with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
-                       config) as pomodoro_timer:
-        def update_status(message: str):
-            gui_handler.status = message
+    non_refreshing_actions = {
+        "KEY_RESIZE": lambda: gui_handler.draw_gui_and_statuses(),
+        'h': lambda: update_status(HELP_MESSAGE),
+        'k': lambda: skip_phases(network_handler, pomodoro_timer),
+        'l': lambda: location_change(network_handler, pomodoro_timer),
+        'p': lambda: toggle_timer(network_handler, pomodoro_timer),
+        'q': lambda: _quit_gracefully(gui_handler, network_handler,
+                                      pomodoro_timer),
+        'r': lambda: refresh(),
+        's': lambda: reset_timer(network_handler, pomodoro_timer),
+    }
 
-        non_refreshing_actions = {
-            "KEY_RESIZE": lambda: gui_handler.draw_gui_and_statuses(),
-            'h': lambda: update_status(HELP_MESSAGE),
-            'k': lambda: skip_phases(network_handler, pomodoro_timer),
-            'l': lambda: location_change(network_handler, pomodoro_timer),
-            'p': lambda: toggle_timer(network_handler, pomodoro_timer),
-            'q': lambda: _quit_gracefully(gui_handler, network_handler),
-            'r': lambda: refresh(),
-            's': lambda: reset_timer(network_handler, pomodoro_timer),
-        }
-
-        while True:
-            try:
-                execute_user_action(gui_handler, refreshing_actions,
-                                    non_refreshing_actions)
-            except (JustStartError, PomodoroError) as exc:
-                _client.write_error(str(exc))
+    while True:
+        try:
+            execute_user_action(gui_handler, refreshing_actions,
+                                non_refreshing_actions)
+        except (JustStartError, PomodoroError) as exc:
+            _client.write_error(str(exc))
 
 
 def skip_phases(network_handler: 'NetworkHandler',
