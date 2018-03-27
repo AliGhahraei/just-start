@@ -5,7 +5,7 @@ from os import makedirs
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
-from sys import exit
+from sys import exit, modules
 from time import sleep
 from traceback import format_exc
 from typing import List, Optional, Dict, Callable, Any, Union
@@ -13,6 +13,7 @@ from typing import List, Optional, Dict, Callable, Any, Union
 from pexpect import spawn, EOF
 from toml import load
 
+from .client_decorators import CLIENT_DECORATORS
 from .constants import (
     SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
     LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF)
@@ -97,7 +98,75 @@ class ActionError(JustStartError):
     pass
 
 
-def main() -> None:
+REGISTERED_CLIENT_FUNCTIONS = {}
+
+
+def client(user_function: Union[Callable, str]):
+    local_function_name = None
+
+    def decorator(user_function_: Callable) -> Callable:
+        if local_function_name not in CLIENT_DECORATORS:
+            raise ValueError(
+                f'{local_function_name} is not a valid client function')
+
+        user_function_name = user_function_.__name__
+        REGISTERED_CLIENT_FUNCTIONS[local_function_name] = user_function_name
+        return user_function_
+
+    if callable(user_function):
+        local_function_name = user_function.__name__
+        return decorator(user_function)
+
+    local_function_name = user_function
+    return decorator
+
+
+class Client(dict):
+    def __init__(self) -> None:
+        super().__init__()
+        self._functions = None
+
+    @property
+    def functions(self) -> Dict[str, Callable]:
+        return self._functions
+
+    @functions.setter
+    def functions(self, value: Dict):
+        self._functions = value
+
+    def __getattr__(self, item: str) -> Callable:
+        return self._functions[item]
+
+
+_client = Client()
+
+
+def main(client_main_or_module) -> Callable:
+    registering_module = None
+
+    def decorator(client_main: Callable):
+        @wraps(client_main)
+        def wrapper(*args, **kwargs) -> None:
+            client_main(*args, **kwargs)
+
+            user_functions = {}
+            for local_name, func_name in REGISTERED_CLIENT_FUNCTIONS.items():
+                user_function = getattr(registering_module, func_name)
+                user_functions[local_name] = user_function
+            _client.functions = user_functions
+
+            _main()
+        return wrapper
+
+    if callable(client_main_or_module):
+        registering_module = modules[client_main_or_module.__module__]
+        return decorator(client_main_or_module)
+
+    registering_module = client_main_or_module
+    return decorator
+
+
+def _main() -> None:
     try:
         config = load(CONFIG_PATH)
     except FileNotFoundError:
@@ -129,69 +198,9 @@ def write_on_error(func: Callable):
         try:
             func(*args, **kwargs)
         except TaskWarriorError as e:
-            write_error(str(e))
+            _client.write_error(str(e))
 
     return wrapper
-
-
-CLIENT_FUNCTIONS = set()
-
-
-def _register(function_: Callable) -> Callable:
-    CLIENT_FUNCTIONS.add(function_.__name__)
-    return function_
-
-
-@_register
-def draw_gui() -> None: pass
-
-
-@_register
-def write_status(status: str) -> None: print(status)
-
-
-@_register
-def write_error(error_msg: str) -> None: print(error_msg)
-
-
-@_register
-def write_pomodoro_status(status: str) -> None: print(status)
-
-
-# noinspection PyUnusedLocal
-@_register
-def refresh_tasks(task_list) -> None: pass
-
-
-@_register
-def prompt_char(prompt: str) -> str: return input(prompt)
-
-
-@_register
-def prompt_string(prompt: str) -> str: return input(prompt)
-
-
-@_register
-def prompt_string_error(prompt: str) -> str: return input(prompt)
-
-
-def client(user_function: Union[Callable, str]):
-    function_name = None
-
-    def decorator(user_function_: Callable) -> Callable:
-        if function_name not in CLIENT_FUNCTIONS:
-            raise ValueError(
-                f'{function_name} is not a valid client function')
-
-        globals()[function_name] = user_function_
-        return user_function_
-
-    if callable(user_function):
-        function_name = user_function.__name__
-        return decorator(user_function)
-    else:
-        function_name = user_function
-        return decorator
 
 
 def task_list_() -> List[str]:
@@ -209,7 +218,7 @@ class GuiHandler:
 
     @status.setter
     def status(self, status) -> None:
-        write_status(status)
+        _client.write_status(status)
         self._status = status
 
     @property
@@ -218,13 +227,13 @@ class GuiHandler:
 
     @pomodoro_status.setter
     def pomodoro_status(self, pomodoro_status) -> None:
-        write_pomodoro_status(pomodoro_status)
+        _client.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
 
     def draw_gui_and_statuses(self) -> None:
-        draw_gui()
+        _client.draw_gui()
         refresh()
-        write_pomodoro_status(self.pomodoro_status)
+        _client.write_pomodoro_status(self.pomodoro_status)
 
     @write_on_error
     def sync_or_write_error(self) -> None:
@@ -236,18 +245,18 @@ class GuiHandler:
 
 
 def refresh() -> None:
-    refresh_tasks(task_list_())
+    _client.refresh_tasks(task_list_())
 
 
 def input_task_ids() -> str:
-    ids = prompt_string("Enter the task's ids")
+    ids = _client.prompt_string("Enter the task's ids")
 
     while True:
         split_ids = ids.split(',')
         try:
             list(map(int, split_ids))
         except ValueError:
-            ids = prompt_string_error("Please enter valid ids")
+            ids = _client.prompt_string_error("Please enter valid ids")
         else:
             return ids
 
@@ -329,7 +338,7 @@ def _quit_gracefully(gui_handler: GuiHandler,
 def action_loop(gui_handler: 'GuiHandler',
                 network_handler: 'NetworkHandler', config: Dict):
     def add() -> None:
-        name = prompt_string("Enter the new task's data")
+        name = _client.prompt_string("Enter the new task's data")
         gui_handler.status = run_task('add', *name.split())
 
     def delete() -> None:
@@ -339,7 +348,7 @@ def action_loop(gui_handler: 'GuiHandler',
 
     def modify() -> None:
         ids = input_task_ids()
-        name = prompt_string("Enter the modified task's data")
+        name = _client.prompt_string("Enter the modified task's data")
         gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
                                       *name.split())
 
@@ -348,7 +357,7 @@ def action_loop(gui_handler: 'GuiHandler',
         gui_handler.status = run_task(ids, 'done')
 
     def custom_command() -> None:
-        command = prompt_string('Enter your command')
+        command = _client.prompt_string('Enter your command')
         gui_handler.status = run_task(*command.split())
 
     refreshing_actions = {
@@ -384,7 +393,7 @@ def action_loop(gui_handler: 'GuiHandler',
                 execute_user_action(gui_handler, refreshing_actions,
                                     non_refreshing_actions)
             except (JustStartError, PomodoroError) as exc:
-                write_error(str(exc))
+                _client.write_error(str(exc))
 
 
 def skip_phases(network_handler: 'NetworkHandler',
@@ -394,7 +403,7 @@ def skip_phases(network_handler: 'NetworkHandler',
 
     while not valid_phases:
         try:
-            phases = int(prompt_string(prompt))
+            phases = int(_client.prompt_string(prompt))
         except ValueError:
             pass
         else:
@@ -420,7 +429,8 @@ def reset_timer(network_handler: 'NetworkHandler', timer: PomodoroTimer,
 
 def location_change(network_handler: 'NetworkHandler',
                     timer: PomodoroTimer) -> None:
-    location = prompt_string("Enter 'w' for work or anything else for home")
+    location = _client.prompt_string("Enter 'w' for work or anything else for"
+                                     " home")
     at_work = location == 'w'
     reset_timer(network_handler, timer, at_work)
     toggle_timer(network_handler, timer)
@@ -433,8 +443,8 @@ def execute_user_action(gui_handler: GuiHandler,
                         refreshing_actions: FunctionDict,
                         non_refreshing_actions: FunctionDict) -> None:
     try:
-        read_char = prompt_char('Waiting for user. Pressing h shows available'
-                                ' actions')
+        read_char = _client.prompt_char('Waiting for user. Pressing h shows'
+                                        ' available actions')
         gui_handler.status = ''
         sleep(0.1)
     except KeyboardInterrupt:

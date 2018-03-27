@@ -79,10 +79,10 @@ def main() -> None:
 
 
 # noinspection SpellCheckingInspection
+@just_start_main
 def start_curses(stdscr: Any) -> None:
     stdscr.clear()
     curses.stdscr = stdscr
-    just_start_main()
 
 
 if __name__ == '__main__':
