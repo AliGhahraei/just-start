@@ -137,7 +137,7 @@ def client(user_function: Union[Callable, str]):
     return decorator
 
 
-def systray():
+def systray() -> None:
     icon = Icon('test name')
     icon.icon = Image.new('RGB', (TRAY_ICON_WIDTH, TRAY_ICON_HEIGHT),
                           TRAY_ICON_COLOR)
