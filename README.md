@@ -1,4 +1,6 @@
 # just-start
+[![Waffle.io - Columns and their card count](https://badge.waffle.io/AliGhahraei/just-start.svg?columns=all)](https://waffle.io/AliGhahraei/just-start) 
+
 An app to defeat procrastination.
 
 ## Introduction
