@@ -329,8 +329,7 @@ def _quit_gracefully(gui_handler: GuiHandler,
     network_handler.manage_wifi()
 
     with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-        for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
-            db[attribute] = pomodoro_timer.__getattribute__(attribute)
+        db.update(pomodoro_timer.serializable_data)
     exit()
 
 

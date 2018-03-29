@@ -8,7 +8,7 @@ from platform import system
 from subprocess import run
 from threading import Timer
 from types import TracebackType
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Any
 
 from just_start.constants import PERSISTENT_PATH
 from .constants import STOP_MESSAGE
@@ -60,6 +60,17 @@ class PomodoroTimer:
         self.notify(STOP_MESSAGE,
                     desktop_stop_notification=show_external_stop_notification)
 
+    @property
+    def serializable_data(self) -> Dict[str, Any]:
+        self._pause()
+        return {attribute: self.__getattribute__(attribute) for attribute
+                in self.SERIALIZABLE_ATTRIBUTES}
+
+    def _pause(self) -> None:
+        self.timer.cancel()
+        elapsed_timedelta = datetime.now() - self.start_datetime
+        self.time_left -= elapsed_timedelta.seconds
+
     def user_is_at_work(self) -> bool:
         if self.at_work_user_overridden is not None:
             return self.at_work_user_overridden
@@ -103,11 +114,7 @@ class PomodoroTimer:
 
     def toggle(self) -> None:
         if self.is_running:
-            self.timer.cancel()
-
-            elapsed_timedelta = datetime.now() - self.start_datetime
-            self.time_left -= elapsed_timedelta.seconds
-
+            self._pause()
             self.notify('Paused')
             self.external_blocking_function(True)
         else:
