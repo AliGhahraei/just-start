@@ -3,39 +3,31 @@ from typing import Callable
 CLIENT_DECORATORS = set()
 
 
-def register(function_: Callable) -> Callable:
+def _register(function_: Callable) -> Callable:
     CLIENT_DECORATORS.add(function_.__name__)
     return function_
 
 
-@register
-def draw_gui() -> None: pass
-
-
-@register
-def write_status(status: str) -> None: print(status)
-
-
-@register
-def write_error(error_msg: str) -> None: print(error_msg)
-
-
-@register
-def write_pomodoro_status(status: str) -> None: print(status)
+# noinspection PyUnusedLocal
+@_register
+def write_status(status: str, error: bool=False) -> None: pass
 
 
 # noinspection PyUnusedLocal
-@register
-def refresh_tasks(task_list) -> None: pass
+@_register
+def write_pomodoro_status(status: str, error: bool=False) -> None: pass
 
 
-@register
-def prompt_char(prompt: str) -> str: return input(prompt)
+# noinspection PyUnusedLocal
+@_register
+def prompt_char(prompt: str, error: bool=False) -> str: pass
 
 
-@register
-def prompt_string(prompt: str) -> str: return input(prompt)
+# noinspection PyUnusedLocal
+@_register
+def prompt_string(prompt: str, error: bool=False) -> str: pass
 
 
-@register
-def prompt_string_error(prompt: str) -> str: return input(prompt)
+# noinspection PyUnusedLocal
+@_register
+def on_tasks_refresh(task_list) -> None: pass

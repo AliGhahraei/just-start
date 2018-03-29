@@ -7,10 +7,10 @@ from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run
 from threading import Timer
-from types import TracebackType
 from typing import Callable, Dict, Optional, Any
 
 from just_start.constants import PERSISTENT_PATH
+from just_start.config_reader import config
 from .constants import STOP_MESSAGE
 
 
@@ -30,17 +30,17 @@ class PomodoroError(Exception):
 
 
 class PomodoroTimer:
-    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'state', 'time_left')
+    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'state', 'time_left',
+                               'at_work_user_overridden')
 
     def __init__(self, external_status_function: Callable[[str], None],
                  external_blocking_function: Callable[[bool], None],
-                 config: Dict, at_work_user_overridden: Optional[bool]=None,
-                 show_external_stop_notification: bool=False,
-                 pomodoro_cycle=None, state=None, time_left=None):
+                 at_work_user_overridden: Optional[bool]=None,
+                 notify: bool=False, pomodoro_cycle=None, state=None,
+                 time_left=None):
         self.external_status_function = external_status_function
         self.external_blocking_function = external_blocking_function
 
-        self.config = config
         self.at_work_user_overridden = at_work_user_overridden
         self.location = 'work' if self.user_is_at_work() else 'home'
 
@@ -57,8 +57,8 @@ class PomodoroTimer:
             self.pomodoro_cycle = self._create_cycle()
             self._update_state_and_time_left()
 
-        self.notify(STOP_MESSAGE,
-                    desktop_stop_notification=show_external_stop_notification)
+        if notify:
+            self.notify(STOP_MESSAGE)
 
     @property
     def serializable_data(self) -> Dict[str, Any]:
@@ -67,21 +67,22 @@ class PomodoroTimer:
                 in self.SERIALIZABLE_ATTRIBUTES}
 
     def _pause(self) -> None:
-        self.timer.cancel()
-        elapsed_timedelta = datetime.now() - self.start_datetime
-        self.time_left -= elapsed_timedelta.seconds
+        if self.is_running:
+            self.timer.cancel()
+            elapsed_timedelta = datetime.now() - self.start_datetime
+            self.time_left -= elapsed_timedelta.seconds
 
     def user_is_at_work(self) -> bool:
         if self.at_work_user_overridden is not None:
             return self.at_work_user_overridden
 
         return datetime.now().isoweekday() < 6 and (
-                self.config['work']['start']
+                config['work']['start']
                 <= datetime.now().time()
-                <= self.config['work']['end'])
+                <= config['work']['end'])
 
     def _generate_phase_duration(self) -> Dict:
-        location_config = self.config[self.location]
+        location_config = config[self.location]
 
         durations = (duration * 60 for duration in (
             location_config['pomodoro_length'], location_config['short_rest'],
@@ -92,7 +93,7 @@ class PomodoroTimer:
 
     def _create_cycle(self) -> cycle:
         states = ([Phases.WORK, Phases.SHORT_REST]
-                  * self.config[self.location]['cycles_before_long_rest'])
+                  * config[self.location]['cycles_before_long_rest'])
         states[-1] = Phases.LONG_REST
         return cycle(states)
 
@@ -100,15 +101,14 @@ class PomodoroTimer:
         self.state = next(self.pomodoro_cycle)
         self.time_left = self.PHASE_DURATION[self.state]
 
-    def notify(self, status: str, desktop_stop_notification: bool=True) -> None:
-        if desktop_stop_notification:
-            if system() == 'Linux':
-                run(['notify-send', status])
-            else:
-                # noinspection SpellCheckingInspection
-                run(['osascript', '-e',
-                     f'display notification "{status}" with title'
-                     f' "just-start"'])
+    def notify(self, status: str) -> None:
+        if system() == 'Linux':
+            run(['notify-send', status])
+        else:
+            # noinspection SpellCheckingInspection
+            run(['osascript', '-e',
+                 f'display notification "{status}" with title'
+                 f' "just-start"'])
 
         self.external_status_function(status)
 
@@ -157,7 +157,7 @@ class PomodoroTimer:
             raise PomodoroError("Sorry, you can't skip more than 1 phase"
                                 " while not working")
 
-        self._stop_countdown()
+        self._pause()
         self.is_running = True
 
         for _ in range(phases_skipped):
@@ -167,21 +167,9 @@ class PomodoroTimer:
         self.external_blocking_function(self.state is self.state.WORK)
 
     def reset(self, at_work_user_overridden: Optional[bool]=None) -> None:
-        self._stop_countdown()
+        self._pause()
         self.__init__(self.external_status_function,
-                      self.external_blocking_function, self.config,
+                      self.external_blocking_function,
                       at_work_user_overridden=at_work_user_overridden,
-                      show_external_stop_notification=True)
+                      notify=True)
         self.external_blocking_function(True)
-
-    def __enter__(self) -> 'PomodoroTimer':
-        return self
-
-    def __exit__(self, exc_type: Optional[type], exc_value: Optional[Exception],
-                 traceback: Optional[TracebackType]) -> None:
-        self._stop_countdown()
-        self.external_blocking_function(True)
-
-    def _stop_countdown(self) -> None:
-        if self.is_running:
-            self.timer.cancel()

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 from curses import (
-    wrapper, echo, noecho, cbreak, nocbreak, newwin, error, color_pair,
-    init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN, use_default_colors)
+    wrapper, echo, noecho, cbreak, nocbreak, newwin, error as curses_error,
+    init_pair, COLOR_RED, COLOR_WHITE, COLOR_GREEN, use_default_colors,
+    color_pair)
 from sys import argv
+from time import sleep
 from traceback import format_exc
 from typing import Any
 
-from just_start import main as just_start_main, client, logger
+from just_start import init, client, logger, prompt_action_char
 
 
 class CursesClient:
@@ -69,7 +71,6 @@ class CursesClient:
 curses = CursesClient()
 
 
-@client
 def draw_gui() -> None:
     curses.stdscr.refresh()
 
@@ -101,12 +102,8 @@ def draw_gui() -> None:
 
 
 @client
-def write_error(error_msg: str):
-    write_status(error_msg, color=COLOR_RED)
-
-
-@client
-def write_status(status: str, color=COLOR_WHITE) -> None:
+def write_status(status: str, error: bool=False) -> None:
+    color = COLOR_RED if error else COLOR_WHITE
     curses.write_prompt('')
     curses.status_window.clear()
     curses.status_window.addstr(status, color_pair(color))
@@ -122,13 +119,13 @@ def write_pomodoro_status(status: str) -> None:
 
 
 @client
-def refresh_tasks(task_list) -> None:
+def on_tasks_refresh(task_list) -> None:
     curses.task_window.clear()
 
     try:
         for y, task in enumerate(task_list):
             curses.task_window.addstr(y, 1, task)
-    except error:
+    except curses_error:
         pass
 
     curses.task_window.refresh()
@@ -142,9 +139,9 @@ def prompt_char(status: str, color: int=COLOR_WHITE) -> str:
 
 
 @client
-def prompt_string(status: str, color: int=COLOR_WHITE) -> str:
+def prompt_string(status: str, error: bool=False) -> str:
     curses.write_prompt(f"{status} and press Ctrl-Enter when done (or Ctrl-C"
-                        f" to cancel)", color)
+                        f" to cancel)", error)
     curses.input_window.clear()
 
     try:
@@ -157,25 +154,25 @@ def prompt_string(status: str, color: int=COLOR_WHITE) -> str:
     return key_sequence.decode('utf-8')
 
 
-@client
-def prompt_string_error(error_msg: str) -> str:
-    return prompt_string(error_msg, color=COLOR_RED)
-
-
 def main() -> None:
     try:
         wrapper(start_curses)
-    except error:
+    except curses_error:
         logger.critical(format_exc())
         exit(f'An error occurred while drawing {argv[0]}. The window was'
              f' probably too small.')
 
 
 # noinspection SpellCheckingInspection
-@just_start_main
 def start_curses(stdscr: Any) -> None:
     stdscr.clear()
     curses.stdscr = stdscr
+    draw_gui()
+
+    init()
+    while True:
+        sleep(0.1)
+        prompt_action_char()
 
 
 if __name__ == '__main__':

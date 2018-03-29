@@ -1,91 +1,21 @@
 import shelve
-from datetime import time, datetime
-from functools import partial, wraps
-from logging import getLogger, FileHandler, Formatter
-from os import makedirs
+from enum import Enum
+from functools import wraps, partial
 from pickle import HIGHEST_PROTOCOL
 from platform import system
 from signal import signal, SIGTERM
 from subprocess import run, PIPE, STDOUT
 from sys import exit
-from time import sleep
-from traceback import format_exc
 from typing import List, Optional, Dict, Callable, Any, Union
 
 from pexpect import spawn, EOF
-from toml import load
 
 from .client_decorators import CLIENT_DECORATORS
+from .config_reader import config
 from .constants import (
-    SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, CONFIG_PATH, LOCAL_DIR,
-    LOG_PATH, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH)
+    SYNC_MSG, PHASE_SKIP_PROMPT, HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
+    PERSISTENT_PATH)
 from just_start.pomodoro import PomodoroTimer, PomodoroError
-
-
-logger = getLogger('just_start')
-try:
-    file_handler = FileHandler(LOG_PATH)
-except FileNotFoundError:
-    makedirs(LOCAL_DIR)
-    file_handler = FileHandler(LOG_PATH)
-
-logger.addHandler(file_handler)
-file_handler.setFormatter(Formatter('%(asctime)s\n%(message)s'))
-
-
-def validate_type(object_: Any, type_: type) -> Any:
-    if not isinstance(object_, type_):
-        raise TypeError(f'Not a {type_.__name__}')
-    return object_
-
-
-def validate_positive_int(int_: Any) -> int:
-    if validate_type(int_, int) < 1:
-        raise ValueError(f'Non-positive integer: "{int_}"')
-    return int_
-
-
-def validate_list(list_: Any) -> list:
-    return validate_type(list_, list)
-
-
-def validate_bool(bool_: Any) -> bool:
-    return validate_type(bool_, bool)
-
-
-def validate_time(time_str: Any) -> time:
-    return as_time(validate_str(time_str))
-
-
-def validate_str(str_: Any) -> str:
-    return validate_type(str_, str)
-
-
-def as_time(time_str: str) -> time:
-    return datetime.strptime(time_str, '%H:%M').time()
-
-
-VALID_CONFIG = {
-    'general': {
-        'password': ('', validate_str),
-        'blocked_sites': ([], validate_list),
-        'blocking_ip': ('127.0.0.1', validate_str),
-    },
-    'work': {
-        'start': (as_time('09:00'), validate_time),
-        'end': (as_time('18:00'), validate_time),
-        'pomodoro_length': (25, validate_positive_int),
-        'short_rest': (5, validate_positive_int),
-        'long_rest': (15, validate_positive_int),
-        'cycles_before_long_rest': (4, validate_positive_int),
-    },
-    'home': {
-        'pomodoro_length': (25, validate_positive_int),
-        'short_rest': (5, validate_positive_int),
-        'long_rest': (15, validate_positive_int),
-        'cycles_before_long_rest': (4, validate_positive_int),
-    },
-}
 
 
 class JustStartError(Exception):
@@ -100,7 +30,7 @@ class ActionError(JustStartError):
     pass
 
 
-class Client(dict):
+class ClientHandler(dict):
     def __init__(self) -> None:
         super().__init__()
         self._functions = {}
@@ -113,9 +43,6 @@ class Client(dict):
 
     def __getattr__(self, item: str) -> Callable:
         return self[item]
-
-
-_client = Client()
 
 
 def client(user_function: Union[Callable, str]):
@@ -136,53 +63,20 @@ def client(user_function: Union[Callable, str]):
     return decorator
 
 
-def main(client_main) -> Callable:
-    @wraps(client_main)
-    def wrapper(*args, **kwargs) -> None:
-        client_main(*args, **kwargs)
+def refresh(function_: Callable=None) -> Union[None, Callable]:
+    if function_:
+        @wraps(function_)
+        def decorator(*args, **kwargs) -> None:
+            function_(*args, **kwargs)
+            _client.on_tasks_refresh(task_list_())
 
-        _main()
-    return wrapper
+        return decorator
+
+    _client.on_tasks_refresh(task_list_())
 
 
-def _main() -> None:
-    try:
-        config = load(CONFIG_PATH)
-    except FileNotFoundError:
-        logger.warning(format_exc())
-        config = {}
-
-    value_errors = []
-    for section_name, section_content in VALID_CONFIG.items():
-        try:
-            validate_config_section(config, section_name, section_content)
-        except ValueError as e:
-            value_errors.append(f'{e} (in {section_name})')
-    if value_errors:
-        value_errors = '\n'.join([error for error in value_errors])
-        exit(f'Wrong configuration file:\n{value_errors}')
-
-    network_handler = NetworkHandler(config)
-    gui_handler = GuiHandler()
-    gui_handler.draw_gui_and_statuses()
-
-    def pomodoro_status(status: str):
-        gui_handler.pomodoro_status = status
-
-    try:
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            timer_kwargs = {arg: db[arg] for arg
-                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
-    except KeyError:
-        timer_kwargs = {}
-
-    with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
-                       config, **timer_kwargs) as pomodoro_timer:
-        signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler,
-                                pomodoro_timer))
-        gui_handler.sync_or_write_error()
-
-        action_loop(gui_handler, network_handler, pomodoro_timer)
+def task_list_() -> List[str]:
+    return run_task().split("\n")
 
 
 def write_on_error(func: Callable):
@@ -191,13 +85,9 @@ def write_on_error(func: Callable):
         try:
             func(*args, **kwargs)
         except TaskWarriorError as e:
-            _client.write_error(str(e))
+            _client.write_status(str(e), error=True)
 
     return wrapper
-
-
-def task_list_() -> List[str]:
-    return run_task().split("\n")
 
 
 class GuiHandler:
@@ -223,39 +113,14 @@ class GuiHandler:
         _client.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
 
-    def draw_gui_and_statuses(self) -> None:
-        _client.draw_gui()
-        refresh()
-        _client.write_pomodoro_status(self.pomodoro_status)
-
-    @write_on_error
-    def sync_or_write_error(self) -> None:
-        self.sync()
-
+    @refresh
     def sync(self) -> None:
         self.status = SYNC_MSG
         self.status = run_task('sync')
 
 
-def refresh() -> None:
-    _client.refresh_tasks(task_list_())
-
-
-def input_task_ids() -> str:
-    ids = _client.prompt_string("Enter the task's ids")
-
-    while True:
-        split_ids = ids.split(',')
-        try:
-            list(map(int, split_ids))
-        except ValueError:
-            ids = _client.prompt_string_error("Please enter valid ids")
-        else:
-            return ids
-
-
 class NetworkHandler:
-    def __init__(self, config: Dict) -> None:
+    def __init__(self) -> None:
         self.password = config['general']['password']
         blocked_sites = config['general']['blocked_sites']
         blocking_ip = config['general']['blocking_ip']
@@ -300,32 +165,42 @@ class NetworkHandler:
                          self.password)
 
 
-def validate_config_section(config: Dict, section_name: str,
-                            section_content: Dict) -> None:
+def get_timer_kwargs() -> Dict:
     try:
-        config[section_name]
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            timer_kwargs = {arg: db[arg] for arg
+                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
     except KeyError:
-        config[section_name] = section_content
-    else:
-        for field_name, field_content in section_content.items():
-            default, validator = field_content
-            try:
-                config[section_name][field_name] = validator(
-                    config[section_name][field_name])
-            except KeyError:
-                config[section_name][field_name] = default
+        timer_kwargs = {}
+    return timer_kwargs
 
 
-def _signal_handler(gui_handler: GuiHandler,
-                    network_handler: NetworkHandler,
-                    pomodoro_timer: PomodoroTimer, *_) -> None:
-    _quit_gracefully(gui_handler, network_handler, pomodoro_timer)
+network_handler = NetworkHandler()
+gui_handler = GuiHandler()
+_client = ClientHandler()
+pomodoro_timer = PomodoroTimer(
+    lambda status: gui_handler.__setattr__('pomodoro_status', status),
+    network_handler.manage_blocked_sites, **get_timer_kwargs()
+)
 
 
-def _quit_gracefully(gui_handler: GuiHandler,
-                     network_handler: NetworkHandler,
-                     pomodoro_timer: PomodoroTimer) -> None:
-    gui_handler.sync_or_write_error()
+def init() -> None:
+    signal(SIGTERM, _signal_handler)
+    refresh()
+    sync()
+
+
+@write_on_error
+def sync() -> None:
+    gui_handler.sync()
+
+
+def _signal_handler() -> None:
+    quit_gracefully()
+
+
+def quit_gracefully() -> None:
+    sync()
     network_handler.manage_wifi()
 
     with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
@@ -333,66 +208,52 @@ def _quit_gracefully(gui_handler: GuiHandler,
     exit()
 
 
-def action_loop(gui_handler: 'GuiHandler',
-                network_handler: 'NetworkHandler',
-                pomodoro_timer: PomodoroTimer):
-    def add() -> None:
-        name = _client.prompt_string("Enter the new task's data")
-        gui_handler.status = run_task('add', *name.split())
+def prompt_action_char() -> None:
+    try:
+        action_key = _client.prompt_char(
+            'Waiting for user. Pressing h shows'
+            ' available actions')
+    except KeyboardInterrupt:
+        raise ActionError(f'Ctrl+C was pressed with no action selected. Use'
+                          f' q to quit')
 
-    def delete() -> None:
-        ids = input_task_ids()
-        gui_handler.status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
-                                      'delete')
+    try:
+        action = KEY_ACTIONS[action_key]
+    except KeyError:
+        raise ActionError(f'Unknown action key: "{action_key}"')
 
-    def modify() -> None:
-        ids = input_task_ids()
-        name = _client.prompt_string("Enter the modified task's data")
-        gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
-                                      *name.split())
+    execute_action(action)
 
-    def complete() -> None:
-        ids = input_task_ids()
-        gui_handler.status = run_task(ids, 'done')
 
-    def custom_command() -> None:
-        command = _client.prompt_string('Enter your command')
-        gui_handler.status = run_task(*command.split())
+def execute_action(action: 'Action') -> None:
+    gui_handler.status = ''
 
-    refreshing_actions = {
-        'a': add,
-        'c': complete,
-        'd': delete,
-        'm': modify,
-        'y': gui_handler.sync,
-        '!': custom_command,
-    }
+    if action not in Action:
+        raise ActionError(f'Unknown action: "{action}"')
 
-    def update_status(message: str):
-        gui_handler.status = message
+    try:
+        action()
+    except (JustStartError, PomodoroError) as exc:
+        _client.write_status(str(exc), error=True)
+    except KeyboardInterrupt:
+        # Cancel current action while it's still running
+        pass
 
-    non_refreshing_actions = {
-        "KEY_RESIZE": lambda: gui_handler.draw_gui_and_statuses(),
-        'h': lambda: update_status(HELP_MESSAGE),
-        'k': lambda: skip_phases(network_handler, pomodoro_timer),
-        'l': lambda: location_change(network_handler, pomodoro_timer),
-        'p': lambda: toggle_timer(network_handler, pomodoro_timer),
-        'q': lambda: _quit_gracefully(gui_handler, network_handler,
-                                      pomodoro_timer),
-        'r': lambda: refresh(),
-        's': lambda: reset_timer(network_handler, pomodoro_timer),
-    }
+
+def input_task_ids() -> str:
+    ids = _client.prompt_string("Enter the task's ids")
 
     while True:
+        split_ids = ids.split(',')
         try:
-            execute_user_action(gui_handler, refreshing_actions,
-                                non_refreshing_actions)
-        except (JustStartError, PomodoroError) as exc:
-            _client.write_error(str(exc))
+            list(map(int, split_ids))
+        except ValueError:
+            ids = _client.prompt_string("Please enter valid ids", error=True)
+        else:
+            return ids
 
 
-def skip_phases(network_handler: 'NetworkHandler',
-                timer: PomodoroTimer) -> None:
+def skip_phases() -> None:
     prompt = PHASE_SKIP_PROMPT
     valid_phases = False
 
@@ -403,64 +264,91 @@ def skip_phases(network_handler: 'NetworkHandler',
             pass
         else:
             if phases >= 1:
-                timer.advance_phases(phases_skipped=phases)
+                pomodoro_timer.advance_phases(phases_skipped=phases)
                 valid_phases = True
                 network_handler.manage_wifi(timer_running=True)
 
         prompt = 'Please enter a valid number of phases'
 
 
-def toggle_timer(network_handler: 'NetworkHandler',
-                 timer: PomodoroTimer) -> None:
-    timer.toggle()
-    network_handler.manage_wifi(timer.is_running)
+def toggle_timer() -> None:
+    pomodoro_timer.toggle()
+    network_handler.manage_wifi(pomodoro_timer.is_running)
 
 
-def reset_timer(network_handler: 'NetworkHandler', timer: PomodoroTimer,
-                at_work_user_overridden: Optional[bool]=None) -> None:
-    timer.reset(at_work_user_overridden=at_work_user_overridden)
+def reset_timer(at_work_user_overridden: Optional[bool]=None) -> None:
+    pomodoro_timer.reset(at_work_user_overridden=at_work_user_overridden)
     network_handler.manage_wifi(timer_running=False)
 
 
-def location_change(network_handler: 'NetworkHandler',
-                    timer: PomodoroTimer) -> None:
+def location_change() -> None:
     location = _client.prompt_string("Enter 'w' for work or anything else for"
                                      " home")
     at_work = location == 'w'
-    reset_timer(network_handler, timer, at_work)
-    toggle_timer(network_handler, timer)
+    reset_timer(at_work)
+    toggle_timer()
 
 
-FunctionDict = Dict[str, Callable[[], None]]
+@refresh
+def add() -> None:
+    name = _client.prompt_string("Enter the new task's data")
+    gui_handler.status = run_task('add', *name.split())
 
 
-def execute_user_action(gui_handler: GuiHandler,
-                        refreshing_actions: FunctionDict,
-                        non_refreshing_actions: FunctionDict) -> None:
-    try:
-        read_char = _client.prompt_char('Waiting for user. Pressing h shows'
-                                        ' available actions')
-        gui_handler.status = ''
-        sleep(0.1)
-    except KeyboardInterrupt:
-        raise ActionError(f'No action was selected yet, but Ctrl+C was pressed'
-                          f'. Use q to quit')
+@refresh
+def delete() -> None:
+    ids = input_task_ids()
+    gui_handler.status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
+                                  'delete')
 
-    try:
-        refreshing_actions[read_char]()
-    except KeyError:
-        try:
-            non_refreshing_actions[read_char]()
-        except KeyError:
-            raise ActionError(f'Unknown key action: "{read_char}"')
-        except KeyboardInterrupt:
-            # Cancel current action
-            pass
-    except KeyboardInterrupt:
-        # Cancel current action
-        pass
-    else:
-        refresh()
+
+@refresh
+def modify() -> None:
+    ids = input_task_ids()
+    name = _client.prompt_string("Enter the modified task's data")
+    gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
+                                  *name.split())
+
+
+@refresh
+def complete() -> None:
+    ids = input_task_ids()
+    gui_handler.status = run_task(ids, 'done')
+
+
+@refresh
+def custom_command() -> None:
+    command = _client.prompt_string('Enter your command')
+    gui_handler.status = run_task(*command.split())
+
+
+def show_help() -> None:
+    gui_handler.status = HELP_MESSAGE
+
+
+class Action(Enum):
+    ADD = partial(add)
+    COMPLETE = partial(complete)
+    DELETE = partial(delete)
+    SHOW_HELP = partial(show_help)
+    SKIP_PHASES = partial(skip_phases)
+    LOCATION_CHANGE = partial(location_change)
+    MODIFY = partial(modify)
+    TOGGLE_TIMER = partial(toggle_timer)
+    QUIT_GRACEFULLY = partial(quit_gracefully)
+    REFRESH = partial(refresh)
+    RESET_TIMER = partial(reset_timer)
+    SYNC = partial(sync)
+    CUSTOM_COMMAND = partial(custom_command)
+
+    def __call__(self, *args, **kwargs) -> None:
+        self.value(*args, **kwargs)
+
+
+KEY_ACTIONS = dict(zip(
+    ('a', 'c', 'd', 'h', 'k', 'l', 'm', 'p', 'q', 'r', 's', 'y', '!'),
+    Action.__members__.values()
+))
 
 
 def run_sudo(command: str, password: str) -> None:
