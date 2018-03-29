@@ -8,7 +8,7 @@ from platform import system
 from subprocess import run
 from threading import Timer
 from types import TracebackType
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional
 
 from just_start.constants import PERSISTENT_PATH
 from .constants import STOP_MESSAGE
@@ -30,37 +30,64 @@ class PomodoroError(Exception):
 
 
 class PomodoroTimer:
+    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'state', 'time_left')
+
     def __init__(self, external_status_function: Callable[[str], None],
                  external_blocking_function: Callable[[bool], None],
                  config: Dict, at_work_user_overridden: Optional[bool]=None,
-                 show_external_stop_notification: bool=False):
-        self.config = config
+                 show_external_stop_notification: bool=False,
+                 pomodoro_cycle=None, state=None, time_left=None):
         self.external_status_function = external_status_function
-        self.at_work_user_overridden = at_work_user_overridden
-        self.PHASE_DURATION, self.POMODORO_CYCLE = self.get_duration_and_cycle()
         self.external_blocking_function = external_blocking_function
-        self.work_count = 0
-        self._update_state()
-        self.is_running = False
+
+        self.config = config
+        self.at_work_user_overridden = at_work_user_overridden
+        self.location = 'work' if self.user_is_at_work() else 'home'
+
         self.start_datetime = self.timer = None
+        self.is_running = False
+        self.work_count = 0
+        self.PHASE_DURATION = self._generate_phase_duration()
+
+        if pomodoro_cycle and state and time_left:
+            self.pomodoro_cycle = pomodoro_cycle
+            self.state = state
+            self.time_left = time_left
+        else:
+            self.pomodoro_cycle = self._create_cycle()
+            self._update_state_and_time_left()
+
         self.notify(STOP_MESSAGE,
                     desktop_stop_notification=show_external_stop_notification)
 
-    def get_duration_and_cycle(self) -> Tuple[Dict, cycle]:
-        location = 'work' if self.user_is_at_work() else 'home'
-        location_config = self.config[location]
+    def user_is_at_work(self) -> bool:
+        if self.at_work_user_overridden is not None:
+            return self.at_work_user_overridden
+
+        return datetime.now().isoweekday() < 6 and (
+                self.config['work']['start']
+                <= datetime.now().time()
+                <= self.config['work']['end'])
+
+    def _generate_phase_duration(self) -> Dict:
+        location_config = self.config[self.location]
 
         durations = (duration * 60 for duration in (
             location_config['pomodoro_length'], location_config['short_rest'],
             location_config['long_rest']))
         # noinspection PyTypeChecker
         phase_duration = dict(zip(Phases, durations))
+        return phase_duration
 
-        cycles_before_long_rest = location_config['cycles_before_long_rest']
-        states = [Phases.WORK, Phases.SHORT_REST] * cycles_before_long_rest
+    def _create_cycle(self) -> cycle:
+        states = ([Phases.WORK, Phases.SHORT_REST]
+                  * self.config[self.location]['cycles_before_long_rest'])
         states[-1] = Phases.LONG_REST
+        return cycle(states)
 
-        return phase_duration, cycle(states)
+    def _update_state_and_time_left(self) -> None:
+        self.state = next(self.pomodoro_cycle)
+        self.time_left = self.PHASE_DURATION[self.state]
 
     def notify(self, status: str, desktop_stop_notification: bool=True) -> None:
         if desktop_stop_notification:
@@ -73,15 +100,6 @@ class PomodoroTimer:
                      f' "just-start"'])
 
         self.external_status_function(status)
-
-    def user_is_at_work(self) -> bool:
-        if self.at_work_user_overridden is not None:
-            return self.at_work_user_overridden
-
-        return datetime.now().isoweekday() < 6 and (
-                self.config['work']['start']
-                <= datetime.now().time()
-                <= self.config['work']['end'])
 
     def toggle(self) -> None:
         if self.is_running:
@@ -110,10 +128,6 @@ class PomodoroTimer:
                            self._timer_triggered_phase_advancement)
         self.timer.start()
 
-    def _update_state(self) -> None:
-        self.state = next(self.POMODORO_CYCLE)
-        self.time_left = self.PHASE_DURATION[self.state]
-
     def _timer_triggered_phase_advancement(self) -> None:
         self.advance_phases(timer_triggered=True)
 
@@ -140,7 +154,7 @@ class PomodoroTimer:
         self.is_running = True
 
         for _ in range(phases_skipped):
-            self._update_state()
+            self._update_state_and_time_left()
         self._run()
 
         self.external_blocking_function(self.state is self.state.WORK)

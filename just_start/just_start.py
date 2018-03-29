@@ -169,8 +169,15 @@ def _main() -> None:
     def pomodoro_status(status: str):
         gui_handler.pomodoro_status = status
 
+    try:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            timer_kwargs = {arg: db[arg] for arg
+                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
+    except KeyError:
+        timer_kwargs = {}
+
     with PomodoroTimer(pomodoro_status, network_handler.manage_blocked_sites,
-                       config) as pomodoro_timer:
+                       config, **timer_kwargs) as pomodoro_timer:
         signal(SIGTERM, partial(_signal_handler, gui_handler, network_handler,
                                 pomodoro_timer))
         gui_handler.sync_or_write_error()
@@ -322,7 +329,8 @@ def _quit_gracefully(gui_handler: GuiHandler,
     network_handler.manage_wifi()
 
     with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-        db['pomodoro_cycle'] = pomodoro_timer.POMODORO_CYCLE
+        for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
+            db[attribute] = pomodoro_timer.__getattribute__(attribute)
     exit()
 
 
