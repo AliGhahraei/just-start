@@ -1,5 +1,7 @@
 # just-start
-[![Waffle.io - Columns and their card count](https://badge.waffle.io/AliGhahraei/just-start.svg?columns=To%20Do,High%20Priority)](https://waffle.io/AliGhahraei/just-start)
+[![Waffle.io - Columns and their card count](
+https://badge.waffle.io/AliGhahraei/just-start.svg?columns=To%20Do,Priority
+)](https://waffle.io/AliGhahraei/just-start)
 
 An app to defeat procrastination.
 
