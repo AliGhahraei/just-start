@@ -42,8 +42,11 @@ this repo and do:
 $ pip install -e just-start/
 ```
 
-That's it! This will install a development version. You can also download a
-[release](https://github.com/AliGhahraei/just-start/releases).
+That's it! This will install an editable/development version (run `pip install 
+--help | grep editable` to find out more). You can of course install without the
+`-e` flag, but be aware that things still move very fast. You may also 
+download a [release](https://github.com/AliGhahraei/just-start/releases) 
+instead.
 
 ## Usage
 Just run it from your terminal:
@@ -53,3 +56,21 @@ $ just-start
 ```
 
 And press h to see a list of available user actions
+
+## Development
+If you want to help out, clone the repo and run:
+
+```bash
+pip install -e just-start/[dev]
+```
+
+This will ensure you have the development and install dependencies. 
+
+## Running Tests
+
+First, you'll need the [development](#Development) dependencies. Then, just 
+issue the following:
+
+```bash
+pytest --cov=just-start/
+```
