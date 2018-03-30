@@ -6,6 +6,6 @@ before_install:
 install:
   - pip install -q .[dev]
 script:
-  - pytest --cov=just-start tests/
+  - pytest --cov=AliGhahraei/just-start
 after_success:
   - coveralls
