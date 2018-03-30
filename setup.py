@@ -11,6 +11,13 @@ setup(
     license='GPLv3',
 
     install_requires=['pexpect', 'toml'],
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-mock'
+            'pytest-cov',
+        ]
+    },
     packages=find_packages(),
     python_requires='>=3.6',
 
