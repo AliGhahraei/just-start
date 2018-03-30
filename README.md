@@ -39,7 +39,8 @@ this repo and do:
 $ pip install -e just-start/
 ```
 
-That's it! This will install a development version.
+That's it! This will install a development version. You can also download a
+[release](https://github.com/AliGhahraei/just-start/releases).
 
 ## Usage
 Just run it from your terminal:
