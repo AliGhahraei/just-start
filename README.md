@@ -1,5 +1,8 @@
 # just-start
-[![Waffle.io - Columns and their card count](
+[![Build Status](
+https://travis-ci.org/AliGhahraei/just-start.svg?branch=master)](
+https://travis-ci.org/AliGhahraei/just-start)[
+![Waffle.io - Columns and their card count](
 https://badge.waffle.io/AliGhahraei/just-start.svg?columns=To%20Do,Priority
 )](https://waffle.io/AliGhahraei/just-start)
 
