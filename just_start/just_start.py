@@ -17,19 +17,9 @@ from .constants import (
 from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 
-def get_timer_kwargs() -> Dict:
-    try:
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            timer_kwargs = {arg: db[arg] for arg
-                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
-    except KeyError:
-        timer_kwargs = {}
-    return timer_kwargs
-
-
 pomodoro_timer = PomodoroTimer(
     lambda status: gui_handler.__setattr__('pomodoro_status', status),
-    network_handler.manage_blocked_sites, **get_timer_kwargs()
+    network_handler.manage_blocked_sites
 )
 
 
@@ -64,8 +54,19 @@ def write_on_error(func: Callable):
 
 def init() -> None:
     signal(SIGTERM, _signal_handler)
+    pomodoro_timer.serializable_data = read_serializable_data()
     refresh()
     sync()
+
+
+def read_serializable_data() -> Dict:
+    try:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            timer_kwargs = {arg: db[arg] for arg
+                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
+    except KeyError:
+        timer_kwargs = {}
+    return timer_kwargs
 
 
 @write_on_error

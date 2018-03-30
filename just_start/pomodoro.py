@@ -11,7 +11,9 @@ from typing import Callable, Dict, Optional, Any
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
-from .constants import STOP_MESSAGE
+
+
+STOP_MESSAGE = 'Pomodoro timer stopped'
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -65,6 +67,11 @@ class PomodoroTimer:
         self._pause()
         return {attribute: self.__getattribute__(attribute) for attribute
                 in self.SERIALIZABLE_ATTRIBUTES}
+
+    @serializable_data.setter
+    def serializable_data(self, data: Dict) -> None:
+        for attribute, value in data.items():
+            self.__setattr__(attribute, value)
 
     def _pause(self) -> None:
         if self.is_running:

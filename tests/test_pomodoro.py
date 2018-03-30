@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from pytest import mark
 
-from just_start.pomodoro.pomodoro import time_after_seconds
+from just_start.pomodoro import time_after_seconds
 
 
 @mark.parametrize('seconds_left', [0, 1, 10, 10000000])
