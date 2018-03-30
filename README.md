@@ -68,7 +68,7 @@ This will ensure you have the development and install dependencies.
 
 ## Running Tests
 
-First, you'll need the [development](#Development) dependencies. Then, just 
+First, you'll need the [development](#development) dependencies. Then, just 
 issue the following:
 
 ```bash
