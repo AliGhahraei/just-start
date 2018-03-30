@@ -8,6 +8,7 @@ setup(
     author='Ali Ghahraei Figueroa',
     author_email='aligf94@gmail.com',
     url='https://github.com/AliGhahraei/just-start',
+    license='GPLv3',
 
     install_requires=['pexpect', 'toml'],
     packages=find_packages(),
