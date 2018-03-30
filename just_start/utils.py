@@ -9,6 +9,21 @@ from .config_reader import config
 from .constants import SYNC_MSG
 
 
+PASSWORD = config['general']['password']
+BLOCKING_IP = config['general']['blocking_ip']
+
+APP_SPECIFIC_COMMENT = '# just-start'
+# noinspection SpellCheckingInspection
+BLOCKING_LINES = '\\n'.join(
+    [f'{BLOCKING_IP}\\t{blocked_site}\\t{APP_SPECIFIC_COMMENT}\\n'
+     f'{BLOCKING_IP}\\twww.{blocked_site}\\t{APP_SPECIFIC_COMMENT}'
+     for blocked_site in config['general']['blocked_sites']])
+BLOCK_COMMAND = (f'/bin/bash -c "echo -e \'{BLOCKING_LINES}\' | '
+                 f'sudo tee -a /etc/hosts > /dev/null"')
+UNBLOCK_COMMAND = (f"sudo sed -i '' '/^.*{APP_SPECIFIC_COMMENT}$"
+                   f"/d' /etc/hosts")
+
+
 class JustStartError(Exception):
     pass
 
@@ -87,53 +102,29 @@ class GuiHandler:
 gui_handler = GuiHandler()
 
 
-class NetworkHandler:
-    def __init__(self) -> None:
-        self.password = config['general']['password']
-        blocked_sites = config['general']['blocked_sites']
-        blocking_ip = config['general']['blocking_ip']
+def manage_blocked_sites(blocked: bool) -> None:
+    if blocked:
+        run_sudo(UNBLOCK_COMMAND, PASSWORD)
+        run_sudo(BLOCK_COMMAND, PASSWORD)
+    else:
+        run_sudo(UNBLOCK_COMMAND, PASSWORD)
 
-        app_specific_comment = '# just-start'
-        # noinspection SpellCheckingInspection
-        blocking_lines = '\\n'.join(
-            [f'{blocking_ip}\\t{blocked_site}\\t{app_specific_comment}\\n'
-             f'{blocking_ip}\\twww.{blocked_site}\\t{app_specific_comment}'
-             for blocked_site in blocked_sites])
 
-        self.block_command = (f'/bin/bash -c "echo -e \'{blocking_lines}\' | '
-                              f'sudo tee -a /etc/hosts > /dev/null"')
-        self.unblock_command = (f"sudo sed -i '' '/^.*{app_specific_comment}$"
-                                f"/d' /etc/hosts")
-
-    def manage_blocked_sites(self, blocked: bool) -> None:
-        if blocked:
-            run_sudo(self.unblock_command, self.password)
-            run_sudo(self.block_command, self.password)
+def manage_wifi(timer_running: bool=False) -> None:
+    if timer_running:
+        if system() == 'Linux':
+            # noinspection SpellCheckingInspection
+            run_sudo('sudo systemctl start netctl-auto@wlp2s0', PASSWORD)
         else:
-            run_sudo(self.unblock_command, self.password)
-
-    def manage_wifi(self, timer_running: bool=False) -> None:
-        if timer_running:
-            if system() == 'Linux':
-                # noinspection SpellCheckingInspection
-                run_sudo('sudo systemctl start netctl-auto@wlp2s0',
-                         self.password)
-            else:
-                # noinspection SpellCheckingInspection
-                run_sudo('networksetup -setairportpower en0 on',
-                         self.password)
+            # noinspection SpellCheckingInspection
+            run_sudo('networksetup -setairportpower en0 on', PASSWORD)
+    else:
+        if system() == 'Linux':
+            # noinspection SpellCheckingInspection
+            run_sudo('sudo systemctl stop netctl-auto@wlp2s0', PASSWORD)
         else:
-            if system() == 'Linux':
-                # noinspection SpellCheckingInspection
-                run_sudo('sudo systemctl stop netctl-auto@wlp2s0',
-                         self.password)
-            else:
-                # noinspection SpellCheckingInspection
-                run_sudo('networksetup -setairportpower en0 off',
-                         self.password)
-
-
-network_handler = NetworkHandler()
+            # noinspection SpellCheckingInspection
+            run_sudo('networksetup -setairportpower en0 off', PASSWORD)
 
 
 def run_task(*args) -> str:

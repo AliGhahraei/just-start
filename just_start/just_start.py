@@ -8,8 +8,8 @@ from typing import Optional, Dict, Callable, Any, Union
 
 from .client_decorators import CLIENT_DECORATORS
 from .utils import (
-    client_handler, network_handler, gui_handler, refresh, run_task,
-    TaskWarriorError, ActionError, JustStartError)
+    client_handler, gui_handler, refresh, run_task, manage_blocked_sites,
+    manage_wifi, TaskWarriorError, ActionError, JustStartError)
 
 from .constants import (
     PHASE_SKIP_PROMPT, HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
@@ -19,7 +19,7 @@ from just_start.pomodoro import PomodoroTimer, PomodoroError
 
 pomodoro_timer = PomodoroTimer(
     lambda status: gui_handler.__setattr__('pomodoro_status', status),
-    network_handler.manage_blocked_sites
+    manage_blocked_sites
 )
 
 
@@ -80,7 +80,7 @@ def _signal_handler() -> None:
 
 def quit_gracefully() -> None:
     sync()
-    network_handler.manage_wifi()
+    manage_wifi()
 
     with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
         db.update(pomodoro_timer.serializable_data)
@@ -146,19 +146,19 @@ def skip_phases() -> None:
             if phases >= 1:
                 pomodoro_timer.advance_phases(phases_skipped=phases)
                 valid_phases = True
-                network_handler.manage_wifi(timer_running=True)
+                manage_wifi(timer_running=True)
 
         prompt = 'Please enter a valid number of phases'
 
 
 def toggle_timer() -> None:
     pomodoro_timer.toggle()
-    network_handler.manage_wifi(pomodoro_timer.is_running)
+    manage_wifi(pomodoro_timer.is_running)
 
 
 def reset_timer(at_work_user_overridden: Optional[bool]=None) -> None:
     pomodoro_timer.reset(at_work_user_overridden=at_work_user_overridden)
-    network_handler.manage_wifi(timer_running=False)
+    manage_wifi(timer_running=False)
 
 
 def location_change() -> None:
