@@ -9,7 +9,7 @@ https://coveralls.io/repos/github/AliGhahraei/just-start/badge.svg?branch=master
 https://badge.waffle.io/AliGhahraei/just-start.svg?columns=To%20Do,Priority
 )](https://waffle.io/AliGhahraei/just-start)
 
-An app to defeat procrastination.
+An app to defeat procrastination!
 
 ## Introduction
 Just-Start is a to-do list application with a focus on boosting your
