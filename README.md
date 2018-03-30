@@ -2,9 +2,6 @@
 [![Build Status](
 https://travis-ci.org/AliGhahraei/just-start.svg?branch=master)](
 https://travis-ci.org/AliGhahraei/just-start)
-[![Coverage Status](
-https://coveralls.io/repos/github/AliGhahraei/just-start/badge.svg?branch=master
-)](https://coveralls.io/github/AliGhahraei/just-start?branch=master)
 [![Waffle.io - Columns and their card count](
 https://badge.waffle.io/AliGhahraei/just-start.svg?columns=To%20Do,Priority
 )](https://waffle.io/AliGhahraei/just-start)
