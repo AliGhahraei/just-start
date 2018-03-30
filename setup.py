@@ -10,8 +10,6 @@ setup(
     url='https://github.com/AliGhahraei/just-start',
 
     install_requires=['pexpect', 'toml'],
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
     packages=find_packages(),
     python_requires='>=3.6',
 
