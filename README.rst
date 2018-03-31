@@ -14,14 +14,11 @@ wasting sites while you’re working to help you focus and it can even enable an
 disable your wi-fi.
 
 Underneath, it’s basically a wrapper for TaskWarrior_ with a timer implementing
-the `Pomodoro Technique <https://cirillocompany.de/pages/pomodoro-technique>`__,
-a popular time management technique. Currently, the only client uses the
-`Ncurses <https://www.gnu.org/software/ncurses/>`__ library and it’s kind of
-like a graphical application, but in your terminal. However, more clients are
-coming soon.
+the `Pomodoro Technique`_, a popular time management technique. Currently, the
+only client uses the Ncurses_ library and it’s similar to a graphical
+application, but in your terminal. More clients are coming soon.
 
-This app draws inspiration from `Omodoro <https://github.com/okraits/omodoro>`__
-and the ncurses client, from `Calcurse <http://calcurse.org/>`__.
+This app draws inspiration from Omodoro_ and the ncurses client, from Calcurse_.
 
 Supported platforms
 -------------------
@@ -41,8 +38,7 @@ this to work. To install, just clone this repo and do:
 That’s it! This will install an editable/development version (run ``pip install
 --help | grep editable`` to find out more). You can of course install without
 the ``-e`` flag, but be aware that things still move very fast. You may also
-download a `release <https://github.com/AliGhahraei/just-start/releases>`__
-instead.
+download a release_ instead.
 
 Usage
 -----
@@ -69,7 +65,7 @@ This will ensure you have the development and install dependencies.
 Running Tests
 -------------
 
-First, you’ll need the `development <#development>`__ dependencies. Then, just
+First, you’ll need the development_ dependencies. Then, just
 issue the following:
 
 .. code:: bash
@@ -86,4 +82,10 @@ issue the following:
    AliGhahraei/just-start.svg?columns=To%20Do,Priority
    :target: https://waffle.io/AliGhahraei/just-start
 
+.. _Calcurse: http://calcurse.org
+.. _development: #development
+.. _Ncurses: https://www.gnu.org/software/ncurses/
+.. _Omodoro: https://github.com/okraits/omodoro
+.. _Pomodoro Technique: https://cirillocompany.de/pages/pomodoro-technique
+.. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
