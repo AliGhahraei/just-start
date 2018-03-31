@@ -57,9 +57,12 @@ def write_errors_option(func):
 
 # noinspection PyUnusedLocal
 @write_errors_option
-def init(refresh_tasks_and_sync=True, write_errors=True) -> None:
-    signal(SIGTERM, _signal_handler)
+def init(handle_sigterm: bool=True, refresh_tasks_and_sync: bool=True,
+         write_errors: bool=True) -> None:
     pomodoro_timer.serializable_data = read_serializable_data()
+
+    if handle_sigterm:
+        signal(SIGTERM, _signal_handler)
     if refresh_tasks_and_sync:
         refresh_tasks()
         sync()
