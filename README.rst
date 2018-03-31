@@ -18,7 +18,8 @@ the `Pomodoro Technique`_, a popular time management technique. Currently, the
 only client uses the Ncurses_ library and it’s similar to a graphical
 application, but in your terminal. More clients are coming soon.
 
-This app draws inspiration from Omodoro_ and the ncurses client, from Calcurse_.
+This app draws inspiration from Omodoro_, and the ncurses client, from
+Calcurse_.
 
 Supported platforms
 -------------------
