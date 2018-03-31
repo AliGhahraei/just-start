@@ -10,7 +10,7 @@ class _Client(dict):
         super().__init__()
 
     @staticmethod
-    def write_status(self, status: str, error: bool = False) -> None:
+    def write_status(status: str, error: bool = False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
