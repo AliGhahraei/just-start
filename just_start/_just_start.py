@@ -63,6 +63,18 @@ def init(write_errors: bool=True) -> None:
     refresh_tasks_and_sync()
 
 
+def read_serialized_data() -> Dict:
+    try:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            data = {arg: db[arg] for arg
+                    in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
+    except KeyError:
+        data = {}
+
+    pomodoro_timer.serializable_data = data
+    return data
+
+
 def handle_sigterm():
     signal(SIGTERM, _signal_handler)
 
@@ -70,6 +82,10 @@ def handle_sigterm():
 def refresh_tasks_and_sync():
     refresh_tasks()
     sync()
+
+
+def sync() -> None:
+    gui_handler.sync()
 
 
 # noinspection PyUnusedLocal
@@ -93,22 +109,6 @@ def prompt_and_exec_action(write_errors=True) -> None:
             except KeyboardInterrupt:
                 # Cancel current action while it's still running
                 pass
-
-
-def read_serialized_data() -> Dict:
-    try:
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            data = {arg: db[arg] for arg
-                    in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
-    except KeyError:
-        data = {}
-
-    pomodoro_timer.serializable_data = data
-    return data
-
-
-def sync() -> None:
-    gui_handler.sync()
 
 
 def _signal_handler() -> None:
