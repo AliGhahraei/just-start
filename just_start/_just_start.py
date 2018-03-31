@@ -88,19 +88,11 @@ def prompt_and_exec_action(write_errors=True) -> None:
         except KeyError:
             raise UserInputError(f'Unknown action key: "{action_key}"')
         else:
-            exec_action(action)
-
-
-# noinspection PyUnusedLocal
-@write_errors_option
-def exec_action(action: Callable, write_errors=True) -> None:
-    gui_handler.status = ''
-
-    try:
-        action()
-    except KeyboardInterrupt:
-        # Cancel current action while it's still running
-        pass
+            try:
+                action()
+            except KeyboardInterrupt:
+                # Cancel current action while it's still running
+                pass
 
 
 def read_serialized_data() -> Dict:
@@ -236,6 +228,7 @@ class Action(Enum):
     CUSTOM_COMMAND = partial(custom_command)
 
     def __call__(self, *args, **kwargs) -> None:
+        gui_handler.status = ''
         self.value(*args, **kwargs)
 
 
