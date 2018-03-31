@@ -57,10 +57,10 @@ def write_errors_option(func):
 
 # noinspection PyUnusedLocal
 @write_errors_option
-def init(refresh_and_sync=True, write_errors=True) -> None:
+def init(refresh_tasks_and_sync=True, write_errors=True) -> None:
     signal(SIGTERM, _signal_handler)
     pomodoro_timer.serializable_data = read_serializable_data()
-    if refresh_and_sync:
+    if refresh_tasks_and_sync:
         refresh_tasks()
         sync()
 
@@ -86,11 +86,8 @@ def prompt_and_exec_action(write_errors=True) -> None:
 
 # noinspection PyUnusedLocal
 @write_errors_option
-def exec_action(action: 'Action', write_errors=True) -> None:
+def exec_action(action: Callable, write_errors=True) -> None:
     gui_handler.status = ''
-
-    if action not in Action:
-        raise ActionError(f'Unknown action: "{action}"')
 
     try:
         action()
@@ -120,10 +117,13 @@ def _signal_handler() -> None:
 def quit_gracefully() -> None:
     sync()
     manage_wifi()
+    serialize_timer()
+    exit()
 
+
+def serialize_timer() -> None:
     with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
         db.update(pomodoro_timer.serializable_data)
-    exit()
 
 
 def input_task_ids() -> str:
