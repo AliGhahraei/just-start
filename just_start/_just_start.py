@@ -154,7 +154,7 @@ def reset_timer(at_work_user_overridden: bool=False) -> None:
 
 def location_change() -> None:
     location = client.prompt_string("Enter 'w' for work or anything"
-                                            " else for home")
+                                    " else for home")
     at_work = location == 'w'
     reset_timer(at_work)
     toggle_timer()
@@ -170,7 +170,7 @@ def add() -> None:
 def delete() -> None:
     ids = input_task_ids()
     status_manager.app_status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
-                                     'delete')
+                                         'delete')
 
 
 @refresh_tasks
