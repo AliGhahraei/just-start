@@ -13,7 +13,7 @@ from .utils import (
     PromptKeyboardInterrupt)
 
 from .constants import (
-    PHASE_SKIP_PROMPT, HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
+    PHASE_SKIP_PROMPT, KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
     PERSISTENT_PATH)
 from just_start.pomodoro import PomodoroTimer
 
@@ -208,8 +208,8 @@ def custom_command() -> None:
     gui_handler.status = run_task(*command.split())
 
 
-def show_help() -> None:
-    gui_handler.status = HELP_MESSAGE
+def show_help(help_message: str=KEYBOARD_HELP_MESSAGE) -> None:
+    gui_handler.status = help_message
 
 
 class Action(Enum):

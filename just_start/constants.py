@@ -11,10 +11,11 @@ LOG_PATH = join(LOCAL_DIR, 'log')
 PERSISTENT_PATH = join(LOCAL_DIR, 'db')
 
 # noinspection SpellCheckingInspection
-HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, s(k)ip to'
-                ' another pomodoro phase, (l)ocation change, (m)odify task,'
-                ' (p)omodoro pause/resume, (q)uit, (r)efresh tasks, (s)top'
-                ' pomodoro, s(y)nc server, (!) custom command')
+KEYBOARD_HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp,'
+                         ' s(k)ip to another pomodoro phase, (l)ocation change,'
+                         ' (m)odify task, (p)omodoro pause/resume, (q)uit,'
+                         ' (r)efresh tasks, (s)top pomodoro, s(y)nc server,'
+                         ' (!) custom command')
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
 SYNC_MSG = 'Syncing task server...'
