@@ -97,7 +97,10 @@ def _signal_handler() -> None:
 
 
 def quit_gracefully() -> None:
-    sync()
+    try:
+        sync()
+    except JustStartError:
+        pass
     manage_wifi()
     serialize_timer()
     exit()
