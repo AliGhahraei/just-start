@@ -57,15 +57,10 @@ def write_errors_option(func):
 
 # noinspection PyUnusedLocal
 @write_errors_option
-def init(handle_sigterm_: bool=True, refresh_tasks_and_sync_: bool=True,
-         write_errors: bool=True) -> None:
-    pomodoro_timer.serializable_data = read_serializable_data()
-
-    if handle_sigterm_:
-        handle_sigterm()
-
-    if refresh_tasks_and_sync_:
-        refresh_tasks_and_sync()
+def init(write_errors: bool=True) -> None:
+    read_serialized_data()
+    handle_sigterm()
+    refresh_tasks_and_sync()
 
 
 def handle_sigterm():
@@ -108,14 +103,16 @@ def exec_action(action: Callable, write_errors=True) -> None:
         pass
 
 
-def read_serializable_data() -> Dict:
+def read_serialized_data() -> Dict:
     try:
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            timer_kwargs = {arg: db[arg] for arg
-                            in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
+            data = {arg: db[arg] for arg
+                    in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
     except KeyError:
-        timer_kwargs = {}
-    return timer_kwargs
+        data = {}
+
+    pomodoro_timer.serializable_data = data
+    return data
 
 
 def sync() -> None:
