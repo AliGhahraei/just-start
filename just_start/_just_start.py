@@ -162,8 +162,8 @@ def toggle_timer() -> None:
     manage_wifi(pomodoro_timer.is_running)
 
 
-def reset_timer(at_work_user_overridden: Optional[bool]=None) -> None:
-    pomodoro_timer.reset(at_work_user_overridden=at_work_user_overridden)
+def reset_timer(at_work_user_overridden: bool=False) -> None:
+    pomodoro_timer.reset(at_work=at_work_user_overridden)
     manage_wifi(timer_running=False)
 
 

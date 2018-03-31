@@ -1,7 +1,7 @@
 from functools import wraps
 from platform import system
 from subprocess import run, PIPE, STDOUT
-from typing import Callable, List, Union
+from typing import Callable, List, Optional
 
 from pexpect import spawn, EOF
 
@@ -62,7 +62,7 @@ class ClientHandler(dict):
 client_handler = ClientHandler()
 
 
-def refresh_tasks(function_: Callable=None) -> Union[None, Callable]:
+def refresh_tasks(function_: Callable=None) -> Optional[Callable]:
     if function_:
         @wraps(function_)
         def decorator(*args, **kwargs) -> None:

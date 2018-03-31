@@ -33,18 +33,15 @@ class PomodoroError(JustStartError):
 
 
 class PomodoroTimer:
-    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'state', 'time_left',
-                               'at_work_user_overridden')
+    SERIALIZABLE_ATTRIBUTES = 'pomodoro_cycle', 'state', 'time_left', 'at_work'
 
     def __init__(self, external_status_function: Callable[[str], None],
                  external_blocking_function: Callable[[bool], None],
-                 at_work_user_overridden: Optional[bool]=None,
-                 notify: bool=False, pomodoro_cycle=None, state=None,
-                 time_left=None):
+                 at_work: bool=False, notify: bool=False):
         self.external_status_function = external_status_function
         self.external_blocking_function = external_blocking_function
 
-        self.at_work_user_overridden = at_work_user_overridden
+        self.at_work = at_work
         self.location = 'work' if self.user_is_at_work() else 'home'
 
         self.start_datetime = self.timer = None
@@ -52,13 +49,8 @@ class PomodoroTimer:
         self.work_count = 0
         self.PHASE_DURATION = self._generate_phase_duration()
 
-        if pomodoro_cycle and state and time_left:
-            self.pomodoro_cycle = pomodoro_cycle
-            self.state = state
-            self.time_left = time_left
-        else:
-            self.pomodoro_cycle = self._create_cycle()
-            self._update_state_and_time_left()
+        self.pomodoro_cycle = self._create_cycle()
+        self._update_state_and_time_left()
 
         if notify:
             self.notify(STOP_MESSAGE)
@@ -81,8 +73,8 @@ class PomodoroTimer:
             self.time_left -= elapsed_timedelta.seconds
 
     def user_is_at_work(self) -> bool:
-        if self.at_work_user_overridden is not None:
-            return self.at_work_user_overridden
+        if self.at_work:
+            return True
 
         return datetime.now().isoweekday() < 6 and (
                 config['work']['start']
@@ -174,10 +166,10 @@ class PomodoroTimer:
 
         self.external_blocking_function(self.state is self.state.WORK)
 
-    def reset(self, at_work_user_overridden: Optional[bool]=None) -> None:
+    def reset(self, at_work: bool) -> None:
         self._pause()
         self.__init__(self.external_status_function,
                       self.external_blocking_function,
-                      at_work_user_overridden=at_work_user_overridden,
+                      at_work=at_work,
                       notify=True)
         self.external_blocking_function(True)
