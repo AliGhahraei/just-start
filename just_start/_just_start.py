@@ -76,14 +76,14 @@ def prompt_and_exec_action(write_errors=True) -> None:
         action_key = client_handler.prompt_char(
             'Waiting for user. Pressing h shows'
             ' available actions')
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         raise PromptKeyboardInterrupt(f'Ctrl+C was pressed with no action'
-                                      f' selected. Use q to quit')
+                                      f' selected. Use q to quit') from e
     else:
         try:
             action = KEY_ACTIONS[action_key]
-        except KeyError:
-            raise UserInputError(f'Unknown action key: "{action_key}"')
+        except KeyError as e:
+            raise UserInputError(f'Unknown action key: "{action_key}"') from e
         else:
             try:
                 action()
@@ -114,8 +114,8 @@ def input_task_ids() -> str:
     split_ids = ids.split(',')
     try:
         list(map(int, split_ids))
-    except ValueError:
-        raise UserInputError(f'Invalid id list "{ids}"')
+    except ValueError as e:
+        raise UserInputError(f'Invalid id list "{ids}"') from e
 
     return ids
 
