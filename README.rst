@@ -1,8 +1,7 @@
 just-start
 ==========
 
-|Build Status| |Coverage Status| |Waffle.io - Columns and their card
-count|
+|Build Status| |Coverage Status| |Waffle.io - Columns and their card count|
 
 An app to defeat procrastination!
 
@@ -10,22 +9,20 @@ Introduction
 ------------
 
 Just-Start is a to-do list application with a focus on boosting your
-productivity and preventing you from procrastinating (too much). It
-blocks time-wasting sites while you’re working to help you focus and it
-can even enable and disable your wi-fi.
+productivity and preventing you from procrastinating (too much). It blocks
+time-wasting sites while you’re working to help you focus and it can even enable
+and disable your wi-fi.
 
 Underneath, it’s basically a wrapper for
 `Taskwarrior <https://taskwarrior.org/>`__ with a timer implementing the
-`Pomodoro
-Technique <https://cirillocompany.de/pages/pomodoro-technique>`__, a
+`Pomodoro Technique <https://cirillocompany.de/pages/pomodoro-technique>`__, a
 popular time management technique. Currently, the only client uses the
-`Ncurses <https://www.gnu.org/software/ncurses/>`__ library and it’s
-kind of like a graphical application, but in your terminal. However,
-more clients are coming soon.
+`Ncurses <https://www.gnu.org/software/ncurses/>`__ library and it’s kind of
+like a graphical application, but in your terminal. However, more clients are
+coming soon.
 
-This app draws inspiration from
-`Omodoro <https://github.com/okraits/omodoro>`__ and the ncurses client,
-from `Calcurse <http://calcurse.org/>`__.
+This app draws inspiration from `Omodoro <https://github.com/okraits/omodoro>`__
+and the ncurses client, from `Calcurse <http://calcurse.org/>`__.
 
 Supported platforms
 -------------------
@@ -35,20 +32,19 @@ Linux and macOS for now.
 Installation
 ------------
 
-You need to have Python 3.6 and
-`Taskwarrior <https://taskwarrior.org/>`__ (a recent enough one) in
-order for this to work. To install, just clone this repo and do:
+You need to have Python 3.6 and `Taskwarrior <https://taskwarrior.org/>`__ (a
+recent enough one) in order for this to work. To install, just clone this repo
+and do:
 
 .. code:: bash
 
     $ pip install -e just-start/
 
 That’s it! This will install an editable/development version (run
-``pip install  --help | grep editable`` to find out more). You can of
-course install without the ``-e`` flag, but be aware that things still
-move very fast. You may also download a
-`release <https://github.com/AliGhahraei/just-start/releases>`__
-instead.
+``pip install  --help | grep editable`` to find out more). You can of course
+install without the ``-e`` flag, but be aware that things still move very fast.
+You may also download a
+`release <https://github.com/AliGhahraei/just-start/releases>`__ instead.
 
 Usage
 -----
@@ -75,8 +71,8 @@ This will ensure you have the development and install dependencies.
 Running Tests
 -------------
 
-First, you’ll need the `development <#development>`__ dependencies.
-Then, just issue the following:
+First, you’ll need the `development <#development>`__ dependencies. Then, just
+issue the following:
 
 .. code:: bash
 
