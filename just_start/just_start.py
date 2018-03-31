@@ -9,7 +9,7 @@ from typing import Optional, Dict, Callable, Union
 from .client_decorators import CLIENT_DECORATORS
 from .utils import (
     client_handler, gui_handler, refresh_tasks, run_task, manage_blocked_sites,
-    manage_wifi, ActionError, JustStartError, UserInputError,
+    manage_wifi, JustStartError, UserInputError,
     PromptKeyboardInterrupt)
 
 from .constants import (
