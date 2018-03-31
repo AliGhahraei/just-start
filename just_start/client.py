@@ -9,24 +9,19 @@ class _Client(dict):
     def __init__(self) -> None:
         super().__init__()
 
-    @staticmethod
-    def write_status(status: str, error: bool=False) -> None:
+    def write_status(self, status: str, error: bool=False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    @staticmethod
-    def write_pomodoro_status(status: str, error: bool=False) -> None:
+    def write_pomodoro_status(self, status: str, error: bool=False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    @staticmethod
-    def prompt_char(prompt: str, error: bool=False) -> str:
+    def prompt_char(self, prompt: str, error: bool=False) -> str:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    @staticmethod
-    def prompt_string(prompt: str, error: bool=False) -> str:
+    def prompt_string(self, prompt: str, error: bool=False) -> str:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    @staticmethod
-    def on_tasks_refresh(task_list) -> None:
+    def on_tasks_refresh(self, task_list) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     def __setitem__(self, key: str, value: Callable):
