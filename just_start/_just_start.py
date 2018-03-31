@@ -100,8 +100,8 @@ def _signal_handler() -> None:
 def quit_gracefully() -> None:
     try:
         sync()
-    except JustStartError:
-        pass
+    except JustStartError as e:
+        client.write_status(str(e), error=True)
     manage_wifi()
     serialize_timer()
     exit()
