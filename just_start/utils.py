@@ -5,6 +5,7 @@ from typing import Callable, List, Optional
 
 from pexpect import spawn, EOF
 
+from .client_handler import client_handler
 from .config_reader import config
 from .constants import SYNC_MSG
 
@@ -42,24 +43,6 @@ class UserInputError(JustStartError, ValueError):
 
 class PromptKeyboardInterrupt(JustStartError, KeyboardInterrupt):
     pass
-
-
-class ClientHandler(dict):
-    def __init__(self) -> None:
-        super().__init__()
-        self._functions = {}
-
-    def __setitem__(self, key: str, value: Callable):
-        self._functions[key] = value
-
-    def __getitem__(self, item: str):
-        return self._functions[item]
-
-    def __getattr__(self, item: str) -> Callable:
-        return self[item]
-
-
-client_handler = ClientHandler()
 
 
 def refresh_tasks(function_: Callable=None) -> Optional[Callable]:

@@ -4,12 +4,11 @@ from functools import wraps, partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from sys import exit
-from typing import Dict, Callable, Union
+from typing import Dict
 
-from .client_decorators import CLIENT_DECORATORS
 from .utils import (
-    client_handler, gui_handler, refresh_tasks, run_task, manage_blocked_sites,
-    manage_wifi, JustStartError, UserInputError,
+    client_handler, gui_handler, refresh_tasks, run_task, manage_wifi,
+    manage_blocked_sites, JustStartError, UserInputError,
     PromptKeyboardInterrupt)
 
 from .constants import (
@@ -22,24 +21,6 @@ pomodoro_timer = PomodoroTimer(
     lambda status: gui_handler.__setattr__('pomodoro_status', status),
     manage_blocked_sites
 )
-
-
-def client(user_function: Union[Callable, str]):
-    local_function_name = None
-
-    def decorator(user_function_: Callable) -> Callable:
-        if local_function_name not in CLIENT_DECORATORS:
-            raise ValueError(f'{local_function_name} is not a valid client'
-                             f' function')
-        client_handler[local_function_name] = user_function_
-        return user_function_
-
-    if callable(user_function):
-        local_function_name = user_function.__name__
-        return decorator(user_function)
-
-    local_function_name = user_function
-    return decorator
 
 
 def write_errors_option(func):
