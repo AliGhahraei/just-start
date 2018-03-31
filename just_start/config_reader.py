@@ -85,12 +85,12 @@ except FileNotFoundError:
     logger.warning(format_exc())
     config = {}
 
-value_errors = []
+_value_errors = []
 for section_name, section_content in CONFIG_SECTIONS.items():
     try:
         validate_config_section(config, section_name, section_content)
     except ValueError as e:
-        value_errors.append(f'{e} (in {section_name})')
-if value_errors:
-    value_errors = '\n'.join([error for error in value_errors])
-    exit(f'Wrong configuration file:\n{value_errors}')
+        _value_errors.append(f'{e} (in {section_name})')
+if _value_errors:
+    _value_errors = '\n'.join([error for error in _value_errors])
+    exit(f'Wrong configuration file:\n{_value_errors}')
