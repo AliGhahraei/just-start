@@ -65,8 +65,8 @@ This will ensure you have the development and install dependencies.
 Running Tests
 -------------
 
-First, you’ll need the development_ dependencies. Then, just
-issue the following:
+First, you’ll need the development_ dependencies. Then, just issue the
+following:
 
 .. code:: bash
 
