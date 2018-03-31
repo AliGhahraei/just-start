@@ -10,7 +10,7 @@ from traceback import format_exc
 from typing import Any
 
 from just_start import (
-    init, client, logger, prompt_and_exec_action, TaskWarriorError)
+    init, client, logger, prompt_and_exec_action)
 
 
 class CursesClient:
