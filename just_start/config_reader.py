@@ -7,6 +7,42 @@ from .constants import CONFIG_PATH
 from .log import logger
 
 
+try:
+    config = load(CONFIG_PATH)
+except FileNotFoundError:
+    logger.warning(format_exc())
+    config = {}
+
+
+def validate_config():
+    value_errors = []
+    for section_name, section_content in CONFIG_SECTIONS.items():
+        try:
+            validate_config_section(section_name, section_content)
+        except ValueError as e:
+            value_errors.append(f'{e} (in {section_name})')
+    if value_errors:
+        value_errors = '\n'.join([error for error in value_errors])
+        exit(f'Wrong configuration file:\n{value_errors}')
+
+
+def validate_config_section(section_name: str, section_content: Dict) -> None:
+    try:
+        config[section_name]
+    except KeyError:
+        default_content = {name: content[0] for name, content
+                           in section_content.items()}
+        config[section_name] = default_content
+    else:
+        for field_name, field_content in section_content.items():
+            default, validator = field_content
+            try:
+                config[section_name][field_name] = validator(
+                    config[section_name][field_name])
+            except KeyError:
+                config[section_name][field_name] = default
+
+
 def validate_type(object_: Any, type_: type) -> Any:
     if not isinstance(object_, type_):
         raise TypeError(f'Not a {type_.__name__}')
@@ -39,24 +75,6 @@ def as_time(time_str: str) -> time:
     return datetime.strptime(time_str, '%H:%M').time()
 
 
-def validate_config_section(config_: Dict, section_name_: str,
-                            section_content_: Dict) -> None:
-    try:
-        config_[section_name_]
-    except KeyError:
-        default_content = {name: content[0] for name, content
-                           in section_content_.items()}
-        config_[section_name_] = default_content
-    else:
-        for field_name, field_content in section_content_.items():
-            default, validator = field_content
-            try:
-                config_[section_name_][field_name] = validator(
-                    config_[section_name_][field_name])
-            except KeyError:
-                config_[section_name_][field_name] = default
-
-
 CONFIG_SECTIONS = {
     'general': {
         'password': ('', validate_str),
@@ -79,18 +97,4 @@ CONFIG_SECTIONS = {
     },
 }
 
-try:
-    config = load(CONFIG_PATH)
-except FileNotFoundError:
-    logger.warning(format_exc())
-    config = {}
-
-_value_errors = []
-for section_name, section_content in CONFIG_SECTIONS.items():
-    try:
-        validate_config_section(config, section_name, section_content)
-    except ValueError as e:
-        _value_errors.append(f'{e} (in {section_name})')
-if _value_errors:
-    _value_errors = '\n'.join([error for error in _value_errors])
-    exit(f'Wrong configuration file:\n{_value_errors}')
+validate_config()
