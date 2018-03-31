@@ -11,6 +11,7 @@ from typing import Callable, Dict, Optional, Any
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
+from just_start.utils import JustStartError
 
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
@@ -27,7 +28,7 @@ class Phases(Enum):
     LONG_REST = 'LONG BREAK!!!'
 
 
-class PomodoroError(Exception):
+class PomodoroError(JustStartError):
     pass
 
 

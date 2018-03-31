@@ -9,7 +9,8 @@ from time import sleep
 from traceback import format_exc
 from typing import Any
 
-from just_start import init, client, logger, prompt_action_char
+from just_start import (
+    init, client, logger, prompt_and_exec_action, TaskWarriorError)
 
 
 class CursesClient:
@@ -172,7 +173,7 @@ def start_curses(stdscr: Any) -> None:
     init()
     while True:
         sleep(0.1)
-        prompt_action_char()
+        prompt_and_exec_action()
 
 
 if __name__ == '__main__':

@@ -36,6 +36,14 @@ class ActionError(JustStartError):
     pass
 
 
+class UserInputError(JustStartError, ValueError):
+    pass
+
+
+class PromptKeyboardInterrupt(JustStartError, KeyboardInterrupt):
+    pass
+
+
 class ClientHandler(dict):
     def __init__(self) -> None:
         super().__init__()
@@ -54,7 +62,7 @@ class ClientHandler(dict):
 client_handler = ClientHandler()
 
 
-def refresh(function_: Callable=None) -> Union[None, Callable]:
+def refresh_tasks(function_: Callable=None) -> Union[None, Callable]:
     if function_:
         @wraps(function_)
         def decorator(*args, **kwargs) -> None:
@@ -93,7 +101,7 @@ class GuiHandler:
         client_handler.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
 
-    @refresh
+    @refresh_tasks
     def sync(self) -> None:
         self.status = SYNC_MSG
         self.status = run_task('sync')
