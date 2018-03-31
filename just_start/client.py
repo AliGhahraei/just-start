@@ -26,7 +26,8 @@ class _Client(dict):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
-    def on_tasks_refresh(task_list) -> None: pass
+    def on_tasks_refresh(task_list) -> None:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     def __setitem__(self, key: str, value: Callable):
         if key not in _Client.__dict__:
