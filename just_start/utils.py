@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pexpect import spawn, EOF
 
-from .client_handler import client_handler
+from .client import client
 from .config_reader import config
 from .constants import SYNC_MSG
 
@@ -50,29 +50,29 @@ def refresh_tasks(function_: Callable=None) -> Optional[Callable]:
         @wraps(function_)
         def decorator(*args, **kwargs) -> None:
             function_(*args, **kwargs)
-            client_handler.on_tasks_refresh(get_task_list())
+            client.on_tasks_refresh(get_task_list())
 
         return decorator
 
-    client_handler.on_tasks_refresh(get_task_list())
+    client.on_tasks_refresh(get_task_list())
 
 
 def get_task_list() -> List[str]:
     return run_task().split("\n")
 
 
-class GuiHandler:
+class StatusManager:
     def __init__(self) -> None:
         self._pomodoro_status = ''
         self._status = ''
 
     @property
-    def status(self) -> str:
+    def app_status(self) -> str:
         return self._status
 
-    @status.setter
-    def status(self, status) -> None:
-        client_handler.write_status(status)
+    @app_status.setter
+    def app_status(self, status) -> None:
+        client.write_status(status)
         self._status = status
 
     @property
@@ -81,16 +81,13 @@ class GuiHandler:
 
     @pomodoro_status.setter
     def pomodoro_status(self, pomodoro_status) -> None:
-        client_handler.write_pomodoro_status(pomodoro_status)
+        client.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
 
     @refresh_tasks
     def sync(self) -> None:
-        self.status = SYNC_MSG
-        self.status = run_task('sync')
-
-
-gui_handler = GuiHandler()
+        self.app_status = SYNC_MSG
+        self.app_status = run_task('sync')
 
 
 def manage_blocked_sites(blocked: bool) -> None:

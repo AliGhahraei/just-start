@@ -7,7 +7,7 @@ from sys import exit
 from typing import Dict
 
 from .utils import (
-    client_handler, gui_handler, refresh_tasks, run_task, manage_wifi,
+    client, StatusManager, refresh_tasks, run_task, manage_wifi,
     manage_blocked_sites, JustStartError, UserInputError,
     PromptKeyboardInterrupt)
 
@@ -17,8 +17,9 @@ from .constants import (
 from just_start.pomodoro import PomodoroTimer
 
 
+status_manager = StatusManager()
 pomodoro_timer = PomodoroTimer(
-    lambda status: gui_handler.__setattr__('pomodoro_status', status),
+    lambda status: status_manager.__setattr__('pomodoro_status', status),
     manage_blocked_sites
 )
 
@@ -30,7 +31,7 @@ def write_errors_option(func):
             try:
                 func(*args, **kwargs)
             except JustStartError as e:
-                client_handler.write_status(str(e), error=True)
+                client.write_status(str(e), error=True)
         else:
             func(*args, **kwargs)
     return wrapper
@@ -66,14 +67,14 @@ def refresh_tasks_and_sync():
 
 
 def sync() -> None:
-    gui_handler.sync()
+    status_manager.sync()
 
 
 # noinspection PyUnusedLocal
 @write_errors_option
 def prompt_and_exec_action(write_errors=True) -> None:
     try:
-        action_key = client_handler.prompt_char(
+        action_key = client.prompt_char(
             'Waiting for user. Pressing h shows'
             ' available actions')
     except KeyboardInterrupt as e:
@@ -112,7 +113,7 @@ def serialize_timer() -> None:
 
 
 def input_task_ids() -> str:
-    ids = client_handler.prompt_string("Enter the task's ids")
+    ids = client.prompt_string("Enter the task's ids")
 
     split_ids = ids.split(',')
     try:
@@ -129,7 +130,7 @@ def skip_phases() -> None:
 
     while not valid_phases:
         try:
-            phases = int(client_handler.prompt_string(prompt))
+            phases = int(client.prompt_string(prompt))
         except ValueError:
             pass
         else:
@@ -152,7 +153,7 @@ def reset_timer(at_work_user_overridden: bool=False) -> None:
 
 
 def location_change() -> None:
-    location = client_handler.prompt_string("Enter 'w' for work or anything"
+    location = client.prompt_string("Enter 'w' for work or anything"
                                             " else for home")
     at_work = location == 'w'
     reset_timer(at_work)
@@ -161,39 +162,39 @@ def location_change() -> None:
 
 @refresh_tasks
 def add() -> None:
-    name = client_handler.prompt_string("Enter the new task's data")
-    gui_handler.status = run_task('add', *name.split())
+    name = client.prompt_string("Enter the new task's data")
+    status_manager.app_status = run_task('add', *name.split())
 
 
 @refresh_tasks
 def delete() -> None:
     ids = input_task_ids()
-    gui_handler.status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
-                                  'delete')
+    status_manager.app_status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids,
+                                     'delete')
 
 
 @refresh_tasks
 def modify() -> None:
     ids = input_task_ids()
-    name = client_handler.prompt_string("Enter the modified task's data")
-    gui_handler.status = run_task(RECURRENCE_OFF, ids, 'modify',
-                                  *name.split())
+    name = client.prompt_string("Enter the modified task's data")
+    status_manager.app_status = run_task(RECURRENCE_OFF, ids, 'modify',
+                                         *name.split())
 
 
 @refresh_tasks
 def complete() -> None:
     ids = input_task_ids()
-    gui_handler.status = run_task(ids, 'done')
+    status_manager.app_status = run_task(ids, 'done')
 
 
 @refresh_tasks
 def custom_command() -> None:
-    command = client_handler.prompt_string('Enter your command')
-    gui_handler.status = run_task(*command.split())
+    command = client.prompt_string('Enter your command')
+    status_manager.app_status = run_task(*command.split())
 
 
 def show_help(help_message: str=KEYBOARD_HELP_MESSAGE) -> None:
-    gui_handler.status = help_message
+    status_manager.app_status = help_message
 
 
 class Action(Enum):
@@ -212,7 +213,7 @@ class Action(Enum):
     CUSTOM_COMMAND = partial(custom_command)
 
     def __call__(self, *args, **kwargs) -> None:
-        gui_handler.status = ''
+        status_manager.app_status = ''
         self.value(*args, **kwargs)
 
 

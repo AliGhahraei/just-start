@@ -34,14 +34,14 @@ class _Client(dict):
         self.__setattr__(key, value)
 
 
-client_handler = _Client()
+client = _Client()
 
 
-def client(user_function: Union[Callable, str]):
+def client_decorator(user_function: Union[Callable, str]):
     local_function_name = None
 
     def decorator(user_function_: Callable) -> Callable:
-        client_handler[local_function_name] = user_function_
+        client[local_function_name] = user_function_
         return user_function_
 
     if callable(user_function):
