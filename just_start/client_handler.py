@@ -10,19 +10,19 @@ class _Client(dict):
         super().__init__()
 
     @staticmethod
-    def write_status(status: str, error: bool = False) -> None:
+    def write_status(status: str, error: bool=False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
-    def write_pomodoro_status(status: str, error: bool = False) -> None:
+    def write_pomodoro_status(status: str, error: bool=False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
-    def prompt_char(prompt: str, error: bool = False) -> str:
+    def prompt_char(prompt: str, error: bool=False) -> str:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
-    def prompt_string(prompt: str, error: bool = False) -> str:
+    def prompt_string(prompt: str, error: bool=False) -> str:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @staticmethod
