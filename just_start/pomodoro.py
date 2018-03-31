@@ -7,7 +7,7 @@ from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run
 from threading import Timer
-from typing import Callable, Dict, Optional, Any
+from typing import Callable, Dict, Any
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config

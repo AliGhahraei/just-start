@@ -4,7 +4,7 @@ from functools import wraps, partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from sys import exit
-from typing import Optional, Dict, Callable, Union
+from typing import Dict, Callable, Union
 
 from .client_decorators import CLIENT_DECORATORS
 from .utils import (
