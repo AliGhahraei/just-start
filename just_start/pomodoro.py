@@ -44,7 +44,8 @@ class PomodoroTimer:
         self.blocking_callback = blocking_callback
 
         self._at_work_override = at_work_override
-        self.location = 'work' if self.at_work else 'home'
+        self.location = ('work' if self._at_work_override or self.at_work
+                         else 'home')
 
         self.start_datetime = self.timer = None
         self.is_running = False
