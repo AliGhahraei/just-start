@@ -2,12 +2,13 @@
 import shelve
 from datetime import datetime, timedelta
 from enum import Enum
+from functools import partial
 from itertools import cycle
 from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run
 from threading import Timer
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, Tuple
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
@@ -22,7 +23,7 @@ def time_after_seconds(seconds_left: int) -> str:
     return end_time.strftime('%H:%M')
 
 
-class Phases(Enum):
+class Phase(Enum):
     WORK = 'Work and switch tasks'
     SHORT_REST = 'Short break'
     LONG_REST = 'LONG BREAK!!!'
@@ -33,16 +34,17 @@ class PomodoroError(JustStartError):
 
 
 class PomodoroTimer:
-    SERIALIZABLE_ATTRIBUTES = 'pomodoro_cycle', 'state', 'time_left', 'at_work'
+    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'phase', 'time_left',
+                               '_at_work_override')
 
-    def __init__(self, external_status_function: Callable[[str], None],
-                 external_blocking_function: Callable[[bool], None],
-                 at_work: bool=False, notify: bool=False):
-        self.external_status_function = external_status_function
-        self.external_blocking_function = external_blocking_function
+    def __init__(self, status_callback: Callable[[str], None],
+                 blocking_callback: Callable[[bool], None],
+                 at_work_override: bool=False, notify: bool=False):
+        self.status_callback = status_callback
+        self.blocking_callback = blocking_callback
 
-        self.at_work = at_work
-        self.location = 'work' if self.user_is_at_work() else 'home'
+        self._at_work_override = at_work_override
+        self.location = 'work' if self.at_work else 'home'
 
         self.start_datetime = self.timer = None
         self.is_running = False
@@ -50,7 +52,7 @@ class PomodoroTimer:
         self.PHASE_DURATION = self._generate_phase_duration()
 
         self.pomodoro_cycle = self._create_cycle()
-        self._update_state_and_time_left()
+        self.phase, self.time_left = self._get_next_phase_and_time_left()
 
         if notify:
             self.notify(STOP_MESSAGE)
@@ -67,19 +69,34 @@ class PomodoroTimer:
             self.__setattr__(attribute, value)
 
     def _pause(self) -> None:
+        self._cancel_timer()
+        self.is_running = False
+        self.blocking_callback(True)
+
+    def _cancel_timer(self) -> None:
         if self.is_running:
             self.timer.cancel()
             elapsed_timedelta = datetime.now() - self.start_datetime
             self.time_left -= elapsed_timedelta.seconds
 
-    def user_is_at_work(self) -> bool:
-        if self.at_work:
+    @property
+    def at_work(self) -> bool:
+        if self._at_work_override:
             return True
 
         return datetime.now().isoweekday() < 6 and (
                 config['work']['start']
                 <= datetime.now().time()
                 <= config['work']['end'])
+
+    @property
+    def skip_enabled(self) -> bool:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            try:
+                return db['skip_enabled']
+            except KeyError:
+                db['skip_enabled'] = False
+                return False
 
     def _generate_phase_duration(self) -> Dict:
         location_config = config[self.location]
@@ -88,88 +105,74 @@ class PomodoroTimer:
             location_config['pomodoro_length'], location_config['short_rest'],
             location_config['long_rest']))
         # noinspection PyTypeChecker
-        phase_duration = dict(zip(Phases, durations))
+        phase_duration = dict(zip(Phase, durations))
         return phase_duration
 
     def _create_cycle(self) -> cycle:
-        states = ([Phases.WORK, Phases.SHORT_REST]
+        states = ([Phase.WORK, Phase.SHORT_REST]
                   * config[self.location]['cycles_before_long_rest'])
-        states[-1] = Phases.LONG_REST
+        states[-1] = Phase.LONG_REST
         return cycle(states)
 
-    def _update_state_and_time_left(self) -> None:
-        self.state = next(self.pomodoro_cycle)
-        self.time_left = self.PHASE_DURATION[self.state]
+    def _get_next_phase_and_time_left(self) -> Tuple[Phase, int]:
+        next_phase = next(self.pomodoro_cycle)
+        return next_phase, self.PHASE_DURATION[next_phase]
 
     def notify(self, status: str) -> None:
         if system() == 'Linux':
             run(['notify-send', status])
         else:
             # noinspection SpellCheckingInspection
-            run(['osascript', '-e',
-                 f'display notification "{status}" with title'
-                 f' "just-start"'])
+            run(['osascript', '-e', f'display notification "{status}" with'
+                                    f' title "just-start"'])
 
-        self.external_status_function(status)
+        self.status_callback(status)
 
     def toggle(self) -> None:
         if self.is_running:
             self._pause()
             self.notify('Paused')
-            self.external_blocking_function(True)
         else:
             self._run()
-            self.external_blocking_function(self.state is self.state.WORK)
-
-        self.is_running = not self.is_running
 
     def _run(self) -> None:
         self.start_datetime = datetime.now()
         now = self.start_datetime.time().strftime('%H:%M')
-        self.notify(f'{self.state.value} - {self.work_count} pomodoros so'
-                    f' far at {"work" if self.user_is_at_work() else "home"}.'
+        pomodoros = 'pomodoro' if self.work_count == 1 else 'pomodoros'
+        self.notify(f'{self.phase.value} - {self.work_count} {pomodoros} so'
+                    f' far at {"work" if self.at_work else "home"}.'
                     f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
 
-        self.timer = Timer(self.time_left,
-                           self._timer_triggered_phase_advancement)
+        self.timer = Timer(self.time_left, partial(self.advance_phases, False))
         self.timer.start()
-
-    def _timer_triggered_phase_advancement(self) -> None:
-        self.advance_phases(timer_triggered=True)
-
-    def advance_phases(self, timer_triggered: bool=False,
-                       phases_skipped: int=1) -> None:
-        if self.state is self.state.WORK:
-            with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-                try:
-                    skip_enabled = db['skip_enabled']
-                except KeyError:
-                    db['skip_enabled'] = skip_enabled = False
-
-                if not timer_triggered and not skip_enabled:
-                    raise PomodoroError('Sorry, please work 1 pomodoro to'
-                                        ' re-enable work skipping')
-
-                self.work_count += 1
-                db['skip_enabled'] = timer_triggered
-        elif phases_skipped > 1:
-            raise PomodoroError("Sorry, you can't skip more than 1 phase"
-                                " while not working")
-
-        self._pause()
         self.is_running = True
+        self.blocking_callback(self.phase is self.phase.WORK)
 
-        for _ in range(phases_skipped):
-            self._update_state_and_time_left()
+    def advance_phases(self, is_skipping: bool=True,
+                       phases_skipped: int=1) -> None:
+        if is_skipping and self.phase is self.phase.WORK:
+            with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+                db['skip_enabled'] = False
+
+        self._cancel_timer()
+
+        if self.phase is self.phase.WORK:
+            self.work_count += 1
+
+        # Skipped work phases count as finished, except for the current one
+        for _ in range(phases_skipped - 1):
+            self.phase, self.time_left = self._get_next_phase_and_time_left()
+
+            if self.phase is self.phase.WORK:
+                self.work_count += 1
+
+        self.phase, self.time_left = self._get_next_phase_and_time_left()
         self._run()
 
-        self.external_blocking_function(self.state is self.state.WORK)
-
-    def reset(self, at_work: bool) -> None:
+    def reset(self, at_work_override: bool) -> None:
         self._pause()
-        self.__init__(self.external_status_function,
-                      self.external_blocking_function,
-                      at_work=at_work,
+        self.__init__(self.status_callback,
+                      self.blocking_callback,
+                      at_work_override=at_work_override,
                       notify=True)
-        self.external_blocking_function(True)

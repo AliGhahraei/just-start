@@ -19,10 +19,9 @@ BLOCKING_LINES = '\\n'.join(
     [f'{BLOCKING_IP}\\t{blocked_site}\\t{APP_SPECIFIC_COMMENT}\\n'
      f'{BLOCKING_IP}\\twww.{blocked_site}\\t{APP_SPECIFIC_COMMENT}'
      for blocked_site in config['general']['blocked_sites']])
-BLOCK_COMMAND = (f'/bin/bash -c "echo -e \'{BLOCKING_LINES}\' | '
-                 f'sudo tee -a /etc/hosts > /dev/null"')
-UNBLOCK_COMMAND = (f"sudo sed -i '' '/^.*{APP_SPECIFIC_COMMENT}$"
-                   f"/d' /etc/hosts")
+BLOCK_COMMAND = (f'/bin/bash -c "echo -e \'{BLOCKING_LINES}\' | sudo tee -a' 
+                 f' /etc/hosts > /dev/null"')
+UNBLOCK_COMMAND = f"sudo sed -i '' '/^.*{APP_SPECIFIC_COMMENT}$/d' /etc/hosts"
 
 
 class JustStartError(Exception):
@@ -90,12 +89,12 @@ class StatusManager:
         self.app_status = run_task('sync')
 
 
-def manage_blocked_sites(blocked: bool) -> None:
-    if blocked:
-        run_sudo(UNBLOCK_COMMAND, PASSWORD)
+def block_sites(block: bool) -> None:
+    # Always delete outdated blocked sites
+    run_sudo(UNBLOCK_COMMAND, PASSWORD)
+
+    if block:
         run_sudo(BLOCK_COMMAND, PASSWORD)
-    else:
-        run_sudo(UNBLOCK_COMMAND, PASSWORD)
 
 
 def manage_wifi(timer_running: bool=False) -> None:

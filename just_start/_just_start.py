@@ -6,21 +6,21 @@ from signal import signal, SIGTERM
 from sys import exit
 from typing import Dict
 
-from .utils import (
-    client, StatusManager, refresh_tasks, run_task, manage_wifi,
-    manage_blocked_sites, JustStartError, UserInputError,
-    PromptKeyboardInterrupt)
-
 from .constants import (
     PHASE_SKIP_PROMPT, KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
     PERSISTENT_PATH)
-from just_start.pomodoro import PomodoroTimer
+from .log import logger
+from .pomodoro import PomodoroTimer, PomodoroError
+from .utils import (
+    client, StatusManager, refresh_tasks, run_task, manage_wifi,
+    block_sites, JustStartError, UserInputError,
+    PromptKeyboardInterrupt)
 
 
 status_manager = StatusManager()
 pomodoro_timer = PomodoroTimer(
     lambda status: status_manager.__setattr__('pomodoro_status', status),
-    manage_blocked_sites
+    block_sites
 )
 
 
@@ -50,7 +50,8 @@ def read_serialized_data() -> Dict:
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
             data = {arg: db[arg] for arg
                     in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
-    except KeyError:
+    except (KeyError, AttributeError) as e:
+        logger.warning(f"Serialized data couldn't be read: {str(e)}")
         data = {}
 
     pomodoro_timer.serializable_data = data
@@ -125,21 +126,27 @@ def input_task_ids() -> str:
 
 
 def skip_phases() -> None:
-    prompt = PHASE_SKIP_PROMPT
-    valid_phases = False
+    if pomodoro_timer.phase is not pomodoro_timer.phase.WORK:
+        pomodoro_timer.advance_phases()
+    elif not pomodoro_timer.skip_enabled:
+        raise PomodoroError('Sorry, please work 1 pomodoro to re-enable phase'
+                            ' skipping')
+    else:
+        prompt_message = PHASE_SKIP_PROMPT
+        valid_phases = False
 
-    while not valid_phases:
-        try:
-            phases = int(client.prompt_string(prompt))
-        except ValueError:
-            pass
-        else:
-            if phases >= 1:
-                pomodoro_timer.advance_phases(phases_skipped=phases)
-                valid_phases = True
-                manage_wifi(timer_running=True)
+        while not valid_phases:
+            try:
+                phases = int(client.prompt_string(prompt_message))
+            except ValueError:
+                pass
+            else:
+                if phases >= 1:
+                    pomodoro_timer.advance_phases(phases_skipped=phases)
+                    valid_phases = True
+                    manage_wifi(timer_running=True)
 
-        prompt = 'Please enter a valid number of phases'
+            prompt_message = 'Please enter a valid number of phases'
 
 
 def toggle_timer() -> None:
@@ -147,8 +154,8 @@ def toggle_timer() -> None:
     manage_wifi(pomodoro_timer.is_running)
 
 
-def reset_timer(at_work_user_overridden: bool=False) -> None:
-    pomodoro_timer.reset(at_work=at_work_user_overridden)
+def reset_timer(at_work_override: bool=False) -> None:
+    pomodoro_timer.reset(at_work_override=at_work_override)
     manage_wifi(timer_running=False)
 
 

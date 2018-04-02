@@ -1,36 +1,36 @@
 from typing import Callable, Union
 
 
-NOT_IMPLEMENTED_MESSAGE = 'Client should implement this function'
-INVALID_CLIENT_MESSAGE = 'Not a valid client function'
+NOT_IMPLEMENTED_FUNCTION = "Client didn't implement this function"
+INVALID_FUNCTION = 'Not a valid client function'
 
 
-class _Client(dict):
+class Client(dict):
     def __init__(self) -> None:
         super().__init__()
 
     def write_status(self, status: str, error: bool=False) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
     def write_pomodoro_status(self, status: str, error: bool=False) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
     def prompt_char(self, prompt: str, error: bool=False) -> str:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
     def prompt_string(self, prompt: str, error: bool=False) -> str:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
     def on_tasks_refresh(self, task_list) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
     def __setitem__(self, key: str, value: Callable):
-        if key not in _Client.__dict__:
-            raise ValueError(f'{INVALID_CLIENT_MESSAGE}: {key}')
+        if key not in Client.__dict__:
+            raise ValueError(f'{INVALID_FUNCTION}: {key}')
         self.__setattr__(key, value)
 
 
-client = _Client()
+client = Client()
 
 
 def client_decorator(user_function: Union[Callable, str]):
