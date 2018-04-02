@@ -1,4 +1,5 @@
 from datetime import time, datetime
+from os.path import join, expanduser, exists
 from traceback import format_exc
 from toml import load
 from typing import Dict, Any
@@ -14,6 +15,10 @@ except FileNotFoundError:
     config = {}
 
 
+class ConfigError(Exception):
+    pass
+
+
 def validate_config():
     value_errors = []
     for section_name, section_content in CONFIG_SECTIONS.items():
@@ -23,7 +28,7 @@ def validate_config():
             value_errors.append(f'{e} (in {section_name})')
     if value_errors:
         value_errors = '\n'.join([error for error in value_errors])
-        exit(f'Wrong configuration file:\n{value_errors}')
+        raise ConfigError(f'Wrong configuration file:\n{value_errors}')
 
 
 def validate_config_section(section_name: str, section_content: Dict) -> None:
@@ -80,6 +85,7 @@ CONFIG_SECTIONS = {
         'password': ('', validate_str),
         'blocked_sites': ([], validate_list),
         'blocking_ip': ('127.0.0.1', validate_str),
+        'taskrc_path': (expanduser(join('~')), validate_str),
     },
     'work': {
         'start': (as_time('09:00'), validate_time),
@@ -98,3 +104,6 @@ CONFIG_SECTIONS = {
 }
 
 validate_config()
+if not exists(expanduser(join(config['general']['taskrc_path'], '.taskrc'))):
+    raise ConfigError(f'.taskrc could not be found in'
+                      f' {config["general"]["taskrc_path"]}')
