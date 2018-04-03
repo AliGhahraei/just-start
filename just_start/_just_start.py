@@ -15,7 +15,7 @@ from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
     StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
-    UserInputError)
+    UserInputError, TaskWarriorError)
 
 
 def _signal_handler() -> None:
@@ -26,8 +26,10 @@ def quit_gracefully() -> None:
     serialize_timer()
     try:
         sync()
-    finally:
-        manage_wifi()
+    except TaskWarriorError as e:
+        print(str(e))
+
+    manage_wifi()
 
 
 def read_serialized_data() -> Dict:
