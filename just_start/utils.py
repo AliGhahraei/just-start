@@ -100,8 +100,8 @@ def block_sites(block: bool) -> None:
         run_sudo(BLOCK_COMMAND, PASSWORD)
 
 
-def manage_wifi(timer_running: bool=False) -> None:
-    if timer_running:
+def manage_wifi(*, enable: bool=False) -> None:
+    if enable:
         if system() == 'Linux':
             # noinspection SpellCheckingInspection
             run_sudo('sudo systemctl start netctl-auto@wlp2s0', PASSWORD)

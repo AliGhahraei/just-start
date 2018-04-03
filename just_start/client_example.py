@@ -1,5 +1,5 @@
 from just_start import (
-    refresh_tasks_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
+    initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
     JustStartError)
 
 RESTORE_COLOR = '\033[0m'
@@ -29,7 +29,7 @@ def error(message):
 
 def main():
     try:
-        refresh_tasks_and_sync()
+        initial_refresh_and_sync()
     except JustStartError as e:
         error(e)
 

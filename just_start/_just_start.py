@@ -24,7 +24,6 @@ def _signal_handler() -> None:
 def quit_gracefully() -> None:
     serialize_timer()
     try:
-        manage_wifi(timer_running=True)
         sync()
     finally:
         manage_wifi()
@@ -53,9 +52,10 @@ signal(SIGTERM, _signal_handler)
 read_serialized_data()
 
 
-def refresh_tasks_and_sync():
+def initial_refresh_and_sync():
     refresh_tasks()
     sync()
+    manage_wifi()
 
 
 def sync() -> None:
@@ -74,17 +74,17 @@ def skip_phases(phases: Optional[int]=None) -> None:
         raise UserInputError('Number of phases must be a positive integer') \
             from e
 
-    manage_wifi(timer_running=True)
+    manage_wifi(enable=True)
 
 
 def toggle_timer() -> None:
     pomodoro_timer.toggle()
-    manage_wifi(pomodoro_timer.is_running)
+    manage_wifi(enable=pomodoro_timer.is_running)
 
 
 def reset_timer(at_work_override: bool=False) -> None:
     pomodoro_timer.reset(at_work_override=at_work_override)
-    manage_wifi(timer_running=False)
+    manage_wifi(enable=False)
 
 
 def location_change(location: str) -> None:
