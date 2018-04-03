@@ -1,5 +1,6 @@
 from just_start import (
-    init, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError)
+    refresh_tasks_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
+    JustStartError)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -27,7 +28,10 @@ def error(message):
 
 
 def main():
-    init()
+    try:
+        refresh_tasks_and_sync()
+    except JustStartError as e:
+        error(e)
 
     while True:
         key = input('Enter your action\n')

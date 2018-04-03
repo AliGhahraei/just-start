@@ -1,3 +1,4 @@
+import atexit
 import shelve
 from collections import OrderedDict
 from enum import Enum
@@ -14,29 +15,20 @@ from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
     StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
-    UserInputError, TaskWarriorError)
+    UserInputError)
 
 
-status_manager = StatusManager()
-pomodoro_timer = PomodoroTimer(
-    lambda status: status_manager.__setattr__('pomodoro_status', status),
-    block_sites
-)
+def _signal_handler() -> None:
+    quit_gracefully()
 
 
-def init(ignore_sync_fail=True) -> None:
-    """Initialize the just-start program.
-
-    :param ignore_sync_fail: False raises a TaskWarriorError on sync fail
-    :raise TaskWarriorError if sync fails and ignore_sync_fail is False
-    """
-    read_serialized_data()
-    handle_sigterm()
+def quit_gracefully() -> None:
+    serialize_timer()
     try:
-        refresh_tasks_and_sync()
-    except TaskWarriorError:
-        if not ignore_sync_fail:
-            raise
+        sync()
+    finally:
+        manage_wifi()
+    exit()
 
 
 def read_serialized_data() -> Dict:
@@ -52,8 +44,14 @@ def read_serialized_data() -> Dict:
     return data
 
 
-def handle_sigterm():
-    signal(SIGTERM, _signal_handler)
+status_manager = StatusManager()
+pomodoro_timer = PomodoroTimer(
+    lambda status: status_manager.__setattr__('pomodoro_status', status),
+    block_sites
+)
+atexit.register(quit_gracefully)
+signal(SIGTERM, _signal_handler)
+read_serialized_data()
 
 
 def refresh_tasks_and_sync():
@@ -63,17 +61,6 @@ def refresh_tasks_and_sync():
 
 def sync() -> None:
     status_manager.sync()
-
-
-def _signal_handler() -> None:
-    quit_gracefully()
-
-
-def quit_gracefully() -> None:
-    sync()
-    manage_wifi()
-    serialize_timer()
-    exit()
 
 
 def serialize_timer() -> None:
@@ -147,7 +134,7 @@ class Action(Enum):
     LOCATION_CHANGE = partial(location_change)
     MODIFY = partial(modify)
     TOGGLE_TIMER = partial(toggle_timer)
-    QUIT_GRACEFULLY = partial(quit_gracefully)
+    QUIT = partial(quit)
     REFRESH_TASKS = partial(refresh_tasks)
     STOP_TIMER = partial(reset_timer)
     SYNC = partial(sync)
