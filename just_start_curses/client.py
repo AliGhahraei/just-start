@@ -10,7 +10,7 @@ from traceback import format_exc
 from typing import Any
 
 from just_start import (
-    init, client, logger, prompt_and_exec_action)
+    init, client, logger, prompt_action)
 
 
 class CursesClient:
@@ -173,7 +173,7 @@ def start_curses(stdscr: Any) -> None:
     init()
     while True:
         sleep(0.1)
-        prompt_and_exec_action()
+        prompt_action()
 
 
 if __name__ == '__main__':

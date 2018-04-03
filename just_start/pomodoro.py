@@ -161,7 +161,7 @@ class PomodoroTimer:
         if self.phase is self.phase.WORK:
             self.work_count += 1
 
-        # Skipped work phases count as finished, except for the current one
+        # Skipped work phases count as finished (but not the current phase)
         for _ in range(phases_skipped - 1):
             self.phase, self.time_left = self._get_next_phase_and_time_left()
 

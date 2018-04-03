@@ -15,12 +15,6 @@ class Client(dict):
     def write_pomodoro_status(self, status: str, error: bool=False) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
-    def prompt_char(self, prompt: str, error: bool=False) -> str:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
-
-    def prompt_string(self, prompt: str, error: bool=False) -> str:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
-
     def on_tasks_refresh(self, task_list) -> None:
         raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
 
