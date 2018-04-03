@@ -4,7 +4,7 @@ from functools import wraps, partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from sys import exit
-from typing import Dict, List, Callable
+from typing import Dict, List
 
 from .constants import (
     PHASE_SKIP_PROMPT, KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
@@ -22,7 +22,6 @@ pomodoro_timer = PomodoroTimer(
     lambda status: status_manager.__setattr__('pomodoro_status', status),
     block_sites
 )
-Prompt = Callable[[str], str]
 
 
 def _write_errors_option(func):
@@ -74,10 +73,10 @@ def sync() -> None:
 
 # noinspection PyUnusedLocal
 @_write_errors_option
-def prompt_action(prompt: Prompt, write_errors=True) -> 'Action':
+def prompt_action(write_errors=True) -> 'Action':
     try:
-        action_key = prompt('Waiting for user. Pressing h shows available'
-                            ' actions')
+        action_key = client.prompt('Waiting for user. Pressing h shows'
+                                   ' available actions')
     except KeyboardInterrupt as e:
         raise PromptKeyboardInterrupt(f'Ctrl+C was pressed with no action'
                                       f' selected. Use q to quit') from e
@@ -109,8 +108,8 @@ def serialize_timer() -> None:
         db.update(pomodoro_timer.serializable_data)
 
 
-def input_task_ids(prompt: Prompt) -> str:
-    ids = prompt("Enter the task's ids")
+def input_task_ids() -> str:
+    ids = client.prompt("Enter the task's ids")
 
     split_ids = ids.split(',')
     try:
@@ -121,7 +120,7 @@ def input_task_ids(prompt: Prompt) -> str:
     return ids
 
 
-def skip_phases(prompt: Prompt) -> None:
+def skip_phases() -> None:
     if pomodoro_timer.phase is not pomodoro_timer.phase.WORK:
         pomodoro_timer.advance_phases()
     elif not pomodoro_timer.skip_enabled:
@@ -133,7 +132,7 @@ def skip_phases(prompt: Prompt) -> None:
 
         while not valid_phases:
             try:
-                phases = int(prompt(prompt_message))
+                phases = int(client.prompt(prompt_message))
             except ValueError:
                 pass
             else:
@@ -155,16 +154,16 @@ def reset_timer(at_work_override: bool=False) -> None:
     manage_wifi(timer_running=False)
 
 
-def location_change(prompt: Prompt) -> None:
-    location = prompt("Enter 'w' for work or anything else for home")
+def location_change() -> None:
+    location = client.prompt("Enter 'w' for work or anything else for home")
     at_work = location == 'w'
     reset_timer(at_work)
     toggle_timer()
 
 
 @refresh_tasks
-def add(prompt: Prompt) -> None:
-    name = prompt("Enter the new task's data")
+def add() -> None:
+    name = client.prompt("Enter the new task's data")
     status_manager.app_status = run_task('add', *name.split())
 
 
@@ -175,8 +174,8 @@ def delete(ids: List[str]) -> None:
 
 
 @refresh_tasks
-def modify(ids: List[str], prompt: Prompt) -> None:
-    name = prompt("Enter the modified data")
+def modify(ids: List[str], ) -> None:
+    name = client.prompt("Enter the modified data")
     status_manager.app_status = run_task(RECURRENCE_OFF, ','.join(ids),
                                          'modify', *name.split())
 
@@ -187,8 +186,8 @@ def complete(ids: List[str]) -> None:
 
 
 @refresh_tasks
-def custom_command(prompt: Prompt) -> None:
-    command = prompt('Enter your command')
+def custom_command() -> None:
+    command = client.prompt('Enter your command')
     status_manager.app_status = run_task(*command.split())
 
 
