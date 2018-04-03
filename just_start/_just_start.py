@@ -25,7 +25,7 @@ pomodoro_timer = PomodoroTimer(
 Prompt = Callable[[str], str]
 
 
-def write_errors_option(func):
+def _write_errors_option(func):
     @wraps(func)
     def wrapper(*args, write_errors=True, **kwargs):
         if write_errors:
@@ -39,7 +39,7 @@ def write_errors_option(func):
 
 
 # noinspection PyUnusedLocal
-@write_errors_option
+@_write_errors_option
 def init(write_errors: bool=True) -> None:
     read_serialized_data()
     handle_sigterm()
@@ -73,7 +73,7 @@ def sync() -> None:
 
 
 # noinspection PyUnusedLocal
-@write_errors_option
+@_write_errors_option
 def prompt_action(prompt: Prompt, write_errors=True) -> 'Action':
     try:
         action_key = prompt('Waiting for user. Pressing h shows available'
