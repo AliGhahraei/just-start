@@ -27,7 +27,8 @@ pomodoro_timer = PomodoroTimer(
 def init(ignore_sync_fail=True) -> None:
     """Initialize the just-start program.
 
-    :raise TaskWarriorError if sync fails
+    :param ignore_sync_fail: False raises a TaskWarriorError on sync fail
+    :raise TaskWarriorError if sync fails and ignore_sync_fail is False
     """
     read_serialized_data()
     handle_sigterm()
