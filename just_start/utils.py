@@ -40,15 +40,18 @@ class UserInputError(JustStartError, ValueError):
     pass
 
 
-class PromptKeyboardInterrupt(JustStartError, KeyboardInterrupt):
-    pass
+def refresh_tasks(f: Callable=None) -> Optional[Callable]:
+    """Refresh tasks or decorate a function to call refresh after its code.
 
+    :param f: call to execute before refreshing
+    :return: a decorated refreshing function if used as decorator
+    :raise TaskWarriorError if sync fails
+    """
 
-def refresh_tasks(function_: Callable=None) -> Optional[Callable]:
-    if function_:
-        @wraps(function_)
+    if f:
+        @wraps(f)
         def decorator(*args, **kwargs) -> None:
-            function_(*args, **kwargs)
+            f(*args, **kwargs)
             client.on_tasks_refresh(get_task_list())
 
         return decorator

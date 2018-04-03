@@ -9,17 +9,17 @@ class Client(dict):
     def __init__(self) -> None:
         super().__init__()
 
-    def write_status(self, status: str, error: bool=False) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
+    def write_status(self, status: str) -> None:
+        raise NotImplementedError(f'{NOT_IMPLEMENTED_FUNCTION}:'
+                                  f' {self.write_status.__name__}')
 
-    def write_pomodoro_status(self, status: str, error: bool=False) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
-
-    def prompt(self, message: str) -> str:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
+    def write_pomodoro_status(self, status: str) -> None:
+        raise NotImplementedError(f'{NOT_IMPLEMENTED_FUNCTION}:'
+                                  f' {self.write_pomodoro_status.__name__}')
 
     def on_tasks_refresh(self, task_list) -> None:
-        raise NotImplementedError(NOT_IMPLEMENTED_FUNCTION)
+        raise NotImplementedError(f'{NOT_IMPLEMENTED_FUNCTION}:'
+                                  f' {self.on_tasks_refresh.__name__}')
 
     def __setitem__(self, key: str, value: Callable):
         if key not in Client.__dict__:

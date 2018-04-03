@@ -1,20 +1,20 @@
 import shelve
+from collections import OrderedDict
 from enum import Enum
-from functools import wraps, partial
+from functools import partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from sys import exit
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .constants import (
-    PHASE_SKIP_PROMPT, KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
+    KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
     PERSISTENT_PATH)
 from .log import logger
-from .pomodoro import PomodoroTimer, PomodoroError
+from .pomodoro import PomodoroTimer
 from .utils import (
     client, StatusManager, refresh_tasks, run_task, manage_wifi,
-    block_sites, JustStartError, UserInputError,
-    PromptKeyboardInterrupt)
+    block_sites, JustStartError, UserInputError, TaskWarriorError)
 
 
 status_manager = StatusManager()
@@ -24,25 +24,18 @@ pomodoro_timer = PomodoroTimer(
 )
 
 
-def _write_errors_option(func):
-    @wraps(func)
-    def wrapper(*args, write_errors=True, **kwargs):
-        if write_errors:
-            try:
-                func(*args, **kwargs)
-            except JustStartError as e:
-                client.write_status(str(e), error=True)
-        else:
-            func(*args, **kwargs)
-    return wrapper
+def init(ignore_sync_fail=True) -> None:
+    """Initialize the just-start program.
 
-
-# noinspection PyUnusedLocal
-@_write_errors_option
-def init(write_errors: bool=True) -> None:
+    :raise TaskWarriorError if sync fails
+    """
     read_serialized_data()
     handle_sigterm()
-    refresh_tasks_and_sync()
+    try:
+        refresh_tasks_and_sync()
+    except TaskWarriorError:
+        if not ignore_sync_fail:
+            raise
 
 
 def read_serialized_data() -> Dict:
@@ -71,33 +64,12 @@ def sync() -> None:
     status_manager.sync()
 
 
-# noinspection PyUnusedLocal
-@_write_errors_option
-def prompt_action(write_errors=True) -> 'Action':
-    try:
-        action_key = client.prompt('Waiting for user. Pressing h shows'
-                                   ' available actions')
-    except KeyboardInterrupt as e:
-        raise PromptKeyboardInterrupt(f'Ctrl+C was pressed with no action'
-                                      f' selected. Use q to quit') from e
-    else:
-        try:
-            action = KEY_ACTIONS[action_key]
-        except KeyError as e:
-            raise UserInputError(f'Unknown action key: "{action_key}"') from e
-        else:
-            return action
-
-
 def _signal_handler() -> None:
     quit_gracefully()
 
 
 def quit_gracefully() -> None:
-    try:
-        sync()
-    except JustStartError as e:
-        client.write_status(str(e), error=True)
+    sync()
     manage_wifi()
     serialize_timer()
     exit()
@@ -108,26 +80,7 @@ def serialize_timer() -> None:
         db.update(pomodoro_timer.serializable_data)
 
 
-def input_task_ids() -> str:
-    ids = client.prompt("Enter the task's ids")
-
-    split_ids = ids.split(',')
-    try:
-        list(map(int, split_ids))
-    except ValueError as e:
-        raise UserInputError(f'Invalid id list "{ids}"') from e
-
-    return ids
-
-
-def skip_phases() -> None:
-    if pomodoro_timer.phase is not pomodoro_timer.phase.WORK:
-        pomodoro_timer.advance_phases()
-    elif not pomodoro_timer.skip_enabled:
-        raise PomodoroError('Sorry, please work 1 pomodoro to re-enable phase'
-                            ' skipping')
-
-    phases = client.prompt(PHASE_SKIP_PROMPT)
+def skip_phases(phases: Optional[int]=None) -> None:
     try:
         pomodoro_timer.advance_phases(phases_skipped=phases)
     except (TypeError, ValueError) as e:
@@ -147,17 +100,15 @@ def reset_timer(at_work_override: bool=False) -> None:
     manage_wifi(timer_running=False)
 
 
-def location_change() -> None:
-    location = client.prompt("Enter 'w' for work or anything else for home")
+def location_change(location: str) -> None:
     at_work = location == 'w'
     reset_timer(at_work)
     toggle_timer()
 
 
 @refresh_tasks
-def add() -> None:
-    name = client.prompt("Enter the new task's data")
-    status_manager.app_status = run_task('add', *name.split())
+def add(task_data: str) -> None:
+    status_manager.app_status = run_task('add', *task_data.split())
 
 
 @refresh_tasks
@@ -167,10 +118,9 @@ def delete(ids: List[str]) -> None:
 
 
 @refresh_tasks
-def modify(ids: List[str], ) -> None:
-    name = client.prompt("Enter the modified data")
+def modify(ids: List[str], task_data: str) -> None:
     status_manager.app_status = run_task(RECURRENCE_OFF, ','.join(ids),
-                                         'modify', *name.split())
+                                         'modify', *task_data.split())
 
 
 @refresh_tasks
@@ -179,8 +129,7 @@ def complete(ids: List[str]) -> None:
 
 
 @refresh_tasks
-def custom_command() -> None:
-    command = client.prompt('Enter your command')
+def custom_command(command: str) -> None:
     status_manager.app_status = run_task(*command.split())
 
 
@@ -193,14 +142,13 @@ class Action(Enum):
     COMPLETE = partial(complete)
     DELETE = partial(delete)
     SHOW_HELP = partial(show_help)
-    INPUT_TASK_IDS = partial(input_task_ids)
     SKIP_PHASES = partial(skip_phases)
     LOCATION_CHANGE = partial(location_change)
     MODIFY = partial(modify)
     TOGGLE_TIMER = partial(toggle_timer)
     QUIT_GRACEFULLY = partial(quit_gracefully)
     REFRESH_TASKS = partial(refresh_tasks)
-    RESET_TIMER = partial(reset_timer)
+    STOP_TIMER = partial(reset_timer)
     SYNC = partial(sync)
     CUSTOM_COMMAND = partial(custom_command)
 
@@ -213,7 +161,10 @@ class Action(Enum):
             pass
 
 
-key_actions = dict(zip(
-    ('a', 'c', 'd', 'h', 'k', 'l', 'm', 'p', 'q', 'r', 's', 'y', '!'),
-    Action.__members__.values()
+UNARY_ACTION_KEYS = OrderedDict([
+    ('c', Action.COMPLETE), ('d', Action.DELETE,), ('m', Action.MODIFY)
+])
+NULLARY_ACTION_KEYS = dict(zip(
+    ('a', 'h', 'k', 'l', 'p', 'q', 'r', 's', 'y', '!'),
+    [action for action in Action if action not in UNARY_ACTION_KEYS.values()]
 ))

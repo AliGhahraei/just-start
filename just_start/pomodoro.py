@@ -8,7 +8,7 @@ from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run
 from threading import Timer
-from typing import Callable, Dict, Any, Tuple
+from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
@@ -30,6 +30,10 @@ class Phase(Enum):
 
 
 class PomodoroError(JustStartError):
+    pass
+
+
+class PromptSkippedPhases(Exception):
     pass
 
 
@@ -99,6 +103,11 @@ class PomodoroTimer:
                 db['skip_enabled'] = False
                 return False
 
+    @skip_enabled.setter
+    def skip_enabled(self, value):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+            db['skip_enabled'] = value
+
     def _generate_phase_duration(self) -> Dict:
         location_config = config[self.location]
 
@@ -150,19 +159,26 @@ class PomodoroTimer:
         self.is_running = True
         self.blocking_callback(self.phase is self.phase.WORK)
 
-    def advance_phases(self, is_skipping: bool=True,
-                       phases_skipped: int=1) -> None:
-        if is_skipping and self.phase is self.phase.WORK:
-            with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-                db['skip_enabled'] = False
+    def advance_phases(self, is_skipping=True,
+                       phases_skipped: Optional[int]=1) -> None:
+        if is_skipping:
+            if self.phase is self.phase.WORK:
+                if not self.skip_enabled:
+                    raise PomodoroError('Sorry, please work 1 pomodoro to'
+                                        ' re-enable phase skipping')
+
+                if not phases_skipped:
+                    raise PromptSkippedPhases
+
+                if phases_skipped < 1:
+                    raise ValueError('Number of phases must be positive')
+
+                self.skip_enabled = False
+                self.work_count += 1
+            else:
+                phases_skipped = phases_skipped or 1
 
         self._cancel_timer()
-
-        if self.phase is self.phase.WORK:
-            self.work_count += 1
-
-        if phases_skipped < 1:
-            raise ValueError('Number of phases must be positive')
 
         # Skipped work phases count as finished (but not the current phase)
         for _ in range(phases_skipped - 1):
