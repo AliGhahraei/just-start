@@ -1,6 +1,6 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError)
+    JustStartError, PromptSkippedPhases, Action)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -40,8 +40,19 @@ def main():
                 action = NULLARY_ACTION_KEYS[key]
             except KeyError:
                 action = UNARY_ACTION_KEYS[key]
-                ids = input('Enter the ids')
+
+                messages = {
+                    Action.ADD: "Enter the task's data",
+                    Action.LOCATION_CHANGE: "Enter 'w' for work or anything"
+                                            " else for home",
+                    Action.CUSTOM_COMMAND: "Enter your custom command"
+                }
+
+                ids = input('Enter the ids\n')
                 action(ids)
+            except PromptSkippedPhases:
+                phases = input('How many phases?')
+                Action.SKIP_PHASES(phases=phases)
             else:
                 action()
         except JustStartError as e:

@@ -99,20 +99,20 @@ def add(task_data: str) -> None:
 
 
 @refresh_tasks
-def delete(ids: List[str]) -> None:
+def delete(ids: str) -> None:
     status_manager.app_status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF,
-                                         ','.join(ids), 'delete')
+                                         ids, 'delete')
 
 
 @refresh_tasks
-def modify(ids: List[str], task_data: str) -> None:
-    status_manager.app_status = run_task(RECURRENCE_OFF, ','.join(ids),
+def modify(ids: str, task_data: str) -> None:
+    status_manager.app_status = run_task(RECURRENCE_OFF, ids,
                                          'modify', *task_data.split())
 
 
 @refresh_tasks
-def complete(ids: List[str]) -> None:
-    status_manager.app_status = run_task(','.join(ids), 'done')
+def complete(ids: str) -> None:
+    status_manager.app_status = run_task(ids, 'done')
 
 
 @refresh_tasks
@@ -149,9 +149,11 @@ class Action(Enum):
 
 
 UNARY_ACTION_KEYS = OrderedDict([
-    ('c', Action.COMPLETE), ('d', Action.DELETE,), ('m', Action.MODIFY)
+    ('a', Action.ADD), ('c', Action.COMPLETE), ('d', Action.DELETE,),
+    ('m', Action.MODIFY), ('l', Action.LOCATION_CHANGE),
+    ('!', Action.CUSTOM_COMMAND),
 ])
 NULLARY_ACTION_KEYS = dict(zip(
-    ('a', 'h', 'k', 'l', 'p', 'q', 'r', 's', 'y', '!'),
+    ('h', 'k', 'p', 'q', 'r', 's', 'y',),
     [action for action in Action if action not in UNARY_ACTION_KEYS.values()]
 ))
