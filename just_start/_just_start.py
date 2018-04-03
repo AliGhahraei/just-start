@@ -5,7 +5,6 @@ from enum import Enum
 from functools import partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
-from sys import exit
 from typing import Dict, List, Optional
 
 from .constants import (
@@ -15,7 +14,7 @@ from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
     StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
-    UserInputError, TaskWarriorError)
+    UserInputError)
 
 
 def _signal_handler() -> None:
@@ -25,11 +24,10 @@ def _signal_handler() -> None:
 def quit_gracefully() -> None:
     serialize_timer()
     try:
+        manage_wifi(timer_running=True)
         sync()
-    except TaskWarriorError as e:
-        print(str(e))
-
-    manage_wifi()
+    finally:
+        manage_wifi()
 
 
 def read_serialized_data() -> Dict:
