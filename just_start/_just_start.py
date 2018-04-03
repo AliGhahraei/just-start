@@ -13,8 +13,8 @@ from .constants import (
 from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
-    client, StatusManager, refresh_tasks, run_task, manage_wifi,
-    block_sites, JustStartError, UserInputError, TaskWarriorError)
+    StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
+    UserInputError, TaskWarriorError)
 
 
 status_manager = StatusManager()
