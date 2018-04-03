@@ -213,7 +213,7 @@ class Action(Enum):
             pass
 
 
-KEY_ACTIONS = dict(zip(
-    ('a', 'c', 'd', 'h', 'i', 'k', 'l', 'm', 'p', 'q', 'r', 's', 'y', '!'),
+key_actions = dict(zip(
+    ('a', 'c', 'd', 'h', 'k', 'l', 'm', 'p', 'q', 'r', 's', 'y', '!'),
     Action.__members__.values()
 ))
