@@ -126,22 +126,15 @@ def skip_phases() -> None:
     elif not pomodoro_timer.skip_enabled:
         raise PomodoroError('Sorry, please work 1 pomodoro to re-enable phase'
                             ' skipping')
-    else:
-        prompt_message = PHASE_SKIP_PROMPT
-        valid_phases = False
 
-        while not valid_phases:
-            try:
-                phases = int(client.prompt(prompt_message))
-            except ValueError:
-                pass
-            else:
-                if phases >= 1:
-                    pomodoro_timer.advance_phases(phases_skipped=phases)
-                    valid_phases = True
-                    manage_wifi(timer_running=True)
+    phases = client.prompt(PHASE_SKIP_PROMPT)
+    try:
+        pomodoro_timer.advance_phases(phases_skipped=phases)
+    except (TypeError, ValueError) as e:
+        raise UserInputError('Number of phases must be a positive integer') \
+            from e
 
-            prompt_message = 'Please enter a valid number of phases'
+    manage_wifi(timer_running=True)
 
 
 def toggle_timer() -> None:
