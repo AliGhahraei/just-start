@@ -28,7 +28,6 @@ def quit_gracefully() -> None:
         sync()
     finally:
         manage_wifi()
-    exit()
 
 
 def read_serialized_data() -> Dict:
