@@ -5,7 +5,7 @@ from enum import Enum
 from functools import partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from .constants import (
     KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
