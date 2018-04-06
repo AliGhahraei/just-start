@@ -69,8 +69,10 @@ def serialize_timer() -> None:
         db.update(pomodoro_timer.serializable_data)
 
 
-def skip_phases(phases: Optional[int]=None) -> None:
+def skip_phases(phases: Optional[str]=None) -> None:
     try:
+        if phases:
+            phases = int(phases)
         pomodoro_timer.advance_phases(phases_skipped=phases)
     except (TypeError, ValueError) as e:
         raise UserInputError('Number of phases must be a positive integer') \
