@@ -1,6 +1,7 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_MESSAGE)
+    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_MESSAGE,
+    UNARY_ACTIONS)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -35,33 +36,36 @@ def main():
 
     while True:
         try:
-            key = input('Enter your action\n')
-            try:
-                action = NULLARY_ACTION_KEYS[key]
-            except KeyError:
-                try:
-                    action = UNARY_ACTION_KEYS[key]
-                except KeyError:
-                    error(f'Invalid key action "{key}"')
-                else:
-                    messages = {
-                        Action.ADD: "Enter the task's data",
-                        Action.LOCATION_CHANGE: "Enter 'w' for work or anything"
-                                                " else for home",
-                        Action.CUSTOM_COMMAND: "Enter your custom command"
-                    }
-
-                    ids = input('Enter the ids\n')
-                    action(ids)
-            except PromptSkippedPhases:
-                phases = input('How many phases?')
-                Action.SKIP_PHASES(phases=phases)
-            else:
-                action()
+            read_action()
         except KeyboardInterrupt:
             error(KEYBOARD_INTERRUPT_MESSAGE)
-        except JustStartError as e:
+        except (JustStartError, ValueError) as e:
             error(e)
+
+
+def read_action():
+    key = input('Enter your action\n')
+    try:
+        action = NULLARY_ACTION_KEYS[key]
+    except KeyError:
+        try:
+            action = UNARY_ACTION_KEYS[key]
+        except KeyError:
+            raise ValueError(f'Invalid key action "{key}"')
+
+        prompt_message = UNARY_ACTIONS[action]
+
+        try:
+            arg = input(f'{prompt_message}\n')
+        except KeyboardInterrupt:
+            pass
+        else:
+            action(arg)
+    except PromptSkippedPhases:
+        phases = input('How many phases do you want to skip?')
+        Action.SKIP_PHASES(phases=phases)
+    else:
+        action()
 
 
 if __name__ == '__main__':

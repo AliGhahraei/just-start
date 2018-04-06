@@ -148,12 +148,16 @@ class Action(Enum):
             pass
 
 
-UNARY_ACTION_KEYS = OrderedDict([
-    ('a', Action.ADD), ('c', Action.COMPLETE), ('d', Action.DELETE,),
-    ('m', Action.MODIFY), ('l', Action.LOCATION_CHANGE),
-    ('!', Action.CUSTOM_COMMAND),
+UNARY_ACTIONS = OrderedDict([
+    (Action.ADD, "Enter the task's data"),
+    (Action.COMPLETE, "Enter the tasks' ids"),
+    (Action.DELETE, "Enter the tasks' ids"),
+    (Action.MODIFY, "Enter the tasks' ids"),
+    (Action.LOCATION_CHANGE, "Enter 'w' for work or anything else for home"),
+    (Action.CUSTOM_COMMAND, "Enter your custom command"),
 ])
+UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',), UNARY_ACTIONS))
 NULLARY_ACTION_KEYS = dict(zip(
     ('h', 'k', 'p', 'q', 'r', 's', 'y',),
-    [action for action in Action if action not in UNARY_ACTION_KEYS.values()]
+    [action for action in Action if action not in UNARY_ACTIONS]
 ))
