@@ -29,10 +29,7 @@ def error(message):
 
 
 def main():
-    try:
-        initial_refresh_and_sync()
-    except JustStartError as e:
-        error(e)
+    initial_refresh_and_sync(error=error)
 
     while True:
         try:

@@ -5,7 +5,7 @@ from enum import Enum
 from functools import partial
 from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
-from typing import Dict, Optional
+from typing import Dict, Optional, Callable, Any
 
 from .constants import (
     KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
@@ -14,17 +14,15 @@ from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
     StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
-    UserInputError)
-
-
-def _signal_handler() -> None:
-    quit_gracefully()
+    UserInputError, JustStartError)
 
 
 def quit_gracefully() -> None:
     serialize_timer()
     try:
         sync()
+    except JustStartError as ex:
+        print(str(ex))
     finally:
         manage_wifi()
 
@@ -48,14 +46,18 @@ pomodoro_timer = PomodoroTimer(
     block_sites
 )
 atexit.register(quit_gracefully)
-signal(SIGTERM, _signal_handler)
+signal(SIGTERM, quit_gracefully)
 read_serialized_data()
 
 
-def initial_refresh_and_sync():
+def initial_refresh_and_sync(*, error: Callable[[str], Any]):
     refresh_tasks()
-    sync()
-    manage_wifi()
+    try:
+        sync()
+    except JustStartError as e:
+        error(str(e))
+    finally:
+        manage_wifi()
 
 
 def sync() -> None:
