@@ -3,6 +3,7 @@ from ._just_start import (
     quit_gracefully
 )
 from .client import client_decorator as client
+from .constants import KEYBOARD_INTERRUPT_MESSAGE
 from .config_reader import ConfigError
 from .log import logger
 from .pomodoro import PromptSkippedPhases
@@ -15,5 +16,5 @@ __all__ = [
     'client', 'UNARY_ACTION_KEYS', 'initial_refresh_and_sync', 'Action',
     'NULLARY_ACTION_KEYS', 'ActionError', 'JustStartError', 'TaskWarriorError',
     'UserInputError', 'logger', 'ConfigError', 'PromptSkippedPhases',
-    'quit_gracefully',
+    'quit_gracefully', 'KEYBOARD_INTERRUPT_MESSAGE',
 ]

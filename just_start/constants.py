@@ -19,6 +19,8 @@ KEYBOARD_HELP_MESSAGE = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp,'
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
 SYNC_MSG = 'Syncing task server...'
+KEYBOARD_INTERRUPT_MESSAGE = ('Ctrl+C before selecting an action. If you wanted'
+                              ' to quit, use q instead')
 
 RECURRENCE_OFF = 'rc.recurrence.confirmation=off'
 CONFIRMATION_OFF = 'rc.confirmation=off'

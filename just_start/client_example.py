@@ -1,6 +1,6 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action)
+    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_MESSAGE)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -34,27 +34,32 @@ def main():
         error(e)
 
     while True:
-        key = input('Enter your action\n')
         try:
+            key = input('Enter your action\n')
             try:
                 action = NULLARY_ACTION_KEYS[key]
             except KeyError:
-                action = UNARY_ACTION_KEYS[key]
+                try:
+                    action = UNARY_ACTION_KEYS[key]
+                except KeyError:
+                    error(f'Invalid key action "{key}"')
+                else:
+                    messages = {
+                        Action.ADD: "Enter the task's data",
+                        Action.LOCATION_CHANGE: "Enter 'w' for work or anything"
+                                                " else for home",
+                        Action.CUSTOM_COMMAND: "Enter your custom command"
+                    }
 
-                messages = {
-                    Action.ADD: "Enter the task's data",
-                    Action.LOCATION_CHANGE: "Enter 'w' for work or anything"
-                                            " else for home",
-                    Action.CUSTOM_COMMAND: "Enter your custom command"
-                }
-
-                ids = input('Enter the ids\n')
-                action(ids)
+                    ids = input('Enter the ids\n')
+                    action(ids)
             except PromptSkippedPhases:
                 phases = input('How many phases?')
                 Action.SKIP_PHASES(phases=phases)
             else:
                 action()
+        except KeyboardInterrupt:
+            error(KEYBOARD_INTERRUPT_MESSAGE)
         except JustStartError as e:
             error(e)
 

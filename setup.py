@@ -10,7 +10,7 @@ setup(
     url='https://github.com/AliGhahraei/just-start',
     license='GPLv3',
 
-    install_requires=['pexpect', 'toml'],
+    install_requires=['pexpect', 'toml', 'urwid'],
     extras_require={
         'dev': [
             'pytest',
@@ -22,6 +22,8 @@ setup(
     python_requires='>=3.6',
 
     entry_points={
-        'console_scripts': ['just-start = just_start_curses:main'],
+        'console_scripts': [
+            'just-start-term = just_start.client_example:main',
+        ],
     }
 )
