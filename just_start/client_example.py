@@ -33,15 +33,19 @@ def main():
 
     while True:
         try:
-            read_action()
+            key = input('Enter your action\n')
         except KeyboardInterrupt:
             error(KEYBOARD_INTERRUPT_MESSAGE)
-        except (JustStartError, ValueError) as e:
-            error(e)
+        else:
+            try:
+                run_action(key)
+            except (JustStartError, ValueError) as e:
+                error(e)
+            except KeyboardInterrupt:
+                pass
 
 
-def read_action():
-    key = input('Enter your action\n')
+def run_action(key):
     try:
         action = NULLARY_ACTION_KEYS[key]
     except KeyError:
@@ -51,18 +55,14 @@ def read_action():
             raise ValueError(f'Invalid key action "{key}"')
 
         prompt_message = UNARY_ACTIONS[action]
-
-        try:
-            arg = input(f'{prompt_message}\n')
-        except KeyboardInterrupt:
-            pass
-        else:
-            action(arg)
-    except PromptSkippedPhases:
-        phases = input('How many phases do you want to skip?')
-        Action.SKIP_PHASES(phases=phases)
+        arg = input(f'{prompt_message}\n')
+        action(arg)
     else:
-        action()
+        try:
+            action()
+        except PromptSkippedPhases:
+            phases = input('How many phases do you want to skip?')
+            Action.SKIP_PHASES(phases=phases)
 
 
 if __name__ == '__main__':
