@@ -10,13 +10,14 @@ setup(
     url='https://github.com/AliGhahraei/just-start',
     license='GPLv3',
 
-    install_requires=['pexpect', 'toml', 'urwid'],
+    install_requires=['pexpect', 'toml'],
     extras_require={
         'dev': [
             'pytest',
             'pytest-mock',
             'pytest-cov',
-        ]
+        ],
+        'urwid': 'urwid',
     },
     packages=find_packages(),
     python_requires='>=3.6',
