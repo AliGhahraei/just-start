@@ -6,19 +6,19 @@ from typing import Callable, List, Optional
 from pexpect import spawn, EOF
 
 from .client import client
-from .config_reader import config
+from .config_reader import CONFIG
 from .constants import SYNC_MSG
 
 
-PASSWORD = config['general']['password']
-BLOCKING_IP = config['general']['blocking_ip']
+PASSWORD = CONFIG['general']['password']
+BLOCKING_IP = CONFIG['general']['blocking_ip']
 
 APP_SPECIFIC_COMMENT = '# just-start'
 # noinspection SpellCheckingInspection
 BLOCKING_LINES = '\\n'.join(
     [f'{BLOCKING_IP}\\t{blocked_site}\\t{APP_SPECIFIC_COMMENT}\\n'
      f'{BLOCKING_IP}\\twww.{blocked_site}\\t{APP_SPECIFIC_COMMENT}'
-     for blocked_site in config['general']['blocked_sites']])
+     for blocked_site in CONFIG['general']['blocked_sites']])
 BLOCK_COMMAND = (f'/bin/bash -c "echo -e \'{BLOCKING_LINES}\' | sudo tee -a' 
                  f' /etc/hosts > /dev/null"')
 UNBLOCK_COMMAND = f"sudo sed -i '' '/^.*{APP_SPECIFIC_COMMENT}$/d' /etc/hosts"

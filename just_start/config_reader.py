@@ -8,16 +8,15 @@ from .constants import CONFIG_PATH
 from .log import logger
 
 
-class Config(dict):
-    def get_client_config(self, client):
-        return self.get('clients', {}).get(client, {})
-
-
 try:
-    config = load(CONFIG_PATH)
+    CONFIG = load(CONFIG_PATH)
 except FileNotFoundError:
     logger.warning(format_exc())
-    config = Config()
+    CONFIG = {}
+
+
+def get_client_config(client):
+    return CONFIG.get('clients', {}).get(client, {})
 
 
 class ConfigError(Exception):
@@ -38,19 +37,19 @@ def validate_config():
 
 def validate_config_section(section_name: str, section_content: Dict) -> None:
     try:
-        config[section_name]
+        CONFIG[section_name]
     except KeyError:
         default_content = {name: content[0] for name, content
                            in section_content.items()}
-        config[section_name] = default_content
+        CONFIG[section_name] = default_content
     else:
         for field_name, field_content in section_content.items():
             default, validator = field_content
             try:
-                config[section_name][field_name] = validator(
-                    config[section_name][field_name])
+                CONFIG[section_name][field_name] = validator(
+                    CONFIG[section_name][field_name])
             except KeyError:
-                config[section_name][field_name] = default
+                CONFIG[section_name][field_name] = default
 
 
 def validate_type(object_: Any, type_: type) -> Any:
@@ -109,6 +108,6 @@ CONFIG_SECTIONS = {
 }
 
 validate_config()
-if not exists(expanduser(join(config['general']['taskrc_path'], '.taskrc'))):
+if not exists(expanduser(join(CONFIG['general']['taskrc_path'], '.taskrc'))):
     raise ConfigError(f'.taskrc could not be found in'
-                      f' {config["general"]["taskrc_path"]}')
+                      f' {CONFIG["general"]["taskrc_path"]}')
