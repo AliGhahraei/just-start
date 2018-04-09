@@ -1,7 +1,8 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_MESSAGE,
-    UNARY_ACTIONS)
+    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_ERROR,
+    UNARY_ACTIONS, UserInputError, EMPTY_STRING, ACTION_PROMPT,
+    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -28,21 +29,26 @@ def error(message):
     print(f'{RED}{message}{RESTORE_COLOR}')
 
 
+def input_non_empty(prompt):
+    user_input = input(f'{prompt}\n')
+    if user_input == '':
+        raise UserInputError(EMPTY_STRING)
+    return user_input
+
+
 def main():
     initial_refresh_and_sync(error=error)
 
     while True:
         try:
-            key = input('Enter your action\n')
-        except KeyboardInterrupt:
-            error(KEYBOARD_INTERRUPT_MESSAGE)
-        else:
             try:
-                run_action(key)
-            except (JustStartError, ValueError) as e:
-                error(e)
+                key = input_non_empty(ACTION_PROMPT)
             except KeyboardInterrupt:
-                pass
+                error(KEYBOARD_INTERRUPT_ERROR)
+            else:
+                run_action(key)
+        except JustStartError as e:
+            error(e)
 
 
 def run_action(key):
@@ -52,16 +58,16 @@ def run_action(key):
         try:
             action = UNARY_ACTION_KEYS[key]
         except KeyError:
-            raise ValueError(f'Invalid key action "{key}"')
+            raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
         prompt_message = UNARY_ACTIONS[action]
-        arg = input(f'{prompt_message}\n')
+        arg = input_non_empty(prompt_message)
         action(arg)
     else:
         try:
             action()
         except PromptSkippedPhases:
-            phases = input('How many phases do you want to skip?')
+            phases = input_non_empty(SKIPPED_PHASES_PROMPT)
             Action.SKIP_PHASES(phases=phases)
 
 

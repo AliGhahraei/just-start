@@ -12,7 +12,7 @@ from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
-from just_start.utils import JustStartError
+from just_start.utils import JustStartError, UserInputError
 
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
@@ -171,7 +171,7 @@ class PomodoroTimer:
                     raise PromptSkippedPhases
 
                 if phases_skipped < 1:
-                    raise ValueError('Number of phases must be positive')
+                    raise UserInputError('Number of phases must be positive')
 
                 self.skip_enabled = False
                 self.work_count += 1

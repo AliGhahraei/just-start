@@ -8,8 +8,8 @@ from signal import signal, SIGTERM
 from typing import Dict, Optional, Callable, Any
 
 from .constants import (
-    KEYBOARD_HELP_MESSAGE, RECURRENCE_OFF, CONFIRMATION_OFF,
-    PERSISTENT_PATH)
+    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH
+)
 from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
@@ -124,7 +124,7 @@ def custom_command(command: str) -> None:
     status_manager.app_status = run_task(*command.split())
 
 
-def show_help(help_message: str=KEYBOARD_HELP_MESSAGE) -> None:
+def show_help(help_message: str=KEYBOARD_HELP) -> None:
     status_manager.app_status = help_message
 
 
