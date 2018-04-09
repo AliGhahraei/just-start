@@ -29,8 +29,8 @@ def error(message):
     print(f'{RED}{message}{RESTORE_COLOR}')
 
 
-def input_non_empty(prompt):
-    user_input = input(f'{prompt}\n')
+def prompt(prompt_):
+    user_input = input(f'{prompt_}\n')
     if user_input == '':
         raise UserInputError(EMPTY_STRING)
     return user_input
@@ -42,7 +42,7 @@ def main():
     while True:
         try:
             try:
-                key = input_non_empty(ACTION_PROMPT)
+                key = prompt(ACTION_PROMPT)
             except KeyboardInterrupt:
                 error(KEYBOARD_INTERRUPT_ERROR)
             else:
@@ -61,13 +61,13 @@ def run_action(key):
             raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
         prompt_message = UNARY_ACTIONS[action]
-        arg = input_non_empty(prompt_message)
+        arg = prompt(prompt_message)
         action(arg)
     else:
         try:
             action()
         except PromptSkippedPhases:
-            phases = input_non_empty(SKIPPED_PHASES_PROMPT)
+            phases = prompt(SKIPPED_PHASES_PROMPT)
             Action.SKIP_PHASES(phases=phases)
 
 
