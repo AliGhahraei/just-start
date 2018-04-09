@@ -19,7 +19,7 @@ setup(
         ],
         'urwid': 'urwid',
     },
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests"]),
     python_requires='>=3.6',
 
     entry_points={
