@@ -8,11 +8,16 @@ from .constants import CONFIG_PATH
 from .log import logger
 
 
+class Config(dict):
+    def get_client_config(self, client):
+        return self.get('clients', {}).get(client, {})
+
+
 try:
     config = load(CONFIG_PATH)
 except FileNotFoundError:
     logger.warning(format_exc())
-    config = {}
+    config = Config()
 
 
 class ConfigError(Exception):

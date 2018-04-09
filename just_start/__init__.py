@@ -7,7 +7,7 @@ from .constants import (
     KEYBOARD_INTERRUPT_ERROR, EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY,
     SKIPPED_PHASES_PROMPT
 )
-from .config_reader import ConfigError
+from .config_reader import ConfigError, config
 from .log import logger
 from .pomodoro import PromptSkippedPhases
 from .utils import (
@@ -21,5 +21,5 @@ __all__ = [
     'UserInputError', 'logger', 'ConfigError', 'PromptSkippedPhases',
     'quit_gracefully', 'KEYBOARD_INTERRUPT_ERROR', 'UNARY_ACTIONS',
     'EMPTY_STRING', 'ACTION_PROMPT', 'INVALID_ACTION_KEY',
-    'SKIPPED_PHASES_PROMPT', 'SKIPPED_PHASES_PROMPT'
+    'SKIPPED_PHASES_PROMPT', 'SKIPPED_PHASES_PROMPT', 'config'
 ]

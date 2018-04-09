@@ -17,7 +17,7 @@ setup(
             'pytest-mock',
             'pytest-cov',
         ],
-        'urwid': 'urwid',
+        'urwid': ['urwid'],
     },
     packages=find_packages(exclude=["tests"]),
     python_requires='>=3.6',
