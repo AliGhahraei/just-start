@@ -1,7 +1,7 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
     JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_ERROR,
-    UNARY_ACTIONS, UserInputError, EMPTY_STRING, ACTION_PROMPT,
+    UNARY_ACTION_MESSAGES, UserInputError, EMPTY_STRING, ACTION_PROMPT,
     INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT)
 
 RESTORE_COLOR = '\033[0m'
@@ -60,7 +60,7 @@ def run_action(key):
         except KeyError:
             raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
-        prompt_message = UNARY_ACTIONS[action]
+        prompt_message = UNARY_ACTION_MESSAGES[action]
         arg = prompt(prompt_message)
         action(arg)
     else:
