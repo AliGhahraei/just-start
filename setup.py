@@ -17,6 +17,8 @@ setup(
             'pytest-mock',
             'pytest-cov',
         ],
+        # Just to be "installable" like the other clients
+        'term': [],
         'urwid': ['urwid'],
     },
     packages=find_packages(exclude=["tests"]),
@@ -24,7 +26,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'just-start-term = just_start.client_example:main',
+            'just-start-term = just_start.client_example:main[term]',
             'just-start-urwid = just_start_urwid:main[urwid]',
         ],
     }
