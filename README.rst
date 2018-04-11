@@ -72,7 +72,7 @@ Clients
 Usage
 -----
 
-`just_start_<client_name>` runs the desired client. For example:
+`just-start-<client_name>` runs the desired client. For example:
 
 .. code:: bash
 
