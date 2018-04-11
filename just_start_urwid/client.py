@@ -12,7 +12,7 @@ from just_start import (
     JustStartError, UserInputError, PromptSkippedPhases, Action, quit_just_start
 )
 from just_start.constants import (
-    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, EXIT_MESSAGE
+    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT
 )
 
 
@@ -38,7 +38,7 @@ class TaskListBox(ListBox):
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
 
-        if key == 'q':
+        elif key == 'q':
             quit_just_start(exit_message_func=write_status, error=error)
             raise ExitMainLoop()
 
@@ -48,10 +48,11 @@ class TaskListBox(ListBox):
         elif key in ('up', 'k'):
             return super().keypress(size, 'up')
 
-        try:
-            self.read_action(key)
-        except JustStartError as e:
-            error(str(e))
+        else:
+            try:
+                self.read_action(key)
+            except JustStartError as e:
+                error(str(e))
 
     def run_unary_action(self):
         user_input = self.focus.edit_text
@@ -144,7 +145,9 @@ def main():
             ('error', error_fg, error_bg),
         )).run()
     except KeyboardInterrupt:
-        print(EXIT_MESSAGE)
+        quit_just_start(exit_message_func=print, error=exit)
+    except Exception as e:
+        print(f'Unhandled error: {e}')
         quit_just_start(exit_message_func=print, error=exit)
 
 
