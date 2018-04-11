@@ -73,6 +73,7 @@ Usage
 -----
 
 .. code:: bash
+
     $ just-start-<client_name>
 
 So for the urwid client:
