@@ -48,7 +48,7 @@ Just run it from your terminal:
 
 .. code:: bash
 
-    $ just-start
+    $ just-start-urwid
 
 And press h to see a list of available user actions
 
