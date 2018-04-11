@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='just-start',
-    version='0.4.0',
+    version='0.4.1',
     description='Just Start is a wrapper for Task Warrior with pomodoro'
                 ' support',
     author='Ali Ghahraei Figueroa',
