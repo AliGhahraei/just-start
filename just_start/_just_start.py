@@ -1,4 +1,3 @@
-import atexit
 import shelve
 from collections import OrderedDict
 from enum import Enum
@@ -8,7 +7,8 @@ from signal import signal, SIGTERM
 from typing import Dict, Optional, Callable, Any
 
 from .constants import (
-    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH
+    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH,
+    EXIT_MESSAGE
 )
 from .log import logger
 from .pomodoro import PomodoroTimer
@@ -17,12 +17,22 @@ from .utils import (
     UserInputError, JustStartError)
 
 
-def quit_gracefully() -> None:
+Displayer = Callable[[Any], Any]
+
+
+def quit_just_start(*, exit_message_func: Displayer, error: Displayer) -> None:
+    exit_message_func(EXIT_MESSAGE)
     serialize_timer()
+    sync_and_manage_wifi(error=error)
+
+
+def sync_and_manage_wifi(*, error: Displayer):
     try:
         sync()
     except JustStartError as ex:
-        print(str(ex))
+        error(str(ex))
+    except KeyboardInterrupt:
+        pass
     finally:
         manage_wifi()
 
@@ -45,19 +55,13 @@ pomodoro_timer = PomodoroTimer(
     lambda status: status_manager.__setattr__('pomodoro_status', status),
     block_sites
 )
-atexit.register(quit_gracefully)
-signal(SIGTERM, quit_gracefully)
+signal(SIGTERM, quit_just_start)
 read_serialized_data()
 
 
-def initial_refresh_and_sync(*, error: Callable[[str], Any]):
+def initial_refresh_and_sync(*, error: Displayer):
     refresh_tasks()
-    try:
-        sync()
-    except JustStartError as e:
-        error(str(e))
-    finally:
-        manage_wifi()
+    sync_and_manage_wifi(error=error)
 
 
 def sync() -> None:

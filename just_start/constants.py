@@ -18,12 +18,11 @@ KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
 SYNC_MSG = 'Syncing task server...'
-KEYBOARD_INTERRUPT_ERROR = ('Ctrl+C before selecting an action. If you wanted'
-                            ' to quit, use q instead')
 EMPTY_STRING = 'An empty string is not allowed'
 ACTION_PROMPT = 'Enter your action'
 INVALID_ACTION_KEY = 'Invalid action key'
 SKIPPED_PHASES_PROMPT = 'How many phases do you want to skip?'
+EXIT_MESSAGE = 'Exiting...'
 
 RECURRENCE_OFF = 'rc.recurrence.confirmation=off'
 CONFIRMATION_OFF = 'rc.confirmation=off'

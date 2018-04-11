@@ -1,8 +1,11 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action, KEYBOARD_INTERRUPT_ERROR,
-    UNARY_ACTION_MESSAGES, UserInputError, EMPTY_STRING, ACTION_PROMPT,
-    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT)
+    JustStartError, PromptSkippedPhases, Action, UNARY_ACTION_MESSAGES,
+    UserInputError, quit_just_start
+)
+from just_start.constants import (
+    EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT,
+)
 
 RESTORE_COLOR = '\033[0m'
 GREEN = '\033[92m'
@@ -39,16 +42,17 @@ def prompt(prompt_):
 def main():
     initial_refresh_and_sync(error=error)
 
-    while True:
-        try:
+    try:
+        while True:
             try:
                 key = prompt(ACTION_PROMPT)
-            except KeyboardInterrupt:
-                error(KEYBOARD_INTERRUPT_ERROR)
-            else:
                 run_action(key)
-        except JustStartError as e:
-            error(e)
+            except JustStartError as e:
+                error(e)
+    except KeyboardInterrupt:
+        pass
+
+    quit_just_start(exit_message_func=print, error=exit)
 
 
 def run_action(key):

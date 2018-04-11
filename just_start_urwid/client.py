@@ -9,8 +9,10 @@ from urwid import (
 from just_start import (
     client, initial_refresh_and_sync, get_client_config,
     NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTION_MESSAGES,
-    JustStartError, INVALID_ACTION_KEY, UserInputError, PromptSkippedPhases,
-    SKIPPED_PHASES_PROMPT, Action
+    JustStartError, UserInputError, PromptSkippedPhases, Action, quit_just_start
+)
+from just_start.constants import (
+    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, EXIT_MESSAGE
 )
 
 
@@ -25,17 +27,20 @@ class TaskListBox(ListBox):
         self.action = None
         self.prev_caption = None
 
-    def keypress(self, size, key):
-        if key == 'enter':
-            self.run_unary_action()
-
-        elif self.action:
-            if key == 'esc':
+    def keypress(self, size: int, key: str):
+        if self.action:
+            if key == 'enter':
+                self.run_unary_action()
+            elif key == 'esc':
                 self.action = None
                 self.focus.edit_text = ''
                 self.focus.set_caption(self.prev_caption)
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
+
+        if key == 'q':
+            quit_just_start(exit_message_func=write_status, error=error)
+            raise ExitMainLoop()
 
         elif key in ('down', 'j'):
             return super().keypress(size, 'down')
@@ -43,14 +48,10 @@ class TaskListBox(ListBox):
         elif key in ('up', 'k'):
             return super().keypress(size, 'up')
 
-        elif key == 'q':
-            raise ExitMainLoop()
-
-        else:
-            try:
-                self.read_action(key)
-            except JustStartError as e:
-                error(str(e))
+        try:
+            self.read_action(key)
+        except JustStartError as e:
+            error(str(e))
 
     def run_unary_action(self):
         user_input = self.focus.edit_text
@@ -62,7 +63,7 @@ class TaskListBox(ListBox):
         finally:
             self.action = None
 
-    def read_action(self, key):
+    def read_action(self, key: str):
         try:
             action = NULLARY_ACTION_KEYS[key]
         except KeyError:
@@ -82,13 +83,13 @@ class TaskListBox(ListBox):
             except PromptSkippedPhases:
                 self.set_caption_and_action(SKIPPED_PHASES_PROMPT, action)
 
-    def set_caption_and_action(self, caption, action):
+    def set_caption_and_action(self, caption: str, action: Action):
         self.prev_caption = self.focus.caption
         self.focus.set_caption(f'{self.prev_caption}\n{caption} ')
         self.action = action
 
 
-def error(status_):
+def error(status_: str):
     write_status(('error', status_))
 
 
@@ -106,7 +107,7 @@ def write_pomodoro_status(status_: str) -> None:
 
 
 class Task(Edit):
-    def __init__(self, caption=u'', **kwargs):
+    def __init__(self, caption: str='', **kwargs):
         self.id = caption.split()[0] if caption else None
         super().__init__(caption=caption, **kwargs)
 
@@ -138,9 +139,13 @@ def main():
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
 
-    MainLoop(top, palette=(
-        ('error', error_fg, error_bg),
-    )).run()
+    try:
+        MainLoop(top, palette=(
+            ('error', error_fg, error_bg),
+        )).run()
+    except KeyboardInterrupt:
+        print(EXIT_MESSAGE)
+        quit_just_start(exit_message_func=print, error=exit)
 
 
 if __name__ == '__main__':
