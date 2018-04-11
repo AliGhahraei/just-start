@@ -72,7 +72,10 @@ Clients
 Usage
 -----
 
-``just-start-<client_name>`` runs the desired client. For example:
+.. code:: bash
+    $ just-start-<client_name>
+
+So for the urwid client:
 
 .. code:: bash
 
