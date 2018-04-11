@@ -11,7 +11,7 @@ from threading import Timer
 from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import PERSISTENT_PATH
-from just_start.config_reader import CONFIG
+from just_start.config_reader import config
 from just_start.utils import JustStartError, UserInputError
 
 
@@ -90,9 +90,9 @@ class PomodoroTimer:
             return True
 
         return datetime.now().isoweekday() < 6 and (
-                CONFIG['work']['start']
+                config['work']['start']
                 <= datetime.now().time()
-                <= CONFIG['work']['end'])
+                <= config['work']['end'])
 
     @property
     def skip_enabled(self) -> bool:
@@ -109,7 +109,7 @@ class PomodoroTimer:
             db['skip_enabled'] = value
 
     def _generate_phase_duration(self) -> Dict:
-        location_config = CONFIG[self.location]
+        location_config = config[self.location]
 
         durations = (duration * 60 for duration in (
             location_config['pomodoro_length'], location_config['short_rest'],
@@ -120,7 +120,7 @@ class PomodoroTimer:
 
     def _create_cycle(self) -> cycle:
         states = ([Phase.WORK, Phase.SHORT_REST]
-                  * CONFIG[self.location]['cycles_before_long_rest'])
+                  * config[self.location]['cycles_before_long_rest'])
         states[-1] = Phase.LONG_REST
         return cycle(states)
 
