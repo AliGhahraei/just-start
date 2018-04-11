@@ -62,7 +62,7 @@ Clients
 +------+----------+------------------------------------------------------------+
 |Name  |Framework |Notes                                                       |
 +======+==========+============================================================+
-|urwid |Urwid_    |Inspired by Calcurse_. similar to a graphical               |
+|urwid |Urwid_    |Inspired by Calcurse_. Similar to a graphical               |
 |      |          |application, but in your terminal                           |
 +------+----------+------------------------------------------------------------+
 |term  |Terminal  |Example client. Useful for seeing how to write a brand new  |
