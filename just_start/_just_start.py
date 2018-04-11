@@ -38,13 +38,17 @@ def sync_and_manage_wifi(*, error: Displayer):
 
 
 def read_serialized_data() -> Dict:
-    try:
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            data = {arg: db[arg] for arg
-                    in PomodoroTimer.SERIALIZABLE_ATTRIBUTES}
-    except (KeyError, AttributeError) as e:
-        logger.warning(f"Serialized data couldn't be read: {str(e)}")
-        data = {}
+    data = {}
+    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
+        for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
+            try:
+                data[attribute] = db[attribute]
+            except KeyError:
+                logger.warning(f"Serialized attribute {attribute} couldn't be"
+                               f" read (this might happen between updates)")
+
+    if not data:
+        logger.warning(f'No serialized attributes could be read')
 
     pomodoro_timer.serializable_data = data
     return data

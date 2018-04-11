@@ -39,7 +39,7 @@ class PromptSkippedPhases(Exception):
 
 class PomodoroTimer:
     SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'phase', 'time_left',
-                               '_at_work_override')
+                               '_at_work_override', 'work_count')
 
     def __init__(self, status_callback: Callable[[str], None],
                  blocking_callback: Callable[[bool], None],
