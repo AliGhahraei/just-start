@@ -8,49 +8,77 @@ An app to defeat procrastination!
 Introduction
 ------------
 
-Just-Start is a to-do list application with a focus on boosting your
-productivity and preventing you from procrastinating (too much). It blocks time-
-wasting sites while you’re working to help you focus and it can even enable and
-disable your wi-fi.
+Just-Start is a to-do list application and productivity booster. It prevents
+you from procrastinating (too much).
 
-Underneath, it’s basically a wrapper for TaskWarrior_ with a timer implementing
-the `Pomodoro Technique`_, a popular time management technique. Currently, the
-only client uses the Ncurses_ library and it’s similar to a graphical
-application, but in your terminal. More clients are coming soon.
+The program is a wrapper for TaskWarrior_ with a timer implementing the
+`Pomodoro Technique`_ (time management). It also draws a bit of inspiration from
+Omodoro_.
 
-This app draws inspiration from Omodoro_, and the ncurses client, from
-Calcurse_.
+Features:
 
-Supported platforms
--------------------
-
-Linux and macOS for now.
+- Configurable pomodoro phase durations
+- Support for multiple configurations (a.k.a. *locations*)
+- Desktop notifications
+- Block time-wasting sites list while you’re working
+- Enable and disable your wi-fi so you REALLY use this
 
 Installation
 ------------
 
-You need to have Python 3.6 and TaskWarrior_ (a recent enough one) in order for
-this to work. To install, just clone this repo and do:
+Supported platforms:
+
+- Linux
+- macOS
+
+Requirements:
+
+- Python 3.6
+- TaskWarrior_ (latest)
+
+Clone this repo and run the following replacing <client_name> with a name from
+the Clients_ table:
 
 .. code:: bash
 
-    $ pip install -e just-start/
+    $ pip install -e just-start/[<client_name>]
 
-That’s it! This will install an editable/development version (run ``pip install
---help | grep editable`` to find out more). You can of course install without
-the ``-e`` flag, but be aware that things still move very fast. You may also
-download a release_ instead.
+So, for example, this would install the urwid client:
+
+.. code:: bash
+
+    $ pip install -e just-start/[urwid]
+
+Now go to Usage_
+
+This installs an editable/development version (run ``pip install --help | grep
+editable`` to find out more). You can of course install without the ``-e`` flag,
+but be aware that things still move very fast. You may also download a release_
+instead.
+
+Clients
+-------
+
++------+----------+------------------------------------------------------------+
+|Name  |Framework |Notes                                                       |
++======+==========+============================================================+
+|urwid |Urwid_    |Inspired by Calcurse_. similar to a graphical               |
+|      |          |application, but in your terminal                           |
++------+----------+------------------------------------------------------------+
+|term  |Terminal  |Example client. Useful for seeing how to write a brand new  |
+|      |(none)    |one but not intended for continuous usage                   |
++------+----------+------------------------------------------------------------+
 
 Usage
 -----
 
-Just run it from your terminal:
+`just_start_<client_name>` runs the desired client. For example:
 
 .. code:: bash
 
     $ just-start-urwid
 
-And press h to see a list of available user actions
+Press h to see a list of available user actions.
 
 Development
 -----------
@@ -61,12 +89,14 @@ If you want to help out, clone the repo and run:
 
     pip install -e just-start/[dev]
 
-This will ensure you have the development and install dependencies.
+This will ensure you have both the development and install dependencies.
+
+Issues are tracked using Waffle_ + `GitHub Issues`_
 
 Running Tests
 -------------
 
-First, you’ll need the development_ dependencies. Then, just issue the
+First, you’ll need the Development_ dependencies. Then, just issue the
 following:
 
 .. code:: bash
@@ -84,9 +114,10 @@ following:
    :target: https://waffle.io/AliGhahraei/just-start
 
 .. _Calcurse: http://calcurse.org
-.. _development: #development
-.. _Ncurses: https://www.gnu.org/software/ncurses/
+.. _GitHub Issues: https://github.com/AliGhahraei/just-start/issues
 .. _Omodoro: https://github.com/okraits/omodoro
 .. _Pomodoro Technique: https://cirillocompany.de/pages/pomodoro-technique
 .. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
+.. _Urwid: http://urwid.org/
+.. _Waffle: https://waffle.io/AliGhahraei/just-start
