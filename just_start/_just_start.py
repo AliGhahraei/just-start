@@ -146,7 +146,6 @@ class Action(Enum):
     LOCATION_CHANGE = partial(location_change)
     MODIFY = partial(modify)
     TOGGLE_TIMER = partial(toggle_timer)
-    QUIT = partial(quit)
     REFRESH_TASKS = partial(refresh_tasks)
     STOP_TIMER = partial(reset_timer)
     SYNC = partial(sync)
@@ -172,6 +171,6 @@ UNARY_ACTION_MESSAGES = OrderedDict([
 UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',),
                              UNARY_ACTION_MESSAGES))
 NULLARY_ACTION_KEYS = dict(zip(
-    ('h', 's', 'p', 'q', 'r', 't', 'y',),
+    ('h', 's', 'p', 'r', 't', 'y',),
     [action for action in Action if action not in UNARY_ACTION_MESSAGES]
 ))

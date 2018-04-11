@@ -46,6 +46,9 @@ def main():
         while True:
             try:
                 key = prompt(ACTION_PROMPT)
+                if key == 'q':
+                    break
+
                 run_action(key)
             except JustStartError as e:
                 error(e)
