@@ -40,7 +40,7 @@ def prompt(prompt_):
 
 
 def main():
-    initial_refresh_and_sync(error=error)
+    initial_refresh_and_sync(sync_error_func=error)
 
     try:
         while True:
@@ -52,7 +52,7 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    quit_just_start(exit_message_func=print, error=exit)
+    quit_just_start(exit_message_func=print, sync_error_func=exit)
 
 
 def run_action(key):

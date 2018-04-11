@@ -20,17 +20,18 @@ from .utils import (
 Displayer = Callable[[Any], Any]
 
 
-def quit_just_start(*, exit_message_func: Displayer, error: Displayer) -> None:
+def quit_just_start(*, exit_message_func: Displayer,
+                    sync_error_func: Displayer) -> None:
     exit_message_func(EXIT_MESSAGE)
     serialize_timer()
-    sync_and_manage_wifi(error=error)
+    sync_and_manage_wifi(sync_error_func=sync_error_func)
 
 
-def sync_and_manage_wifi(*, error: Displayer):
+def sync_and_manage_wifi(*, sync_error_func: Displayer):
     try:
         sync()
     except JustStartError as ex:
-        error(str(ex))
+        sync_error_func(str(ex))
     except KeyboardInterrupt:
         pass
     finally:
@@ -63,9 +64,9 @@ signal(SIGTERM, quit_just_start)
 read_serialized_data()
 
 
-def initial_refresh_and_sync(*, error: Displayer):
+def initial_refresh_and_sync(*, sync_error_func: Displayer):
     refresh_tasks()
-    sync_and_manage_wifi(error=error)
+    sync_and_manage_wifi(sync_error_func=sync_error_func)
 
 
 def sync() -> None:

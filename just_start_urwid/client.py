@@ -39,7 +39,8 @@ class TaskListBox(ListBox):
                 return super().keypress(size, key)
 
         elif key == 'q':
-            quit_just_start(exit_message_func=write_status, error=error)
+            quit_just_start(exit_message_func=write_status,
+                            sync_error_func=error)
             raise ExitMainLoop()
 
         elif key in ('down', 'j'):
@@ -128,7 +129,7 @@ pomodoro_status_box = LineBox(pomodoro_status, title='Pomodoro Status')
 class TopWidget(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        initial_refresh_and_sync(error=error)
+        initial_refresh_and_sync(sync_error_func=error)
 
 
 columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
@@ -140,15 +141,16 @@ def main():
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
 
+    # noinspection PyBroadException
     try:
         MainLoop(top, palette=(
             ('error', error_fg, error_bg),
         )).run()
     except KeyboardInterrupt:
-        quit_just_start(exit_message_func=print, error=exit)
+        quit_just_start(exit_message_func=print, sync_error_func=exit)
     except Exception as e:
         print(f'Unhandled error: {e}')
-        quit_just_start(exit_message_func=print, error=exit)
+        quit_just_start(exit_message_func=print, sync_error_func=exit)
 
 
 if __name__ == '__main__':
