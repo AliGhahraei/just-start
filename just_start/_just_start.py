@@ -156,7 +156,7 @@ UNARY_ACTION_MESSAGES = OrderedDict([
     (Action.ADD, "Enter the task's data"),
     (Action.COMPLETE, "Enter the tasks' ids"),
     (Action.DELETE, "Enter the tasks' ids"),
-    (Action.MODIFY, "Enter the tasks' ids"),
+    (Action.MODIFY, "Enter the modified data"),
     (Action.LOCATION_CHANGE, "Enter 'w' for work or anything else for home"),
     (Action.CUSTOM_COMMAND, "Enter your custom command"),
 ])
