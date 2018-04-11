@@ -32,6 +32,8 @@ class TaskListBox(ListBox):
         elif self.action:
             if key == 'esc':
                 self.action = None
+                self.focus.edit_text = ''
+                self.focus.caption = self.prev_caption
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
 
