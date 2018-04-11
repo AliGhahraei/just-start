@@ -31,7 +31,7 @@ class TaskListBox(ListBox):
 
         elif self.action:
             if key == 'esc':
-                self.reset_caption_and_action()
+                self.action = None
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
 
@@ -53,15 +53,12 @@ class TaskListBox(ListBox):
     def run_unary_action(self):
         user_input = self.focus.edit_text
         try:
-            self.action(user_input)
+            if self.action is Action.MODIFY:
+                self.action(self.focus.id, user_input)
+            else:
+                self.action(user_input)
         finally:
-            self.reset_caption_and_action()
-
-    def reset_caption_and_action(self):
-        self.action = None
-        self.focus.set_caption(self.prev_caption)
-        self.prev_caption = None
-        self.focus.edit_text = ''
+            self.action = None
 
     def read_action(self, key):
         try:
