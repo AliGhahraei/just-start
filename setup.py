@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='just-start',
-    version='0.2.0',
+    version='0.4.0',
     description='Just Start is a wrapper for Task Warrior with pomodoro'
                 ' support',
     author='Ali Ghahraei Figueroa',
@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'just-start-term = just_start.client_example:main',
+            'just-start-urwid = just_start_urwid:main[urwid]',
         ],
     }
 )
