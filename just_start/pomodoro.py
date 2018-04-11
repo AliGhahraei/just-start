@@ -174,6 +174,7 @@ class PomodoroTimer:
                     raise UserInputError('Number of phases must be positive')
 
                 self.skip_enabled = False
+                # A skipped work phase is counted as finished
                 self.work_count += 1
             else:
                 phases_skipped = phases_skipped or 1
@@ -182,7 +183,7 @@ class PomodoroTimer:
 
         self._cancel_timer()
 
-        # Skipped work phases count as finished (but not the current phase)
+        # Skipped phases count as finished (but not the running one)
         for _ in range(phases_skipped - 1):
             self.phase, self.time_left = self._get_next_phase_and_time_left()
 
