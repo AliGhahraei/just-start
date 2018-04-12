@@ -17,17 +17,17 @@ from .utils import (
     UserInputError, JustStartError)
 
 
-Displayer = Callable[[Any], Any]
+UnaryCallable = Callable[[Any], Any]
 
 
-def quit_just_start(*, exit_message_func: Displayer,
-                    sync_error_func: Displayer) -> None:
+def quit_just_start(*, exit_message_func: UnaryCallable,
+                    sync_error_func: UnaryCallable) -> None:
     exit_message_func(EXIT_MESSAGE)
     serialize_timer()
     sync_and_manage_wifi(sync_error_func=sync_error_func)
 
 
-def sync_and_manage_wifi(*, sync_error_func: Displayer):
+def sync_and_manage_wifi(*, sync_error_func: UnaryCallable):
     try:
         sync()
     except JustStartError as ex:
@@ -64,7 +64,7 @@ signal(SIGTERM, quit_just_start)
 read_serialized_data()
 
 
-def initial_refresh_and_sync(*, sync_error_func: Displayer):
+def initial_refresh_and_sync(*, sync_error_func: UnaryCallable):
     refresh_tasks()
     sync_and_manage_wifi(sync_error_func=sync_error_func)
 
