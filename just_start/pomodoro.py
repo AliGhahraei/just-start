@@ -180,6 +180,7 @@ class PomodoroTimer:
                 phases_skipped = phases_skipped or 1
         else:
             self.skip_enabled = True
+            self.work_count += 1
 
         self._cancel_timer()
 
