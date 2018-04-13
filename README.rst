@@ -110,9 +110,9 @@ following:
 .. |Build Status| image:: https://travis-ci.org/AliGhahraei/
    just-start.svg?branch=master
    :target: https://travis-ci.org/AliGhahraei/just-start
-.. |Coverage Status| image:: https://coveralls.io/repos/github/AliGhahraei/
-   just-start/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/github/AliGhahraei/just-start?branch=master
+.. |Coverage Status| image:: https://codecov.io/gh/AliGhahraei/just-start/branch
+   /master/graph/badge.svg
+   :target: https://codecov.io/gh/AliGhahraei/just-start
 .. |Waffle.io - Columns and their card count| image:: https://badge.waffle.io/
    AliGhahraei/just-start.svg?columns=To%20Do,Priority
    :target: https://waffle.io/AliGhahraei/just-start
