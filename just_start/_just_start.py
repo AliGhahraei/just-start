@@ -95,14 +95,14 @@ def toggle_timer() -> None:
     manage_wifi(enable=pomodoro_timer.is_running)
 
 
-def reset_timer(at_work_override: bool=False) -> None:
+def stop_timer(at_work_override: bool=False) -> None:
     pomodoro_timer.reset(at_work_override=at_work_override)
     manage_wifi(enable=False)
 
 
 def location_change(location: str) -> None:
     at_work = location == 'w'
-    reset_timer(at_work)
+    stop_timer(at_work)
     toggle_timer()
 
 
@@ -147,7 +147,7 @@ class Action(Enum):
     MODIFY = partial(modify)
     TOGGLE_TIMER = partial(toggle_timer)
     REFRESH_TASKS = partial(refresh_tasks)
-    STOP_TIMER = partial(reset_timer)
+    STOP_TIMER = partial(stop_timer)
     SYNC = partial(sync)
     CUSTOM_COMMAND = partial(custom_command)
 
