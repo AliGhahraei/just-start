@@ -1,4 +1,8 @@
-from typing import Callable, Union
+from functools import wraps
+from typing import Callable, Union, Optional
+
+from .constants import SYNC_MSG
+from .utils import get_task_list, run_task
 
 
 NOT_IMPLEMENTED_FUNCTION = "Client didn't implement this function"
@@ -43,3 +47,51 @@ def client_decorator(user_function: Union[Callable, str]):
 
     local_function_name = user_function
     return decorator
+
+
+def refresh_tasks(f: Callable=None) -> Optional[Callable]:
+    """Refresh tasks or decorate a function to call refresh after its code.
+
+    :param f: call to execute before refreshing
+    :return: a decorated refreshing function if used as decorator
+    :raise TaskWarriorError if sync fails
+    """
+
+    if f:
+        @wraps(f)
+        def decorator(*args, **kwargs) -> None:
+            f(*args, **kwargs)
+            client.on_tasks_refresh(get_task_list())
+
+        return decorator
+
+    client.on_tasks_refresh(get_task_list())
+
+
+class StatusManager:
+    def __init__(self) -> None:
+        self._pomodoro_status = ''
+        self._status = ''
+
+    @property
+    def app_status(self) -> str:
+        return self._status
+
+    @app_status.setter
+    def app_status(self, status) -> None:
+        client.write_status(status)
+        self._status = status
+
+    @property
+    def pomodoro_status(self) -> str:
+        return self._pomodoro_status
+
+    @pomodoro_status.setter
+    def pomodoro_status(self, pomodoro_status) -> None:
+        client.write_pomodoro_status(pomodoro_status)
+        self._pomodoro_status = pomodoro_status
+
+    @refresh_tasks
+    def sync(self) -> None:
+        self.app_status = SYNC_MSG
+        self.app_status = run_task('sync')

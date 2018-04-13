@@ -1,13 +1,10 @@
-from functools import wraps
 from platform import system
 from subprocess import run, PIPE, STDOUT
-from typing import Callable, List, Optional
+from typing import List
 
 from pexpect import spawn, EOF
 
-from .client import client
 from .config_reader import config
-from .constants import SYNC_MSG
 
 
 PASSWORD = config['general']['password']
@@ -40,56 +37,8 @@ class UserInputError(JustStartError, ValueError):
     pass
 
 
-def refresh_tasks(f: Callable=None) -> Optional[Callable]:
-    """Refresh tasks or decorate a function to call refresh after its code.
-
-    :param f: call to execute before refreshing
-    :return: a decorated refreshing function if used as decorator
-    :raise TaskWarriorError if sync fails
-    """
-
-    if f:
-        @wraps(f)
-        def decorator(*args, **kwargs) -> None:
-            f(*args, **kwargs)
-            client.on_tasks_refresh(get_task_list())
-
-        return decorator
-
-    client.on_tasks_refresh(get_task_list())
-
-
 def get_task_list() -> List[str]:
     return run_task().split("\n")
-
-
-class StatusManager:
-    def __init__(self) -> None:
-        self._pomodoro_status = ''
-        self._status = ''
-
-    @property
-    def app_status(self) -> str:
-        return self._status
-
-    @app_status.setter
-    def app_status(self, status) -> None:
-        client.write_status(status)
-        self._status = status
-
-    @property
-    def pomodoro_status(self) -> str:
-        return self._pomodoro_status
-
-    @pomodoro_status.setter
-    def pomodoro_status(self, pomodoro_status) -> None:
-        client.write_pomodoro_status(pomodoro_status)
-        self._pomodoro_status = pomodoro_status
-
-    @refresh_tasks
-    def sync(self) -> None:
-        self.app_status = SYNC_MSG
-        self.app_status = run_task('sync')
 
 
 def block_sites(block: bool) -> None:

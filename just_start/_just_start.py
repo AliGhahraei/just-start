@@ -6,6 +6,7 @@ from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from typing import Dict, Optional, Callable, Any
 
+from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH,
     EXIT_MESSAGE
@@ -13,8 +14,7 @@ from .constants import (
 from .log import logger
 from .pomodoro import PomodoroTimer
 from .utils import (
-    StatusManager, refresh_tasks, run_task, manage_wifi, block_sites,
-    UserInputError, JustStartError)
+    run_task, manage_wifi, block_sites, UserInputError, JustStartError)
 
 
 UnaryCallable = Callable[[Any], Any]
