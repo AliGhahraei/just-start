@@ -4,7 +4,7 @@ python:
 before_install:
   - touch ~/.taskrc
 install:
-  - pip install -q .[dev]
+  - pip install -e .[dev]
 script:
   - pytest --cov=.
 after_success:
