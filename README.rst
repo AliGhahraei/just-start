@@ -41,13 +41,14 @@ the Clients_ table:
 
 .. code:: bash
 
-    $ pip install -e just-start/[<client_name>]
+    $ cd just-start
+    $ pip install -e .[<client_name>]
 
 So, for example, this would install the urwid client:
 
 .. code:: bash
 
-    $ pip install -e just-start/[urwid]
+    $ pip install -e .[urwid]
 
 Now go to Usage_
 
@@ -91,7 +92,7 @@ If you want to help out, clone the repo and run:
 
 .. code:: bash
 
-    pip install -e just-start/[dev]
+    pip install -e .[dev]
 
 This will ensure you have both the development and install dependencies.
 
@@ -105,7 +106,7 @@ following:
 
 .. code:: bash
 
-    pytest --cov=just-start/
+    pytest --cov=.
 
 .. |Build Status| image:: https://travis-ci.org/AliGhahraei/
    just-start.svg?branch=master
