@@ -1,6 +1,6 @@
 from just_start import (
     initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action, UNARY_ACTION_MESSAGES,
+    JustStartError, PromptSkippedPhases, Action, UNARY_ACTIONS,
     UserInputError, quit_just_start
 )
 from just_start.constants import (
@@ -67,7 +67,7 @@ def run_action(key):
         except KeyError:
             raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
-        prompt_message = UNARY_ACTION_MESSAGES[action]
+        prompt_message = UNARY_ACTIONS[action]
         arg = prompt(prompt_message)
         action(arg)
     else:

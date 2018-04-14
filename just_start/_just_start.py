@@ -160,7 +160,7 @@ class Action(Enum):
             pass
 
 
-UNARY_ACTION_MESSAGES = OrderedDict([
+UNARY_ACTIONS = OrderedDict([
     (Action.ADD, "Enter the task's data"),
     (Action.COMPLETE, "Enter the tasks' ids"),
     (Action.DELETE, "Enter the tasks' ids"),
@@ -169,8 +169,8 @@ UNARY_ACTION_MESSAGES = OrderedDict([
     (Action.CUSTOM_COMMAND, "Enter your custom command"),
 ])
 UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',),
-                             UNARY_ACTION_MESSAGES))
+                             UNARY_ACTIONS))
 NULLARY_ACTION_KEYS = dict(zip(
     ('h', 's', 'p', 'r', 't', 'y',),
-    [action for action in Action if action not in UNARY_ACTION_MESSAGES]
+    [action for action in Action if action not in UNARY_ACTIONS]
 ))

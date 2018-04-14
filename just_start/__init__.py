@@ -1,8 +1,8 @@
 from ._just_start import (
     initial_refresh_and_sync, Action, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS,
-    UNARY_ACTION_MESSAGES, quit_just_start
+    UNARY_ACTIONS, quit_just_start
 )
-from .client import client_decorator as client
+from .client import client_decorator as client, ClientError
 from .config_reader import ConfigError, get_client_config
 from .log import logger
 from .pomodoro import PromptSkippedPhases
@@ -15,5 +15,6 @@ __all__ = [
     'client', 'UNARY_ACTION_KEYS', 'initial_refresh_and_sync', 'Action',
     'NULLARY_ACTION_KEYS', 'ActionError', 'JustStartError', 'TaskWarriorError',
     'UserInputError', 'logger', 'ConfigError', 'PromptSkippedPhases',
-    'quit_just_start', 'UNARY_ACTION_MESSAGES', 'get_client_config',
+    'quit_just_start', 'UNARY_ACTIONS', 'get_client_config',
+    'ClientError',
 ]

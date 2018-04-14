@@ -2,11 +2,15 @@ from functools import wraps
 from typing import Callable, Union, Optional
 
 from .constants import SYNC_MSG
-from .utils import get_task_list, run_task
+from .utils import get_task_list, run_task, JustStartError
 
 
 NOT_IMPLEMENTED_FUNCTION = "Client didn't implement this function"
 INVALID_FUNCTION = 'Not a valid client function'
+
+
+class ClientError(JustStartError, ValueError):
+    pass
 
 
 class Client(dict):
@@ -27,25 +31,24 @@ class Client(dict):
 
     def __setitem__(self, key: str, value: Callable):
         if key not in Client.__dict__:
-            raise ValueError(f'{INVALID_FUNCTION}: {key}')
+            raise ClientError(f'{INVALID_FUNCTION}: {key}')
         self.__setattr__(key, value)
 
 
 client = Client()
 
 
-def client_decorator(user_function: Union[Callable, str]):
-    local_function_name = None
+def client_decorator(user_function_or_name: Union[Callable, str]):
+    target_function_name = user_function_or_name
 
-    def decorator(user_function_: Callable) -> Callable:
-        client[local_function_name] = user_function_
-        return user_function_
+    def decorator(user_function: Callable) -> Callable:
+        client[target_function_name] = user_function
+        return user_function
 
-    if callable(user_function):
-        local_function_name = user_function.__name__
-        return decorator(user_function)
+    if callable(user_function_or_name):
+        target_function_name = user_function_or_name.__name__
+        return decorator(user_function_or_name)
 
-    local_function_name = user_function
     return decorator
 
 

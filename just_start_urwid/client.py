@@ -8,7 +8,7 @@ from urwid import (
 
 from just_start import (
     client, initial_refresh_and_sync, get_client_config,
-    NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTION_MESSAGES,
+    NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
     JustStartError, UserInputError, PromptSkippedPhases, Action, quit_just_start
 )
 from just_start.constants import (
@@ -32,8 +32,7 @@ class TaskListBox(ListBox):
             if key == 'enter':
                 self.run_unary_action()
             elif key == 'esc':
-                self.action = None
-                self.focus.edit_text = ''
+                self.clear_edit_text_and_action()
                 self.focus.set_caption(self.prev_caption)
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
@@ -55,6 +54,10 @@ class TaskListBox(ListBox):
             except JustStartError as e:
                 error(str(e))
 
+    def clear_edit_text_and_action(self):
+        self.action = None
+        self.focus.edit_text = ''
+
     def run_unary_action(self):
         user_input = self.focus.edit_text
         try:
@@ -63,7 +66,11 @@ class TaskListBox(ListBox):
             else:
                 self.action(user_input)
         finally:
-            self.action = None
+            if (self.action in UNARY_ACTIONS
+                    or self.action is Action.SKIP_PHASES):
+                self.focus.set_caption(self.prev_caption)
+
+            self.clear_edit_text_and_action()
 
     def read_action(self, key: str):
         try:
@@ -77,7 +84,7 @@ class TaskListBox(ListBox):
             if action in (Action.DELETE, Action.COMPLETE):
                 action(self.focus.id)
             else:
-                prompt_message = UNARY_ACTION_MESSAGES[action]
+                prompt_message = UNARY_ACTIONS[action]
                 self.set_caption_and_action(prompt_message, action)
         else:
             try:
