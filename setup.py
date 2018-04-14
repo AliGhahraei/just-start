@@ -21,7 +21,7 @@ setup(
         'term': [],
         'urwid': ['urwid'],
     },
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(),
     python_requires='>=3.6',
 
     entry_points={
