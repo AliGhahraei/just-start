@@ -12,7 +12,7 @@ from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import PERSISTENT_PATH
 from just_start.config_reader import config
-from just_start.os import JustStartError, UserInputError
+from just_start.os_utils import JustStartError, UserInputError
 
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
