@@ -1,6 +1,6 @@
 from just_start import client, ClientError
 from just_start.client import refresh_tasks, StatusManager
-from pytest import raises
+from pytest import raises, fail
 
 
 def test_right_client_decoration(client_refresh, client_status,
@@ -29,10 +29,11 @@ def test_right_refresh_tasks_decoration(client_refresh):
 def test_right_status_manager(client_status, client_pomodoro):
     status_manager = StatusManager()
 
+    assert hasattr(status_manager, 'app_status')
+    assert hasattr(status_manager, 'pomodoro_status')
+
     status_manager.app_status = 'test'
-    assert status_manager.app_status
     status_manager.pomodoro_status = 'test'
-    assert status_manager.pomodoro_status
     status_manager.sync()
 
 
