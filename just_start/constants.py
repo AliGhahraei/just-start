@@ -29,5 +29,9 @@ LOCATION_CHANGE_PROMPT = "Enter 'w' for work or anything else for home"
 CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
 EXIT_MESSAGE = 'Exiting...'
 
+STOP_MESSAGE = 'Pomodoro timer stopped'
+SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
+INVALID_PHASE_NUMBER = 'Number of phases must be positive'
+
 RECURRENCE_OFF = 'rc.recurrence.confirmation=off'
 CONFIRMATION_OFF = 'rc.confirmation=off'

@@ -10,12 +10,11 @@ from subprocess import run
 from threading import Timer
 from typing import Callable, Dict, Any, Tuple, Optional
 
-from just_start.constants import PERSISTENT_PATH
+from just_start.constants import (
+    PERSISTENT_PATH, STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
+)
 from just_start.config_reader import config
 from just_start.os_utils import JustStartError, UserInputError
-
-
-STOP_MESSAGE = 'Pomodoro timer stopped'
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -164,14 +163,13 @@ class PomodoroTimer:
         if is_skipping:
             if self.phase is self.phase.WORK:
                 if not self.skip_enabled:
-                    raise PomodoroError('Sorry, please work 1 pomodoro to'
-                                        ' re-enable phase skipping')
+                    raise PomodoroError(SKIP_NOT_ENABLED)
 
                 if not phases_skipped:
                     raise PromptSkippedPhases
 
                 if phases_skipped < 1:
-                    raise UserInputError('Number of phases must be positive')
+                    raise UserInputError(INVALID_PHASE_NUMBER)
 
                 self.skip_enabled = False
                 # A skipped work phase is counted as finished
