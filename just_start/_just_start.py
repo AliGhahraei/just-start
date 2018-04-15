@@ -9,7 +9,8 @@ from typing import Dict, Optional, Callable, Any
 from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH,
-    EXIT_MESSAGE
+    EXIT_MESSAGE, TASK_IDS_PROMPT, ADD_PROMPT, MODIFY_PROMPT,
+    LOCATION_CHANGE_PROMPT, CUSTOM_COMMAND_PROMPT
 )
 from .log import logger
 from .pomodoro import PomodoroTimer
@@ -161,12 +162,12 @@ class Action(Enum):
 
 
 UNARY_ACTIONS = OrderedDict([
-    (Action.ADD, "Enter the task's data"),
-    (Action.COMPLETE, "Enter the tasks' ids"),
-    (Action.DELETE, "Enter the tasks' ids"),
-    (Action.MODIFY, "Enter the modified data"),
-    (Action.LOCATION_CHANGE, "Enter 'w' for work or anything else for home"),
-    (Action.CUSTOM_COMMAND, "Enter your custom command"),
+    (Action.ADD, ADD_PROMPT),
+    (Action.COMPLETE, TASK_IDS_PROMPT),
+    (Action.DELETE, TASK_IDS_PROMPT),
+    (Action.MODIFY, MODIFY_PROMPT),
+    (Action.LOCATION_CHANGE, LOCATION_CHANGE_PROMPT),
+    (Action.CUSTOM_COMMAND, CUSTOM_COMMAND_PROMPT),
 ])
 UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',),
                              UNARY_ACTIONS))

@@ -5,6 +5,7 @@ from just_start import (
 )
 from just_start.constants import (
     EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT,
+    TASK_IDS_PROMPT
 )
 
 RESTORE_COLOR = '\033[0m'
@@ -68,8 +69,12 @@ def run_action(key):
             raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
         prompt_message = UNARY_ACTIONS[action]
-        arg = prompt(prompt_message)
-        action(arg)
+        args = [prompt(prompt_message)]
+
+        if action is Action.MODIFY:
+            args.append(prompt(TASK_IDS_PROMPT))
+
+        action(*args)
     else:
         try:
             action()
