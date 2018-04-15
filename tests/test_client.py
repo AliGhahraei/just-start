@@ -26,12 +26,14 @@ def test_right_refresh_tasks_decoration(client_refresh):
     refreshing_function()
 
 
-def test_right_status_manager_properties(client_status, client_pomodoro):
+def test_right_status_manager(client_status, client_pomodoro):
     status_manager = StatusManager()
+
     status_manager.app_status = 'test'
     assert status_manager.app_status
     status_manager.pomodoro_status = 'test'
     assert status_manager.pomodoro_status
+    status_manager.sync()
 
 
 def test_wrong_client_decoration():
