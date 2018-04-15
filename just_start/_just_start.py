@@ -14,7 +14,7 @@ from .constants import (
 )
 from .log import logger
 from .pomodoro import PomodoroTimer
-from .os_utils import (
+from .os import (
     run_task, manage_wifi, block_sites, UserInputError, JustStartError)
 
 

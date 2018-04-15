@@ -11,14 +11,14 @@ def mock_run():
     def run_mock(*args, **__):
         return CompletedProcess(args, stdout=b'', returncode=0)
 
-    with patch('just_start.os_utils.run', run_mock), \
+    with patch('just_start.os.run', run_mock), \
             patch('just_start.pomodoro.run', run_mock):
         yield
 
 
 @fixture(scope='session', autouse=True)
 def mock_spawn():
-    with patch('just_start.os_utils.spawn'):
+    with patch('just_start.os.spawn'):
         yield
 
 

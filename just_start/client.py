@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Callable, Union, Optional
 
 from .constants import SYNC_MSG
-from .os_utils import get_task_list, run_task, JustStartError
+from .os import get_task_list, run_task, JustStartError
 
 
 NOT_IMPLEMENTED_FUNCTION = "Client didn't implement this function"
