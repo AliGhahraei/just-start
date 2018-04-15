@@ -6,7 +6,7 @@ from .client import client_decorator as client, ClientError
 from .config_reader import ConfigError, get_client_config
 from .log import logger
 from .pomodoro import PromptSkippedPhases, PomodoroError
-from .utils import (
+from .os_utils import (
     JustStartError, TaskWarriorError, ActionError, UserInputError,
 )
 
