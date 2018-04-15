@@ -24,7 +24,7 @@ def main_sysout(mocker, capsys, request):
     ('h',),
     ('p',),
     ('p', 'p',),
-    ('s', '1',),
+    ('s',),
     ('r',),
     ('t',),
     ('y',),
