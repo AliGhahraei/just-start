@@ -1,6 +1,6 @@
 from just_start import client, ClientError
 from just_start.client import refresh_tasks, StatusManager
-from pytest import raises, fail
+from pytest import raises
 
 
 def test_right_client_decoration(client_refresh, client_status,
