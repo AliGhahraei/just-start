@@ -1,4 +1,5 @@
 import shelve
+from contextlib import contextmanager
 from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run, PIPE, STDOUT
@@ -95,17 +96,23 @@ def run_sudo(command: str, password: str) -> None:
             pass
 
 
+@contextmanager
+def _db():
+    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        yield db_
+
+
 class Db(dict):
     def __getitem__(self, item):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        with _db() as db_:
             return db_[item]
 
     def __setitem__(self, key, value):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        with _db() as db_:
             db_[key] = value
 
     def update(self, __m, **kwargs):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        with _db() as db_:
             db_.update(__m, **kwargs)
 
 

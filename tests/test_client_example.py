@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from pytest import mark, fixture
 
 from just_start.client_example import main as client_main
@@ -7,9 +8,14 @@ from just_start.constants import (
 
 
 @fixture(autouse=True)
-def mock_db(tmpdir, mocker):
-    db_test = tmpdir.join('db_test')
-    mocker.patch('just_start.os_utils.PERSISTENT_PATH', db_test.strpath)
+def mock_db(mocker):
+    db = {}
+
+    @contextmanager
+    def db_mock():
+        yield db
+
+    mocker.patch('just_start.os_utils._db', db_mock)
 
 
 @fixture
