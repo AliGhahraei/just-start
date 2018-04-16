@@ -37,7 +37,7 @@ def sync_and_manage_wifi(*, sync_error_func: UnaryCallable):
         manage_wifi()
 
 
-def read_serialized_data() -> Dict:
+def read_db_data() -> Dict:
     data = {}
     for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
         try:
@@ -59,7 +59,6 @@ pomodoro_timer = PomodoroTimer(
     block_sites
 )
 signal(SIGTERM, quit_just_start)
-read_serialized_data()
 
 
 def initial_refresh_and_sync(*, sync_error_func: UnaryCallable):
