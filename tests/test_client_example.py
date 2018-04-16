@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from pytest import mark, fixture
 
+from conftest import raise_keyboard_interrupt
 from just_start.client_example import main as client_main
 from just_start.constants import (
     INVALID_ACTION_KEY, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
