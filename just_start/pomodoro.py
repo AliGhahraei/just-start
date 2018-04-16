@@ -8,7 +8,7 @@ from threading import Timer
 from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import (
-    STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
+    STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED
 )
 from just_start.config_reader import config
 from just_start.os_utils import JustStartError, UserInputError, run_command, db
@@ -93,14 +93,14 @@ class PomodoroTimer:
     @property
     def skip_enabled(self) -> bool:
         try:
-            return db['skip_enabled']
+            return db[SKIP_ENABLED]
         except KeyError:
-            db['skip_enabled'] = False
+            db[SKIP_ENABLED] = False
             return False
 
     @skip_enabled.setter
     def skip_enabled(self, value):
-        db['skip_enabled'] = value
+        db[SKIP_ENABLED] = value
 
     def _generate_phase_duration(self) -> Dict:
         location_config = config[self.location]

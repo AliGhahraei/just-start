@@ -57,8 +57,5 @@ def test_wrong_action(main_sysout):
 
 
 def test_keyboard_interrupt(mocker):
-    def raise_keyboard_interrupt(*_, **__):
-        raise KeyboardInterrupt
-
     mocker.patch('just_start.client_example.prompt', raise_keyboard_interrupt)
     client_main()

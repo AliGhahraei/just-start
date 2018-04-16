@@ -33,7 +33,7 @@ def error(message):
     print(f'{RED}{message}{RESTORE_COLOR}')
 
 
-def prompt(prompt_):
+def prompt(prompt_):  # pragma: no cover
     user_input = input(f'{prompt_}\n')
     if user_input == '':
         raise UserInputError(EMPTY_STRING)

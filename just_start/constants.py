@@ -33,5 +33,7 @@ STOP_MESSAGE = 'Pomodoro timer stopped'
 SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
 
+SKIP_ENABLED = 'skip_enabled'
+
 RECURRENCE_OFF = 'rc.recurrence.confirmation=off'
 CONFIRMATION_OFF = 'rc.confirmation=off'
