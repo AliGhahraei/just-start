@@ -1,12 +1,20 @@
 from pytest import mark, fixture
 
 from just_start.client_example import main as client_main
-from just_start.constants import INVALID_ACTION_KEY
+from just_start.constants import (
+    INVALID_ACTION_KEY, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
+)
+
+
+@fixture(autouse=True)
+def mock_db(tmpdir, mocker):
+    db_test = tmpdir.join('db_test')
+    mocker.patch('just_start.os_utils.PERSISTENT_PATH', db_test.strpath)
 
 
 @fixture
 def main_sysout(mocker, capsys, request):
-    user_input = (*request.param, 'q')
+    user_input = *request.param, 'q'
     mocker.patch('just_start.client_example.prompt', side_effect=user_input)
     client_main()
     return capsys.readouterr()[0]
