@@ -3,8 +3,6 @@ from subprocess import CompletedProcess
 
 from pytest import fixture
 
-from just_start import client
-
 
 @fixture(scope='session', autouse=True)
 def mock_os_commands():
