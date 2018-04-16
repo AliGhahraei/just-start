@@ -40,10 +40,12 @@ def test_right_action(main_sysout):
     assert INVALID_ACTION_KEY not in main_sysout
 
 
-@mark.parametrize('main_sysout', (
-        ('w',),
-        ('x',),
-), indirect=True)
+@mark.parametrize('main_sysout', (('s',),), indirect=True)
+def test_skip_not_allowed(main_sysout):
+    assert SKIP_NOT_ENABLED in main_sysout
+
+
+@mark.parametrize('main_sysout', (('w',), ('x',),), indirect=True)
 def test_wrong_action(main_sysout):
     assert INVALID_ACTION_KEY in main_sysout
 
