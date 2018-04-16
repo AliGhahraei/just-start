@@ -1,21 +1,19 @@
-import shelve
 from collections import OrderedDict
 from enum import Enum
 from functools import partial
-from pickle import HIGHEST_PROTOCOL
 from signal import signal, SIGTERM
 from typing import Dict, Optional, Callable, Any
 
 from .client import StatusManager, refresh_tasks
 from .constants import (
-    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, PERSISTENT_PATH,
-    EXIT_MESSAGE, TASK_IDS_PROMPT, ADD_PROMPT, MODIFY_PROMPT,
-    LOCATION_CHANGE_PROMPT, CUSTOM_COMMAND_PROMPT
+    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT,
+    EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT,
+    LOCATION_CHANGE_PROMPT,
 )
 from .log import logger
 from .pomodoro import PomodoroTimer
 from .os_utils import (
-    run_task, manage_wifi, block_sites, UserInputError, JustStartError)
+    run_task, manage_wifi, block_sites, UserInputError, JustStartError, db)
 
 
 UnaryCallable = Callable[[Any], Any]
@@ -41,13 +39,12 @@ def sync_and_manage_wifi(*, sync_error_func: UnaryCallable):
 
 def read_serialized_data() -> Dict:
     data = {}
-    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-        for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
-            try:
-                data[attribute] = db[attribute]
-            except KeyError:
-                logger.warning(f"Serialized attribute {attribute} couldn't be"
-                               f" read (this might happen between updates)")
+    for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
+        try:
+            data[attribute] = db[attribute]
+        except KeyError:
+            logger.warning(f"Serialized attribute {attribute} couldn't be"
+                           f" read (this might happen between updates)")
 
     if not data:
         logger.warning(f'No serialized attributes could be read')
@@ -75,8 +72,7 @@ def sync() -> None:
 
 
 def serialize_timer() -> None:
-    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-        db.update(pomodoro_timer.serializable_data)
+    db.update(pomodoro_timer.serializable_data)
 
 
 def skip_phases(phases: Optional[str]=None) -> None:

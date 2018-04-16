@@ -1,3 +1,5 @@
+import shelve
+from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run, PIPE, STDOUT
 from typing import List
@@ -5,6 +7,7 @@ from typing import List
 from pexpect import spawn, EOF
 
 from .config_reader import config
+from .constants import PERSISTENT_PATH
 
 
 PASSWORD = config['general']['password']
@@ -66,9 +69,13 @@ def manage_wifi(*, enable: bool=False) -> None:
             run_sudo('networksetup -setairportpower en0 off', PASSWORD)
 
 
+def run_command(*args):
+    return run(args, stdout=PIPE, stderr=STDOUT)
+
+
 def run_task(*args) -> str:
     args = args or ['-BLOCKED']
-    completed_process = run(['task', *args], stdout=PIPE, stderr=STDOUT)
+    completed_process = run_command('task', *args)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:
@@ -86,3 +93,20 @@ def run_sudo(command: str, password: str) -> None:
             child.expect(EOF)
         except OSError:
             pass
+
+
+class Db(dict):
+    def __getitem__(self, item):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            return db_[item]
+
+    def __setitem__(self, key, value):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            db_[key] = value
+
+    def update(self, __m, **kwargs):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            db_.update(__m, **kwargs)
+
+
+db = Db()

@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-import shelve
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import partial
 from itertools import cycle
-from pickle import HIGHEST_PROTOCOL
 from platform import system
-from subprocess import run
 from threading import Timer
 from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import (
-    PERSISTENT_PATH, STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
+    STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER
 )
 from just_start.config_reader import config
-from just_start.os_utils import JustStartError, UserInputError
+from just_start.os_utils import JustStartError, UserInputError, run_command, db
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -95,17 +92,15 @@ class PomodoroTimer:
 
     @property
     def skip_enabled(self) -> bool:
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            try:
-                return db['skip_enabled']
-            except KeyError:
-                db['skip_enabled'] = False
-                return False
+        try:
+            return db['skip_enabled']
+        except KeyError:
+            db['skip_enabled'] = False
+            return False
 
     @skip_enabled.setter
     def skip_enabled(self, value):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db:
-            db['skip_enabled'] = value
+        db['skip_enabled'] = value
 
     def _generate_phase_duration(self) -> Dict:
         location_config = config[self.location]
@@ -129,11 +124,11 @@ class PomodoroTimer:
 
     def notify(self, status: str) -> None:
         if system() == 'Linux':
-            run(['notify-send', status])
+            run_command('notify-send', status)
         else:
             # noinspection SpellCheckingInspection
-            run(['osascript', '-e', f'display notification "{status}" with'
-                                    f' title "just-start"'])
+            run_command('osascript', '-e', f'display notification "{status}"'
+                                           f' with title "just-start"')
 
         self.status_callback(status)
 
