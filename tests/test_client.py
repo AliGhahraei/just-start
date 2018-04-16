@@ -1,24 +1,47 @@
 from just_start import client, ClientError
 from just_start.client import refresh_tasks, StatusManager
-from pytest import raises
+from pytest import raises, mark, fixture
 
 
-def test_right_client_decoration(client_refresh, client_status,
-                                 client_pomodoro):
+@fixture
+def client_refresh():
+    @client
+    def on_tasks_refresh(_):
+        pass
+
+
+@fixture
+def client_status():
+    @client
+    def write_status(_):
+        pass
+
+
+@fixture
+def client_pomodoro():
+    @client
+    def write_pomodoro_status(_):
+        pass
+
+
+@mark.use_fixtures('client_refresh', 'client_status', 'client_pomodoro')
+def test_right_client_decoration():
     pass
 
 
 def test_right_client_decoration_with_name_param():
     @client('write_status')
-    def func():
+    def func(_):
         pass
 
 
-def test_right_refresh_tasks(client_refresh):
+@mark.use_fixtures('client_refresh')
+def test_right_refresh_tasks():
     refresh_tasks()
 
 
-def test_right_refresh_tasks_decoration(client_refresh):
+@mark.use_fixtures('client_refresh')
+def test_right_refresh_tasks_decoration():
     @refresh_tasks
     def refreshing_function():
         pass
@@ -26,7 +49,8 @@ def test_right_refresh_tasks_decoration(client_refresh):
     refreshing_function()
 
 
-def test_right_status_manager(client_status, client_pomodoro):
+@mark.use_fixtures('client_pomodoro', 'client_status')
+def test_right_status_manager():
     status_manager = StatusManager()
 
     assert hasattr(status_manager, 'app_status')

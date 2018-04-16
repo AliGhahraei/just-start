@@ -14,24 +14,3 @@ def mock_os_commands():
     with patch('just_start.os_utils.run', run_mock), \
             patch('just_start.os_utils.spawn', autospec=True):
         yield
-
-
-@fixture
-def client_refresh():
-    @client
-    def on_tasks_refresh(_):
-        pass
-
-
-@fixture
-def client_status():
-    @client
-    def write_status(_):
-        pass
-
-
-@fixture
-def client_pomodoro():
-    @client
-    def write_pomodoro_status(_):
-        pass
