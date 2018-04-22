@@ -1,5 +1,5 @@
 import shelve
-from contextlib import contextmanager
+from collections import MutableMapping
 from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run, PIPE, STDOUT
@@ -96,24 +96,31 @@ def run_sudo(command: str, password: str) -> None:
             pass
 
 
-@contextmanager
-def _db():
-    with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-        yield db_
-
-
-class Db(dict):
+class Db(MutableMapping):
     def __getitem__(self, item):
-        with _db() as db_:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             return db_[item]
 
     def __setitem__(self, key, value):
-        with _db() as db_:
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             db_[key] = value
 
-    def update(self, __m, **kwargs):
-        with _db() as db_:
-            db_.update(__m, **kwargs)
+    def __delitem__(self, key):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            del db_[key]
+
+    def __iter__(self):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            return iter(db_)
+
+    def __len__(self):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            return len(db_)
+
+    def update(*args):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            # method doesn't expect self argument
+            db_.update(*args[1:])
 
 
 db = Db()

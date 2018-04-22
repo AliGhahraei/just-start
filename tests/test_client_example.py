@@ -13,11 +13,10 @@ def mock_db(mocker):
     db = {}
 
     @contextmanager
-    def db_mock():
         yield db
 
-    mocker.patch('just_start.os_utils._db', db_mock)
 
+    mocker.patch('just_start.os_utils.shelve.open', db_mock)
 
 @fixture
 def main_sysout(mocker, capsys, request):
