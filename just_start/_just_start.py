@@ -10,7 +10,7 @@ from .constants import (
     EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT,
     LOCATION_CHANGE_PROMPT,
 )
-from .log import logger
+from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import (
     run_task, manage_wifi, block_sites, UserInputError, JustStartError, db)
@@ -43,11 +43,11 @@ def read_db_data() -> Dict:
         try:
             data[attribute] = db[attribute]
         except KeyError:
-            logger.warning(f"Serialized attribute {attribute} couldn't be"
-                           f" read (this might happen between updates)")
+            log.warning(f"Serialized attribute {attribute} couldn't be"
+                        f" read (this might happen between updates)")
 
     if not data:
-        logger.warning(f'No serialized attributes could be read')
+        log.warning(f'No serialized attributes could be read')
 
     pomodoro_timer.serializable_data = data
     return data

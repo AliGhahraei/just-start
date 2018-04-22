@@ -5,13 +5,13 @@ from toml import load
 from typing import Dict, Any
 
 from .constants import CONFIG_PATH
-from .log import logger
+from ._log import log
 
 
 try:
     config = load(CONFIG_PATH)
 except FileNotFoundError:
-    logger.warning(format_exc())
+    log.warning(format_exc())
     config = {}
 
 
