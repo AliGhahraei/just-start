@@ -7,10 +7,10 @@ from urwid import (
 )
 
 from just_start import (
-    client, initial_refresh_and_sync, get_client_config,
+    client, init_gui, get_client_config,
     NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS, quit_just_start,
     JustStartError, UserInputError, PromptSkippedPhases, Action,
-    read_db_data
+    init
 )
 from just_start.constants import (
     INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT
@@ -137,8 +137,8 @@ pomodoro_status_box = LineBox(pomodoro_status, title='Pomodoro Status')
 class TopWidget(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        read_db_data()
-        initial_refresh_and_sync(sync_error_func=error)
+        init()
+        init_gui(sync_error_func=error)
 
 
 columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])

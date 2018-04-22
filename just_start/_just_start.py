@@ -1,14 +1,15 @@
 from collections import OrderedDict
 from enum import Enum
 from functools import partial
+from os import makedirs
 from signal import signal, SIGTERM
-from typing import Dict, Optional, Callable, Any
+from typing import Optional, Callable, Any
 
 from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT,
     EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT,
-    LOCATION_CHANGE_PROMPT,
+    LOCATION_CHANGE_PROMPT, LOCAL_DIR
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
@@ -37,7 +38,7 @@ def sync_and_manage_wifi(*, sync_error_func: UnaryCallable):
         manage_wifi()
 
 
-def read_db_data() -> Dict:
+def init() -> None:
     data = {}
     for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
         try:
@@ -50,7 +51,8 @@ def read_db_data() -> Dict:
         log.warning(f'No serialized attributes could be read')
 
     pomodoro_timer.serializable_data = data
-    return data
+
+    makedirs(LOCAL_DIR, exist_ok=True)
 
 
 status_manager = StatusManager()
@@ -61,7 +63,7 @@ pomodoro_timer = PomodoroTimer(
 signal(SIGTERM, quit_just_start)
 
 
-def initial_refresh_and_sync(*, sync_error_func: UnaryCallable):
+def init_gui(*, sync_error_func: UnaryCallable):
     refresh_tasks()
     sync_and_manage_wifi(sync_error_func=sync_error_func)
 

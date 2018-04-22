@@ -1,7 +1,7 @@
 from just_start import (
-    initial_refresh_and_sync, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
+    init_gui, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
     JustStartError, PromptSkippedPhases, Action, UNARY_ACTIONS,
-    UserInputError, quit_just_start, read_db_data
+    UserInputError, quit_just_start, init
 )
 from just_start.constants import (
     EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT,
@@ -41,8 +41,8 @@ def prompt(prompt_):  # pragma: no cover
 
 
 def main():
-    read_db_data()
-    initial_refresh_and_sync(sync_error_func=error)
+    init()
+    init_gui(sync_error_func=error)
 
     try:
         while True:
