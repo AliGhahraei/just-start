@@ -8,7 +8,8 @@ from threading import Timer
 from typing import Callable, Dict, Any, Tuple, Optional
 
 from just_start.constants import (
-    STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED
+    STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
+    LONG_BREAK_SKIP_NOT_ENABLED,
 )
 from just_start.config_reader import config
 from just_start.os_utils import JustStartError, UserInputError, run_command, db
@@ -179,12 +180,18 @@ class PomodoroTimer:
 
         # Skipped phases count as finished (but not the running one)
         for _ in range(phases_skipped - 1):
-            self.phase, self.time_left = self._get_next_phase_and_time_left()
+            phase, _ = self._get_next_phase_and_time_left()
 
-            if self.phase is self.phase.WORK:
+            if phase is self.phase.WORK:
                 self.work_count += 1
 
-        self.phase, self.time_left = self._get_next_phase_and_time_left()
+        phase, time_left = self._get_next_phase_and_time_left()
+
+        if phase is self.phase.LONG_REST:
+            raise PomodoroError(LONG_BREAK_SKIP_NOT_ENABLED)
+
+        self.phase, self.time_left = phase, time_left
+
         self._run()
 
     def reset(self, at_work_override: bool) -> None:

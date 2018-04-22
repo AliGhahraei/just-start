@@ -32,6 +32,7 @@ EXIT_MESSAGE = 'Exiting...'
 STOP_MESSAGE = 'Pomodoro timer stopped'
 SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
+LONG_BREAK_SKIP_NOT_ENABLED = "Skip to a long break is not allowed"
 
 SKIP_ENABLED = 'skip_enabled'
 
