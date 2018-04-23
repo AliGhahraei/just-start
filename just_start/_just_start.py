@@ -17,6 +17,16 @@ from .os_utils import (
     run_task, manage_wifi, block_sites, UserInputError, JustStartError, db)
 
 
+def create_module_vars():
+    status_manager_ = StatusManager()
+    pomodoro_timer_ = PomodoroTimer(
+        lambda status: status_manager_.__setattr__('pomodoro_status', status),
+        block_sites
+    )
+    return status_manager_, pomodoro_timer_
+
+
+status_manager, pomodoro_timer = create_module_vars()
 UnaryCallable = Callable[[Any], Any]
 
 
@@ -53,18 +63,6 @@ def init() -> None:
     pomodoro_timer.serializable_data = data
 
     makedirs(CONFIG_DIR, exist_ok=True)
-
-
-def create_module_vars():
-    status_manager_ = StatusManager()
-    pomodoro_timer_ = PomodoroTimer(
-        lambda status: status_manager_.__setattr__('pomodoro_status', status),
-        block_sites
-    )
-    return status_manager_, pomodoro_timer_
-
-
-status_manager, pomodoro_timer = create_module_vars()
 
 
 signal(SIGTERM, quit_just_start)
