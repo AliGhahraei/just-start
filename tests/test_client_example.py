@@ -14,7 +14,6 @@ pytestmark = mark.usefixtures("recreate_just_start_module_vars")
 
 @fixture
 def main_sysout(mocker, capsys, request):
-
     db_data = request.param.get('db', {})
     log.debug(db_data)
 

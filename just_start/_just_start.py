@@ -9,7 +9,7 @@ from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT,
     EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT,
-    LOCATION_CHANGE_PROMPT, LOCAL_DIR, CONFIG_DIR
+    LOCATION_CHANGE_PROMPT, CONFIG_DIR
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
@@ -52,8 +52,7 @@ def init() -> None:
 
     pomodoro_timer.serializable_data = data
 
-    for path in LOCAL_DIR, CONFIG_DIR:
-        makedirs(path, exist_ok=True)
+    makedirs(CONFIG_DIR, exist_ok=True)
 
 
 def create_module_vars():

@@ -1,6 +1,9 @@
 from logging import getLogger, FileHandler, Formatter
+from os import makedirs
 
-from .constants import LOG_PATH
+from .constants import LOG_PATH, LOCAL_DIR
+
+makedirs(LOCAL_DIR, exist_ok=True)
 
 log = getLogger('just_start')
 
