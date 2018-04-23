@@ -93,14 +93,10 @@ class PomodoroTimer:
 
     @property
     def skip_enabled(self) -> bool:
-        try:
-            return db[SKIP_ENABLED]
-        except KeyError:
-            db[SKIP_ENABLED] = False
-            return False
+        return db.get(SKIP_ENABLED, False)
 
     @skip_enabled.setter
-    def skip_enabled(self, value):
+    def skip_enabled(self, value: bool):
         db[SKIP_ENABLED] = value
 
     def _generate_phase_duration(self) -> Dict:
