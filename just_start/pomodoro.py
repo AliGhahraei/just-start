@@ -11,6 +11,7 @@ from just_start.constants import (
     STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
     LONG_BREAK_SKIP_NOT_ENABLED,
 )
+from ._log import log
 from just_start.config_reader import config
 from just_start.os_utils import JustStartError, UserInputError, run_command, db
 
@@ -152,6 +153,8 @@ class PomodoroTimer:
 
     def advance_phases(self, is_skipping=True,
                        phases_skipped: Optional[int]=1) -> None:
+        log.debug(f'advancing pomodoro phases (db: {dict(db)}, skipping:'
+                  f' {is_skipping}, phase: {self.phase})')
         if is_skipping:
             if self.phase is self.phase.WORK:
                 if not self.skip_enabled:
