@@ -56,11 +56,18 @@ def init() -> None:
         makedirs(path, exist_ok=True)
 
 
-status_manager = StatusManager()
-pomodoro_timer = PomodoroTimer(
-    lambda status: status_manager.__setattr__('pomodoro_status', status),
-    block_sites
-)
+def create_module_vars():
+    status_manager_ = StatusManager()
+    pomodoro_timer_ = PomodoroTimer(
+        lambda status: status_manager_.__setattr__('pomodoro_status', status),
+        block_sites
+    )
+    return status_manager_, pomodoro_timer_
+
+
+status_manager, pomodoro_timer = create_module_vars()
+
+
 signal(SIGTERM, quit_just_start)
 
 
