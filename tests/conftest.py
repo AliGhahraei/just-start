@@ -24,5 +24,8 @@ def mock_os_commands():
 @fixture
 def recreate_just_start_module_vars(mocker):
     module_vars = create_module_vars()
-    for var, name in zip(module_vars, ('status_manager', 'pomodoro_timer')):
+    module_var_names = 'status_manager', 'pomodoro_timer'
+    assert len(module_vars) == len(module_var_names)
+
+    for var, name in zip(module_vars, module_var_names):
         mocker.patch(f'just_start._just_start.{name}', var)
