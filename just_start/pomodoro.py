@@ -153,7 +153,7 @@ class PomodoroTimer:
 
     def advance_phases(self, is_skipping=True,
                        phases_skipped: Optional[int]=1) -> None:
-        log.debug(f'advancing pomodoro phases (db: {dict(db)}, skipping:'
+        log.debug(f'advancing pomodoro phases (db: {db}, skipping:'
                   f' {is_skipping}, phase: {self.phase})')
         if is_skipping:
             if self.phase is self.phase.WORK:

@@ -111,11 +111,15 @@ class Db(MutableMapping):
 
     def __iter__(self):
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            return iter(db_)
+            yield iter(db_)
 
     def __len__(self):
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             return len(db_)
+
+    def __str__(self):
+        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            return str({key: value for key, value in db_.items()})
 
     def update(*args):
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
