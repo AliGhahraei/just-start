@@ -28,6 +28,7 @@ MODIFY_PROMPT = "Enter the modified tasks' data"
 LOCATION_CHANGE_PROMPT = "Enter 'w' for work or anything else for home"
 CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
 EXIT_MESSAGE = 'Exiting...'
+UNHANDLED_ERROR = f'Unhandled error: please see the log ({LOG_PATH})'
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
 SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
