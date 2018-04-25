@@ -66,7 +66,10 @@ class TaskListBox(ListBox):
             if self.action is Action.MODIFY:
                 self.action(self.focus.id, user_input)
             else:
-                self.action(user_input)
+                try:
+                    self.action(user_input)
+                except JustStartError as e:
+                    error(str(e))
         finally:
             if (self.action in UNARY_ACTIONS
                     or self.action is Action.SKIP_PHASES):
