@@ -32,7 +32,10 @@ class TaskListBox(ListBox):
     def keypress(self, size: int, key: str):
         if self.action:
             if key == 'enter':
-                self.run_unary_action()
+                try:
+                    self.run_unary_action()
+                except JustStartError as e:
+                    error(str(e))
             elif key == 'esc':
                 self.clear_edit_text_and_action()
                 self.focus.set_caption(self.prev_caption)
