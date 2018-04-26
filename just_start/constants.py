@@ -18,9 +18,7 @@ KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
 SYNC_MSG = 'Syncing task server...'
-EMPTY_STRING = 'An empty string is not allowed'
 ACTION_PROMPT = 'Enter your action'
-INVALID_ACTION_KEY = 'Invalid action key'
 SKIPPED_PHASES_PROMPT = 'How many phases do you want to skip?'
 TASK_IDS_PROMPT = "Enter the tasks' ids"
 ADD_PROMPT = "Enter the task's data"
@@ -28,12 +26,19 @@ MODIFY_PROMPT = "Enter the modified tasks' data"
 LOCATION_CHANGE_PROMPT = "Enter 'w' for work or anything else for home"
 CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
 EXIT_MESSAGE = 'Exiting...'
+
+INVALID_ACTION_KEY = 'Invalid action key'
+EMPTY_STRING = 'An empty string is not allowed'
 UNHANDLED_ERROR = f'Unhandled error: please see the log ({LOG_PATH})'
 
-STOP_MESSAGE = 'Pomodoro timer stopped'
 SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
 LONG_BREAK_SKIP_NOT_ENABLED = "Skip to a long break is not allowed"
+
+ERRORS = {INVALID_ACTION_KEY, EMPTY_STRING, UNHANDLED_ERROR, SKIP_NOT_ENABLED,
+          INVALID_PHASE_NUMBER, LONG_BREAK_SKIP_NOT_ENABLED}
+
+STOP_MESSAGE = 'Pomodoro timer stopped'
 
 SKIP_ENABLED = 'skip_enabled'
 

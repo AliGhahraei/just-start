@@ -6,6 +6,7 @@ from just_start import log
 from just_start.client_example import main as client_main
 from just_start.constants import (
     INVALID_ACTION_KEY, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
+    ERRORS,
 )
 
 
@@ -33,6 +34,14 @@ def input_param(*args):
     return ({'input': input_} for input_ in args)
 
 
+def assert_no_sysout_errors_except(sysout, *allowed_errors):
+    for error in allowed_errors:
+        assert error in sysout
+
+    for error in ERRORS - set(allowed_errors):
+        assert error not in sysout
+
+
 @mark.parametrize('main_sysout', input_param(
         ('a', 'Task description',),
         ('c', '1',),
@@ -45,31 +54,33 @@ def input_param(*args):
         ('h',),
         ('p',),
         ('p', 'p',),
-        ('s',),
         ('t',),
         ('y',),
 ), indirect=True)
 def test_right_action(main_sysout):
-    assert INVALID_ACTION_KEY not in main_sysout
+    assert_no_sysout_errors_except(main_sysout)
 
 
 @mark.parametrize('main_sysout', (({'input': ('s', '1'),
                                     'db': {SKIP_ENABLED: True}}),),
                   indirect=True)
-def test_skip_allowed(main_sysout):
-    assert SKIP_NOT_ENABLED not in main_sysout
+def test_skip_enabled(main_sysout):
+    assert_no_sysout_errors_except(main_sysout)
 
 
 @mark.parametrize('main_sysout', input_param('s'), indirect=True)
-def test_skip_not_allowed(main_sysout):
-    assert SKIP_NOT_ENABLED in main_sysout
+def test_skip_not_enabled(main_sysout):
+    assert_no_sysout_errors_except(main_sysout, SKIP_NOT_ENABLED)
 
 
 @mark.parametrize('main_sysout', input_param('w', 'x'), indirect=True)
 def test_wrong_action(main_sysout):
-    assert INVALID_ACTION_KEY in main_sysout
+    assert_no_sysout_errors_except(main_sysout, INVALID_ACTION_KEY)
 
 
-def test_keyboard_interrupt(mocker):
+def test_keyboard_interrupt(mocker, capsys):
     mocker.patch('just_start.client_example.prompt', raise_keyboard_interrupt)
     client_main()
+
+    sysout = capsys.readouterr()[0]
+    assert_no_sysout_errors_except(sysout)
