@@ -186,7 +186,7 @@ class PomodoroTimer:
 
         phase, time_left = self._get_next_phase_and_time_left()
 
-        if phase is self.phase.LONG_REST:
+        if is skipping and phase is self.phase.LONG_REST:
             raise PomodoroError(LONG_BREAK_SKIP_NOT_ENABLED)
 
         self.phase, self.time_left = phase, time_left
