@@ -13,7 +13,9 @@ from just_start.constants import (
 )
 from ._log import log
 from just_start.config_reader import config
-from just_start.os_utils import JustStartError, UserInputError, run_command, db
+from just_start.os_utils import (
+    JustStartError, UserInputError, run_command, db, block_sites
+)
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -40,10 +42,8 @@ class PomodoroTimer:
                                '_at_work_override', 'work_count')
 
     def __init__(self, status_callback: Callable[[str], None],
-                 blocking_callback: Callable[[bool], None],
                  at_work_override: bool=False, notify: bool=False):
         self.status_callback = status_callback
-        self.blocking_callback = blocking_callback
 
         self._at_work_override = at_work_override
         self.location = ('work' if self._at_work_override or self.at_work
@@ -74,7 +74,7 @@ class PomodoroTimer:
     def _pause(self) -> None:
         self._cancel_timer()
         self.is_running = False
-        self.blocking_callback(True)
+        block_sites(True)
 
     def _cancel_timer(self) -> None:
         if self.is_running:
@@ -149,7 +149,7 @@ class PomodoroTimer:
         self.timer = Timer(self.time_left, partial(self.advance_phases, False))
         self.timer.start()
         self.is_running = True
-        self.blocking_callback(self.phase is self.phase.WORK)
+        block_sites(self.phase is self.phase.WORK)
 
     def advance_phases(self, is_skipping=True,
                        phases_skipped: Optional[int]=1) -> None:
@@ -196,6 +196,5 @@ class PomodoroTimer:
     def reset(self, at_work_override: bool) -> None:
         self._pause()
         self.__init__(self.status_callback,
-                      self.blocking_callback,
                       at_work_override=at_work_override,
                       notify=True)

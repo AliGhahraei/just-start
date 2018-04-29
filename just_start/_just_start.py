@@ -14,14 +14,13 @@ from .constants import (
 from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import (
-    run_task, manage_wifi, block_sites, UserInputError, JustStartError, db)
+    run_task, manage_wifi, UserInputError, JustStartError, db)
 
 
 def create_module_vars():
     status_manager_ = StatusManager()
     pomodoro_timer_ = PomodoroTimer(
         lambda status: status_manager_.__setattr__('pomodoro_status', status),
-        block_sites
     )
     return status_manager_, pomodoro_timer_
 
