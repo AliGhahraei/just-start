@@ -11,7 +11,7 @@ from .config_reader import config
 from .constants import PERSISTENT_PATH
 
 
-PASSWORD = config['general']['password']
+password = config['general']['password']
 BLOCKING_IP = config['general']['blocking_ip']
 
 APP_SPECIFIC_COMMENT = '# just-start'
@@ -47,27 +47,27 @@ def get_task_list() -> List[str]:
 
 def block_sites(block: bool) -> None:
     # Always delete outdated blocked sites
-    run_sudo(UNBLOCK_COMMAND, PASSWORD)
+    run_sudo(UNBLOCK_COMMAND)
 
     if block:
-        run_sudo(BLOCK_COMMAND, PASSWORD)
+        run_sudo(BLOCK_COMMAND)
 
 
 def manage_wifi(*, enable: bool=False) -> None:
     if enable:
         if system() == 'Linux':
             # noinspection SpellCheckingInspection
-            run_sudo('sudo systemctl start netctl-auto@wlp2s0', PASSWORD)
+            run_sudo('sudo systemctl start netctl-auto@wlp2s0')
         else:
             # noinspection SpellCheckingInspection
-            run_sudo('networksetup -setairportpower en0 on', PASSWORD)
+            run_sudo('networksetup -setairportpower en0 on')
     else:
         if system() == 'Linux':
             # noinspection SpellCheckingInspection
-            run_sudo('sudo systemctl stop netctl-auto@wlp2s0', PASSWORD)
+            run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
         else:
             # noinspection SpellCheckingInspection
-            run_sudo('networksetup -setairportpower en0 off', PASSWORD)
+            run_sudo('networksetup -setairportpower en0 off')
 
 
 def run_command(*args):
@@ -85,7 +85,7 @@ def run_task(*args) -> str:
     return process_output
 
 
-def run_sudo(command: str, password: str) -> None:
+def run_sudo(command: str) -> None:
     if password:
         child = spawn(command)
 
