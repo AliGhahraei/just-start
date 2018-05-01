@@ -94,7 +94,7 @@ def client_decorator(function_or_class_or_name: Union[Callable, str]):
         if client.client_impl.functions:
             log.warning(f'The following client methods were defined before'
                         f" class decoration and might be overridden:"
-                        f' {", ".join(client.client.functions)}')
+                        f' {", ".join(client.client_impl.functions)}')
 
         client.client_impl = function_or_class_or_name
         return function_or_class_or_name
