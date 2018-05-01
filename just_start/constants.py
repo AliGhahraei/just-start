@@ -10,7 +10,6 @@ CONFIG_PATH = join(CONFIG_DIR, 'preferences.toml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 PERSISTENT_PATH = join(LOCAL_DIR, 'db')
 
-# noinspection SpellCheckingInspection
 KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
                  ' another pomodoro phase, (l)ocation change, (m)odify task,'
                  ' (p)omodoro pause/resume, (q)uit, (r)efresh tasks, s(t)op'

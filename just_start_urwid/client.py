@@ -157,7 +157,7 @@ def main():
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
 
-    # noinspection PyBroadException
+    #pylint: disable=broad-except
     try:
         MainLoop(top, palette=(
             ('error', error_fg, error_bg),

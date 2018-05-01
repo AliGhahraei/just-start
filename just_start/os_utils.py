@@ -15,7 +15,6 @@ password = config['general']['password']
 BLOCKING_IP = config['general']['blocking_ip']
 
 APP_SPECIFIC_COMMENT = '# just-start'
-# noinspection SpellCheckingInspection
 BLOCKING_LINES = '\\n'.join(
     [f'{BLOCKING_IP}\\t{blocked_site}\\t{APP_SPECIFIC_COMMENT}\\n'
      f'{BLOCKING_IP}\\twww.{blocked_site}\\t{APP_SPECIFIC_COMMENT}'
@@ -56,17 +55,13 @@ def block_sites(block: bool) -> None:
 def manage_wifi(*, enable: bool=False) -> None:
     if enable:
         if system() == 'Linux':
-            # noinspection SpellCheckingInspection
             run_sudo('sudo systemctl start netctl-auto@wlp2s0')
         else:
-            # noinspection SpellCheckingInspection
             run_sudo('networksetup -setairportpower en0 on')
     else:
         if system() == 'Linux':
-            # noinspection SpellCheckingInspection
             run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
         else:
-            # noinspection SpellCheckingInspection
             run_sudo('networksetup -setairportpower en0 off')
 
 

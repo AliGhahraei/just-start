@@ -106,7 +106,6 @@ class PomodoroTimer:
         durations = (duration * 60 for duration in (
             location_config['pomodoro_length'], location_config['short_rest'],
             location_config['long_rest']))
-        # noinspection PyTypeChecker
         phase_duration = dict(zip(Phase, durations))
         return phase_duration
 
@@ -124,7 +123,6 @@ class PomodoroTimer:
         if system() == 'Linux':
             run_command('notify-send', status)
         else:
-            # noinspection SpellCheckingInspection
             run_command('osascript', '-e', f'display notification "{status}"'
                                            f' with title "just-start"')
 

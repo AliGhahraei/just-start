@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from pytest import fixture
 
-# noinspection PyProtectedMember
 from just_start._just_start import create_module_vars
 
 
