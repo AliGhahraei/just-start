@@ -38,16 +38,10 @@ class PromptSkippedPhases(Exception):
 
 
 class PomodoroTimer:
-    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'phase', 'time_left',
-                               '_at_work_override', 'work_count')
+    SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'phase', 'time_left', 'work_count')
 
-    def __init__(self, status_callback: Callable[[str], None],
-                 at_work_override: bool=False, notify: bool=False):
+    def __init__(self, status_callback: Callable[[str], None], notify: bool=False):
         self.status_callback = status_callback
-
-        self._at_work_override = at_work_override
-        self.location = ('work' if self._at_work_override or self.at_work
-                         else 'home')
 
         self.start_datetime = self.timer = None
         self.is_running = False
@@ -83,16 +77,6 @@ class PomodoroTimer:
             self.time_left -= elapsed_timedelta.seconds
 
     @property
-    def at_work(self) -> bool:
-        if self._at_work_override:
-            return True
-
-        return datetime.now().isoweekday() < 6 and (
-                config['work']['start']
-                <= datetime.now().time()
-                <= config['work']['end'])
-
-    @property
     def skip_enabled(self) -> bool:
         return db.get(SKIP_ENABLED, False)
 
@@ -100,18 +84,18 @@ class PomodoroTimer:
     def skip_enabled(self, value: bool):
         db[SKIP_ENABLED] = value
 
-    def _generate_phase_duration(self) -> Dict:
-        location_config = config[self.location]
-
-        durations = (duration * 60 for duration in (
-            location_config['pomodoro_length'], location_config['short_rest'],
-            location_config['long_rest']))
+    @staticmethod
+    def _generate_phase_duration() -> Dict:
+        durations = (duration * 60 for duration in (config.location['pomodoro']['pomodoro_length'],
+                                                    config.location['pomodoro']['short_rest'],
+                                                    config.location['pomodoro']['long_rest']))
         phase_duration = dict(zip(Phase, durations))
         return phase_duration
 
-    def _create_cycle(self) -> cycle:
+    @staticmethod
+    def _create_cycle() -> cycle:
         states = ([Phase.WORK, Phase.SHORT_REST]
-                  * config[self.location]['cycles_before_long_rest'])
+                  * config.location['pomodoro']['cycles_before_long_rest'])
         states[-1] = Phase.LONG_REST
         return cycle(states)
 
@@ -140,7 +124,7 @@ class PomodoroTimer:
         now = self.start_datetime.time().strftime('%H:%M')
         pomodoros = 'pomodoro' if self.work_count == 1 else 'pomodoros'
         self.notify(f'{self.phase.value} - {self.work_count} {pomodoros} so'
-                    f' far at {"work" if self.at_work else "home"}.'
+                    f' far at {"work" if config.at_work() else "home"}.'
                     f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
 
@@ -191,8 +175,6 @@ class PomodoroTimer:
 
         self._run()
 
-    def reset(self, at_work_override: bool) -> None:
+    def reset(self) -> None:
         self._pause()
-        self.__init__(self.status_callback,
-                      at_work_override=at_work_override,
-                      notify=True)
+        self.__init__(self.status_callback, notify=True)

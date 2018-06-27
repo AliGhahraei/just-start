@@ -97,14 +97,13 @@ def toggle_timer() -> None:
     manage_wifi(enable=pomodoro_timer.is_running)
 
 
-def stop_timer(at_work_override: bool=False) -> None:
-    pomodoro_timer.reset(at_work_override=at_work_override)
+def stop_timer() -> None:
+    pomodoro_timer.reset()
     manage_wifi(enable=False)
 
 
 def location_change(location: str) -> None:
-    at_work = location == 'w'
-    stop_timer(at_work)
+    stop_timer()
     toggle_timer()
 
 

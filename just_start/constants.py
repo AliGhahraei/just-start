@@ -1,5 +1,5 @@
 from os import getenv
-from os.path import expanduser, join
+from os.path import expanduser, join, dirname
 
 LOCAL_DIR = join(getenv('XDG_DATA_HOME',
                         expanduser(join('~', '.local', 'share'))),
@@ -9,6 +9,7 @@ CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
 CONFIG_PATH = join(CONFIG_DIR, 'preferences.toml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 PERSISTENT_PATH = join(LOCAL_DIR, 'db')
+SCHEMA_PATH = join(dirname(__file__), 'preferences.schema.json')
 
 KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
                  ' another pomodoro phase, (l)ocation change, (m)odify task,'
@@ -28,7 +29,7 @@ EXIT_MESSAGE = 'Exiting...'
 
 INVALID_ACTION_KEY = 'Invalid action key'
 EMPTY_STRING = 'An empty string is not allowed'
-UNHANDLED_ERROR = f'Unhandled error: please see the log ({LOG_PATH})'
+UNHANDLED_ERROR = f'Unhandled error: please see ({LOG_PATH})'
 
 SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
