@@ -20,8 +20,8 @@ Features:
 - Configurable pomodoro phase durations
 - Support for multiple configurations (a.k.a. *locations*)
 - Desktop notifications
-- Block time-wasting sites list while you’re working
-- Enable and disable your wi-fi so you REALLY use this
+- Block time-wasting sites while you’re working
+- Enable and disable your wi-fi so you REALLY use this app
 
 Installation
 ------------
@@ -41,21 +41,20 @@ the Clients_ table:
 
 .. code:: bash
 
-    $ cd just-start
-    $ pip install -e .[<client_name>]
+    $ pip install -e just-start[<client_name>]
 
 So, for example, this would install the urwid client:
 
 .. code:: bash
 
-    $ pip install -e .[urwid]
+    $ pip install -e just-start[urwid]
 
 Now go to Usage_
 
 This installs an editable/development version (run ``pip install --help | grep
-editable`` to find out more). You can of course install without the ``-e`` flag,
-but be aware that things still move very fast. You may also download a release_
-instead.
+ --after-context=4 -- --editable`` to find out more). You can of course install
+without the ``-e`` flag, but be aware that things still move very fast. You may
+also download a release_ instead.
 
 Clients
 -------
@@ -88,11 +87,12 @@ Press h to see a list of available user actions.
 Development
 -----------
 
-If you want to help out, clone the repo and run:
+If you want to help out please install Pipenv_, clone the repo and run:
 
 .. code:: bash
 
-    pip install -e .[dev]
+    cd just-start/
+    pipenv install --dev -e .[dev]
 
 This will ensure you have both the development and install dependencies.
 
@@ -121,6 +121,7 @@ following:
 .. _Calcurse: http://calcurse.org
 .. _GitHub Issues: https://github.com/AliGhahraei/just-start/issues
 .. _Omodoro: https://github.com/okraits/omodoro
+.. _Pipenv: https://docs.pipenv.org
 .. _Pomodoro Technique: https://cirillocompany.de/pages/pomodoro-technique
 .. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
