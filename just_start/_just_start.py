@@ -14,7 +14,8 @@ from .constants import (
 from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import (
-    run_task, manage_wifi, UserInputError, JustStartError, db)
+    run_task, manage_wifi, UserInputError, JustStartError, db
+)
 
 
 def create_module_vars():
