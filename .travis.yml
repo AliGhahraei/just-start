@@ -3,7 +3,6 @@ python:
   - "3.6"
 before_install:
   - touch ~/.taskrc
-  - pwd
   - cp just-start/example_config.toml ~/.config/just-start/preferences.toml
 install:
   - pip install -e .[dev]
