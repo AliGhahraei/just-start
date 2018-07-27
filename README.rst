@@ -92,7 +92,7 @@ If you want to help out please install Pipenv_, clone the repo and run:
 .. code:: bash
 
     cd just-start/
-    pipenv install --dev -e .[dev]
+    pipenv install --dev -e .
 
 This will ensure you have both the development and install dependencies.
 
