@@ -1,0 +1,25 @@
+password = "my password"
+blocked_sites = [
+    "facebook.com", "messenger.com", "youtube.com"
+]
+
+[pomodoro]
+pomodoro_length = 30
+short_rest = 6
+long_rest = 18
+cycles_before_long_rest = 5
+
+[[locations]]
+name = "work"
+
+    [locations.activation]
+    start = "08:00"
+    end = "17:00"
+    days = []
+
+    [locations.pomodoro]
+    pomodoro_length = 60
+    short_rest = 12
+    long_rest = 36
+    cycles_before_long_rest = 5
+    notifications = false
