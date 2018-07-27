@@ -6,7 +6,7 @@ before_install:
   - mkdir -p ~/.config/just-start/
   - cp example_config.toml ~/.config/just-start/preferences.toml
 install:
-  - pip install --user pipenv
+  - pip install pipenv
   - pipenv install --ignore-pipfile --dev .
 script:
   - pytest --cov=.
