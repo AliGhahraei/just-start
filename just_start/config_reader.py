@@ -20,7 +20,7 @@ class Config(MutableMapping):
     def __init__(self, config_: Dict = None):
         self._at_work_override = False
         self._validate(config_)
-        self._convert_types(config_)
+        self._convert_location_intervals_to_times(config_)
         self._config = config_ or {}
 
     def __getitem__(self, key) -> Any:
@@ -63,7 +63,7 @@ class Config(MutableMapping):
         default_validator(schema).validate(config)
 
     @staticmethod
-    def _convert_types(config: Dict):
+    def _convert_location_intervals_to_times(config: Dict):
         for location in config['locations']:
             try:
                 activation = location['activation']
