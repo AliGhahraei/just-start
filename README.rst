@@ -21,7 +21,6 @@ Features:
 - Support for multiple configurations (a.k.a. *locations*)
 - Desktop notifications
 - Block time-wasting sites while you’re working
-- Enable and disable your wi-fi so you REALLY use this app
 
 Installation
 ------------

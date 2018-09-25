@@ -51,19 +51,6 @@ def block_sites(block: bool) -> None:
         run_sudo(BLOCK_COMMAND)
 
 
-def manage_wifi(*, enable: bool=False) -> None:
-    if enable:
-        if system() == 'Linux':
-            run_sudo('sudo systemctl start netctl-auto@wlp2s0')
-        else:
-            run_sudo('networksetup -setairportpower en0 on')
-    else:
-        if system() == 'Linux':
-            run_sudo('sudo systemctl stop netctl-auto@wlp2s0')
-        else:
-            run_sudo('networksetup -setairportpower en0 off')
-
-
 def run_command(*args):
     return run(args, stdout=PIPE, stderr=STDOUT)
 

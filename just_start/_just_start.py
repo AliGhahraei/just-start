@@ -14,7 +14,7 @@ from .constants import (
 from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import (
-    run_task, manage_wifi, UserInputError, JustStartError, db
+    run_task, UserInputError, JustStartError, db
 )
 
 
@@ -34,18 +34,14 @@ def quit_just_start(*, exit_message_func: UnaryCallable,
                     sync_error_func: UnaryCallable) -> None:
     exit_message_func(EXIT_MESSAGE)
     serialize_timer()
-    sync_and_manage_wifi(sync_error_func=sync_error_func)
+    sync_or_error(sync_error_func=sync_error_func)
 
 
-def sync_and_manage_wifi(*, sync_error_func: UnaryCallable):
+def sync_or_error(*, sync_error_func: UnaryCallable):
     try:
         sync()
     except JustStartError as ex:
         sync_error_func(str(ex))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        manage_wifi()
 
 
 def init() -> None:
@@ -70,7 +66,7 @@ signal(SIGTERM, quit_just_start)
 
 def init_gui(*, sync_error_func: UnaryCallable):
     refresh_tasks()
-    sync_and_manage_wifi(sync_error_func=sync_error_func)
+    sync_or_error(sync_error_func=sync_error_func)
 
 
 def sync() -> None:
@@ -90,17 +86,13 @@ def skip_phases(phases: Optional[str]=None) -> None:
         raise UserInputError('Number of phases must be a positive integer') \
             from e
 
-    manage_wifi(enable=True)
-
 
 def toggle_timer() -> None:
     pomodoro_timer.toggle()
-    manage_wifi(enable=pomodoro_timer.is_running)
 
 
 def stop_timer() -> None:
     pomodoro_timer.reset()
-    manage_wifi(enable=False)
 
 
 def location_change(location: str) -> None:
