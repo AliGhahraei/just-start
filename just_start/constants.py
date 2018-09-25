@@ -9,7 +9,6 @@ CONFIG_DIR = join(getenv('XDG_CONFIG_HOME', expanduser(join('~', '.config'))),
 CONFIG_PATH = join(CONFIG_DIR, 'preferences.toml')
 LOG_PATH = join(LOCAL_DIR, 'log')
 PERSISTENT_PATH = join(LOCAL_DIR, 'db')
-SCHEMA_PATH = join(dirname(__file__), 'preferences.schema.json')
 
 KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
                  ' another pomodoro phase, (l)ocation change, (m)odify task,'
@@ -35,8 +34,8 @@ SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
 LONG_BREAK_SKIP_NOT_ENABLED = "Skip to a long break is not allowed"
 
-ERRORS = {INVALID_ACTION_KEY, EMPTY_STRING, UNHANDLED_ERROR, SKIP_NOT_ENABLED,
-          INVALID_PHASE_NUMBER, LONG_BREAK_SKIP_NOT_ENABLED}
+POSSIBLE_ERRORS = {INVALID_ACTION_KEY, EMPTY_STRING, UNHANDLED_ERROR, SKIP_NOT_ENABLED,
+                   INVALID_PHASE_NUMBER, LONG_BREAK_SKIP_NOT_ENABLED}
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
 

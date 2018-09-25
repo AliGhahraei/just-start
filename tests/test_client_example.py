@@ -1,12 +1,11 @@
 from contextlib import contextmanager
 from pytest import mark, fixture
 
-from conftest import raise_keyboard_interrupt
 from just_start import log
 from just_start.client_example import main as client_main
 from just_start.constants import (
     INVALID_ACTION_KEY, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
-    ERRORS,
+    POSSIBLE_ERRORS,
 )
 
 
@@ -38,8 +37,7 @@ def assert_no_sysout_errors_except(sysout, *allowed_errors):
     for error in allowed_errors:
         assert error in sysout
 
-    for error in ERRORS - set(allowed_errors):
-        assert error not in sysout
+    assert not (set(allowed_errors) - POSSIBLE_ERRORS)
 
 
 @mark.parametrize('main_sysout', input_param(
@@ -84,3 +82,7 @@ def test_keyboard_interrupt(mocker, capsys):
 
     sysout = capsys.readouterr()[0]
     assert_no_sysout_errors_except(sysout)
+
+
+def raise_keyboard_interrupt(*_, **__):
+    raise KeyboardInterrupt

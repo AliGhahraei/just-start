@@ -32,6 +32,7 @@ class BaseClient(ABC):
 
 class _ClientImpl:
     def __init__(self):
+        # By-pass own __setattr__
         super().__setattr__('functions', {})
 
     def __getattr__(self, item) -> Callable:
@@ -44,17 +45,16 @@ class _ClientImpl:
 _client_abstractmethods = set()
 
 
-def _dynamic_abstractmethod(f):
-    _client_abstractmethods.add(f.__name__)
+def _dynamic_abstractmethod(abstract_method: Callable) -> Callable:
+    _client_abstractmethods.add(abstract_method.__name__)
 
-    @wraps(f)
+    @wraps(abstract_method)
     def wrapper(*args, **kwargs):
         self, *args = args
-        implementation = getattr(self.client_impl, f.__name__)
+        implementation = getattr(self.client_impl, abstract_method.__name__)
 
-        if f is implementation:
-            raise NotImplementedError(f'{NOT_IMPLEMENTED_FUNCTION}:'
-                                      f' {f.__name__}')
+        if implementation is abstract_method:
+            raise NotImplementedError(f'{NOT_IMPLEMENTED_FUNCTION}: {abstract_method.__name__}')
 
         implementation(*args, **kwargs)
 
@@ -111,9 +111,9 @@ def client_decorator(function_or_class_or_name: Union[Callable, str]):
 
 
 def refresh_tasks(f: Callable=None) -> Optional[Callable]:
-    """Refresh tasks or decorate a function to call refresh after its code.
+    """Refresh tasks and optionally invoke a callback before refreshing.
 
-    :param f: call to execute before refreshing
+    :param f: function to execute before refreshing
     :return: a decorated refreshing function if used as decorator
     :raise TaskWarriorError if sync fails
     """

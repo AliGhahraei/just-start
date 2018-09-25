@@ -6,10 +6,6 @@ from pytest import fixture
 from just_start._just_start import create_module_vars
 
 
-def raise_keyboard_interrupt(*_, **__):
-    raise KeyboardInterrupt
-
-
 @fixture(scope='session', autouse=True)
 def mock_os_commands():
     def run_mock(*args, **__):

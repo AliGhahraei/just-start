@@ -12,7 +12,7 @@ from just_start.constants import (
     LONG_BREAK_SKIP_NOT_ENABLED,
 )
 from ._log import log
-from just_start.config_reader import config
+from just_start.config_reader import get_config
 from just_start.os_utils import (
     JustStartError, UserInputError, run_command, db, block_sites
 )
@@ -86,16 +86,16 @@ class PomodoroTimer:
 
     @staticmethod
     def _generate_phase_duration() -> Dict:
-        durations = (duration * 60 for duration in (config.location['pomodoro']['pomodoro_length'],
-                                                    config.location['pomodoro']['short_rest'],
-                                                    config.location['pomodoro']['long_rest']))
+        pomodoro_config = get_config().pomodoro
+        durations = (duration * 60 for duration in (pomodoro_config.pomodoro_length,
+                                                    pomodoro_config.short_rest,
+                                                    pomodoro_config.long_rest))
         phase_duration = dict(zip(Phase, durations))
         return phase_duration
 
     @staticmethod
     def _create_cycle() -> cycle:
-        states = ([Phase.WORK, Phase.SHORT_REST]
-                  * config.location['pomodoro']['cycles_before_long_rest'])
+        states = ([Phase.WORK, Phase.SHORT_REST] * get_config().pomodoro.cycles_before_long_rest)
         states[-1] = Phase.LONG_REST
         return cycle(states)
 
@@ -124,7 +124,7 @@ class PomodoroTimer:
         now = self.start_datetime.time().strftime('%H:%M')
         pomodoros = 'pomodoro' if self.work_count == 1 else 'pomodoros'
         self.notify(f'{self.phase.value} - {self.work_count} {pomodoros} so'
-                    f' far at {"work" if config.at_work() else "home"}.'
+                    f' far at {get_config().location_name}.'
                     f'\n{now} - {time_after_seconds(self.time_left)}'
                     f' ({int(self.time_left / 60)} mins)')
 

@@ -1,124 +1,130 @@
-from collections.abc import MutableMapping
 from datetime import time, datetime
-from os.path import join, expanduser, exists
-from traceback import format_exc
-from typing import Dict, Any, Iterator
+from functools import partial
+from os.path import expanduser
+from typing import Dict, List, Generator, Callable, Any, Mapping, Iterator, Tuple, TypeVar, cast
 
-from json import load as json_load
-from jsonschema import Draft4Validator, validators
+from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
 from toml import load
 
-from .constants import CONFIG_PATH, SCHEMA_PATH
-from ._log import log
+from .constants import CONFIG_PATH
 
 
-def as_time(time_str: str) -> time:
-    return datetime.strptime(time_str, '%H:%M').time()
+WeekdayInt = conint(le=0, ge=6)
 
 
-class Config(MutableMapping):
-    def __init__(self, config_: Dict = None):
+class _ClockTime(time):
+    @classmethod
+    def get_validators(cls) -> Generator[Callable, None, None]:
+        yield cls.validate_format
+
+    @classmethod
+    def validate_format(cls, time_str: str) -> time:
+        return datetime.strptime(time_str, '%H:%M').time()
+
+
+class _LocationActivationConfig(BaseModel):
+    start: _ClockTime
+    end: _ClockTime
+    days: List[WeekdayInt]
+
+
+class GeneralConfig(BaseModel):
+    password: str = None
+    taskrc_path: FilePath = expanduser("~/.taskrc")
+    blocked_sites: List[str] = []
+    blocking_ip: UrlStr = "127.0.0.1"
+    notifications: bool = True
+
+
+class PomodoroConfig(BaseModel):
+    pomodoro_length: PositiveInt = 25
+    short_rest: PositiveInt = 5
+    long_rest: PositiveInt = 15
+    cycles_before_long_rest: PositiveInt = 4
+
+
+class _LocationConfig(BaseModel):
+    name: str
+    activation: _LocationActivationConfig
+    general: GeneralConfig = GeneralConfig()
+    pomodoro: PomodoroConfig = PomodoroConfig()
+
+
+class _FullConfig(BaseModel):
+    general: GeneralConfig = GeneralConfig()
+    pomodoro: PomodoroConfig = PomodoroConfig()
+    locations: List[_LocationConfig] = []
+
+
+Section = TypeVar('Section', bound=BaseModel)
+
+
+class Config(Mapping):
+    def __init__(self, **data):
+        self._config = _FullConfig(**data)
+        self._config_dict = self._config.dict()  # type: Dict
         self._at_work_override = False
-        self._validate(config_)
-        self._convert_location_intervals_to_times(config_)
-        self._config = config_ or {}
 
-    def __getitem__(self, key) -> Any:
-        return self._config[key]
+    def __getitem__(self, item: str) -> Any:
+        return getattr(self._config, item)
 
-    def __setitem__(self, key, value) -> None:
-        self._config[key] = value
-
-    def __delitem__(self, value) -> None:
-        del self._config[value]
-
-    def __iter__(self) -> Iterator:
-        return iter(self._config)
+    def __iter__(self) -> Iterator[Tuple]:
+        return iter(self._config_dict.items())
 
     def __len__(self) -> int:
-        return len(self._config)
+        return len(self._config_dict)
 
     @property
-    def location(self):
-        return self.work_location if self.at_work() else self._config
-
-    @staticmethod
-    def _validate(config: Dict):
-        def extend_with_default(validator_class: Draft4Validator):
-            validate_properties = validator_class.VALIDATORS["properties"]
-
-            def set_defaults(validator, properties, instance, schema):
-                for validator_property, subschema in properties.items():
-                    if "default" in subschema:
-                        instance.setdefault(validator_property, subschema["default"])
-
-                for error in validate_properties(validator, properties, instance, schema):
-                    yield error
-
-            return validators.extend(validator_class, {"properties": set_defaults})
-
-        default_validator = extend_with_default(Draft4Validator)
-        with open(SCHEMA_PATH) as f:
-            schema = json_load(f)
-        default_validator(schema).validate(config)
-
-    @staticmethod
-    def _convert_location_intervals_to_times(config: Dict):
-        for location in config['locations']:
-            try:
-                activation = location['activation']
-            except KeyError:
-                pass
-            else:
-                activation['start'] = as_time(activation['start'])
-                activation['end'] = as_time(activation['end'])
+    def general(self) -> GeneralConfig:
+        return self._get_location_section_or_default('general')
 
     @property
-    def work_location(self) -> Dict:
-        return next((location for location in self._config['locations']
-                     if location['name'] == 'work'))
+    def pomodoro(self) -> PomodoroConfig:
+        return self._get_location_section_or_default('pomodoro')
 
-    def at_work(self) -> bool:
-        if self._at_work_override:
-            return True
+    def _get_location_section_or_default(self, section_name: str) -> Section:
+        try:
+            section_name = next((getattr(location, section_name) for location
+                                 in self._config.locations if location.activation.start
+                                 <= datetime.now().time() <= location.activation.end))
+        except StopIteration:
+            section_name = getattr(self._config, section_name)
 
-        return datetime.now().isoweekday() < 6 and (self.work_location['activation']['start']
-                                                    <= datetime.now().time()
-                                                    <= self.work_location['activation']['end'])
-
-
-try:
-    _original_config = load(CONFIG_PATH)
-except FileNotFoundError:
-    log.warning(format_exc())
-    _original_config = dict()
-
-config = Config(_original_config)
-
-
-def get_client_config(client):
-    return config.get('clients', {}).get(client, {})
+        return section_name
 
 
 class ConfigError(Exception):
     pass
 
 
-def validate_config_section(section_name: str, section_content: Dict) -> None:
+class Singleton:
+    _instance = None
+
+    def __init__(self, init_instance: Callable, *args, **kwargs):
+        self._init_instance = partial(init_instance, *args, **kwargs)
+
+    def __getattr__(self, item: str) -> Any:
+        try:
+            return self._get_instance_attr(item)
+        except AttributeError:
+            Singleton._instance = self._init_instance()
+            return self._get_instance_attr(item)
+
+    @classmethod
+    def _get_instance_attr(cls, item: str):
+        return getattr(cls._instance, item)
+
+
+def _create_config() -> Config:
     try:
-        config[section_name]
-    except KeyError:
-        default_content = {name: content[0] for name, content in section_content.items()}
-        config[section_name] = default_content
-    else:
-        for field_name, field_content in section_content.items():
-            default, validator = field_content
-            try:
-                config[section_name][field_name] = validator(config[section_name][field_name])
-            except KeyError:
-                config[section_name][field_name] = default
+        return Config(**load(CONFIG_PATH))
+    except FileNotFoundError:
+        return Config()
 
 
-if not exists(expanduser(join(config['taskrc_path'], '.taskrc'))):
-    raise ConfigError(f'.taskrc could not be found in'
-                      f' {config["taskrc_path"]}')
+def get_config() -> Config:
+    return cast(Config, Singleton(_create_config))
+
+
+def get_client_config(client):
+    return get_config().get('clients', {}).get(client, {})

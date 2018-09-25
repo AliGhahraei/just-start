@@ -9,7 +9,7 @@ setup(
     url='https://github.com/AliGhahraei/just-start',
     license='GPLv3',
 
-    install_requires=['pexpect', 'toml', 'jsonschema'],
+    install_requires=['pexpect', 'toml', 'pydantic'],
     extras_require={
         'urwid': ['urwid'],
 
