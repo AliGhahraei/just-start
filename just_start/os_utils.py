@@ -1,7 +1,6 @@
 import shelve
 from collections import MutableMapping
 from pickle import HIGHEST_PROTOCOL
-from platform import system
 from subprocess import run, PIPE, STDOUT
 from typing import List
 

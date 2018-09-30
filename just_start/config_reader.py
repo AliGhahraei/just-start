@@ -107,7 +107,7 @@ class Singleton:
         try:
             return self._get_instance_attr(item)
         except AttributeError:
-            Singleton._instance = self._init_instance()
+            type(self)._instance = self._init_instance()
             return self._get_instance_attr(item)
 
     @classmethod

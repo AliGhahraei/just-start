@@ -104,11 +104,10 @@ class PomodoroTimer:
         return next_phase, self.PHASE_DURATION[next_phase]
 
     def notify(self, status: str) -> None:
-        if system() == 'Linux':
-            run_command('notify-send', status)
-        else:
-            run_command('osascript', '-e', f'display notification "{status}"'
-                                           f' with title "just-start"')
+        notification_command_args = (('notify-send', status) if system() == 'Linux'
+                                     else ('osascript', '-e', f'display notification "{status}"'
+                                                              f' with title "just-start"'))
+        run_command(*notification_command_args)
 
         self.status_callback(status)
 
