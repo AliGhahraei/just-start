@@ -1,6 +1,9 @@
 language: python
 python:
   - "3.6"
+os:
+  - linux
+  - osx
 before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
