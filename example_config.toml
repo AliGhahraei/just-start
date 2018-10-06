@@ -10,6 +10,11 @@ short_rest = 6
 long_rest = 18
 cycles_before_long_rest = 5
 
+[clients.just_start]
+error_fg = 'dark red'
+error_bg = 'black'
+
+
 [[locations]]
     name = "work"
 

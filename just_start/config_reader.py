@@ -1,6 +1,9 @@
+from collections import defaultdict
 from datetime import time, datetime
 from os.path import expanduser
-from typing import Dict, List, Generator, Callable, Any, Mapping, Iterator, Tuple, TypeVar, cast
+from typing import (
+    Dict, List, Generator, Callable, Any, Mapping, Iterator, TypeVar, cast, DefaultDict,
+)
 
 from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
 from toml import load
@@ -10,6 +13,7 @@ from just_start.singleton import Singleton
 
 
 WeekdayInt = conint(le=0, ge=6)
+ClientsConfig = DefaultDict[str, Dict[str, str]]
 
 
 class _ClockTime(time):
@@ -48,11 +52,13 @@ class _LocationConfig(BaseModel):
     activation: _LocationActivationConfig
     general: GeneralConfig = GeneralConfig()
     pomodoro: PomodoroConfig = PomodoroConfig()
+    clients: ClientsConfig = defaultdict(dict)
 
 
 class _FullConfig(BaseModel):
     general: GeneralConfig = GeneralConfig()
     pomodoro: PomodoroConfig = PomodoroConfig()
+    clients: ClientsConfig = defaultdict(dict)
     locations: List[_LocationConfig] = []
 
 
@@ -82,6 +88,14 @@ class Config(Mapping):
     def pomodoro(self) -> PomodoroConfig:
         return self._get_location_section_or_default('pomodoro')
 
+    @property
+    def clients(self) -> ClientsConfig:
+        return self._get_location_section_or_default('clients')
+
+    @property
+    def location_name(self) -> str:
+        return 'empty'
+
     def _get_location_section_or_default(self, section_name: str) -> Section:
         try:
             section_name = next((getattr(location, section_name) for location
@@ -108,5 +122,5 @@ def get_config() -> Config:
     return cast(Config, Singleton(_create_config))
 
 
-def get_client_config(client):
-    return get_config().get('clients', {}).get(client, {})
+def get_client_config(client: str) -> Dict[str, str]:
+    return get_config().clients[client]
