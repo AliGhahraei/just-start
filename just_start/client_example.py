@@ -7,7 +7,7 @@ from just_start import (
 )
 from just_start.constants import (
     EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT,
-    TASK_IDS_PROMPT, UNHANDLED_ERROR
+    TASK_IDS_PROMPT, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH
 )
 
 RESTORE_COLOR = '\033[0m'
@@ -62,7 +62,7 @@ def main():
 
         quit_just_start(exit_message_func=print, sync_error_func=exit)
     except Exception:
-        print(UNHANDLED_ERROR)
+        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH)
         log.error(f'Unhandled error: {format_exc()}')
 
 

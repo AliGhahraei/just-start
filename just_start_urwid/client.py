@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from traceback import format_exc
 from typing import List, Union, Tuple
 
 from urwid import (
@@ -14,7 +13,7 @@ from just_start import (
     init, log
 )
 from just_start.constants import (
-    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, UNHANDLED_ERROR
+    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR
 )
 
 
@@ -163,9 +162,9 @@ def main():
         )).run()
     except KeyboardInterrupt:
         quit_just_start(exit_message_func=print, sync_error_func=exit)
-    except Exception:
-        print(UNHANDLED_ERROR)
-        log.error(f'Unhandled error: {format_exc()}')
+    except Exception as ex:
+        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
+        log.exception(UNHANDLED_ERROR)
         quit_just_start(exit_message_func=print, sync_error_func=exit)
 
 
