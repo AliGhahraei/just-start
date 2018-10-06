@@ -6,7 +6,7 @@ from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
 from toml import load
 
 from just_start.constants import CONFIG_PATH
-from singleton import Singleton
+from just_start.singleton import Singleton
 
 
 WeekdayInt = conint(le=0, ge=6)
