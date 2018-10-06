@@ -1,8 +1,9 @@
+from abc import ABCMeta
 from functools import partial
 from typing import Callable, Any
 
 
-class Singleton:
+class Singleton(metaclass=ABCMeta):
     _instance = None
 
     def __init__(self, init_instance: Callable, *args, **kwargs):

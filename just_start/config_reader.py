@@ -118,8 +118,12 @@ def _create_config() -> Config:
         return Config()
 
 
+class _ConfigSingleton(Singleton):
+    pass
+
+
 def get_config() -> Config:
-    return cast(Config, Singleton(_create_config))
+    return cast(Config, _ConfigSingleton(_create_config))
 
 
 def get_client_config(client: str) -> Dict[str, str]:
