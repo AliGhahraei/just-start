@@ -8,6 +8,7 @@ from pexpect import spawn, EOF
 
 from .config_reader import get_config
 from .constants import PERSISTENT_PATH
+from ._log import log
 
 
 BLOCKING_IP = get_config().general.blocking_ip
@@ -68,13 +69,20 @@ def run_task(*args) -> str:
 def run_sudo(command: str) -> None:
     password = get_config().general.password
     if password:
-        child = spawn(command)
+        run_with_password(command, password)
 
-        try:
-            child.sendline(password)
-            child.expect(EOF)
-        except OSError:
-            pass
+
+def run_with_password(command: str, password: str):
+    try:
+        _spawn_sudo_command(command, password)
+    except OSError:
+        log.exception(f'"{command}" command failed')
+
+
+def _spawn_sudo_command(command, password):
+    child = spawn(command)
+    child.sendline(password)
+    child.expect(EOF)
 
 
 class Db(MutableMapping):
@@ -86,17 +94,14 @@ class Db(MutableMapping):
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             db_[key] = value
 
-    def __delitem__(self, key):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            del db_[key]
+    def __delitem__(self, key):  # pragma: no cover
+        raise NotImplementedError
 
-    def __iter__(self):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            yield iter(db_)
+    def __iter__(self):  # pragma: no cover
+        raise NotImplementedError
 
-    def __len__(self):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            return len(db_)
+    def __len__(self):  # pragma: no cover
+        raise NotImplementedError
 
     def __str__(self):
         with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
