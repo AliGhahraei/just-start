@@ -1,12 +1,12 @@
 from datetime import time, datetime
-from functools import partial
 from os.path import expanduser
 from typing import Dict, List, Generator, Callable, Any, Mapping, Iterator, Tuple, TypeVar, cast
 
 from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
 from toml import load
 
-from .constants import CONFIG_PATH
+from just_start.constants import CONFIG_PATH
+from singleton import Singleton
 
 
 WeekdayInt = conint(le=0, ge=6)
@@ -68,8 +68,8 @@ class Config(Mapping):
     def __getitem__(self, item: str) -> Any:
         return getattr(self._config, item)
 
-    def __iter__(self) -> Iterator[Tuple]:
-        return iter(self._config_dict.items())
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._config_dict)
 
     def __len__(self) -> int:
         return len(self._config_dict)
@@ -95,24 +95,6 @@ class Config(Mapping):
 
 class ConfigError(Exception):
     pass
-
-
-class Singleton:
-    _instance = None
-
-    def __init__(self, init_instance: Callable, *args, **kwargs):
-        self._init_instance = partial(init_instance, *args, **kwargs)
-
-    def __getattr__(self, item: str) -> Any:
-        try:
-            return self._get_instance_attr(item)
-        except AttributeError:
-            type(self)._instance = self._init_instance()
-            return self._get_instance_attr(item)
-
-    @classmethod
-    def _get_instance_attr(cls, item: str):
-        return getattr(cls._instance, item)
 
 
 def _create_config() -> Config:
