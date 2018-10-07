@@ -90,8 +90,8 @@ If you want to help out please install Pipenv_, clone the repo and run:
 
 .. code:: bash
 
-    cd just-start/
-    pipenv install --dev -e .
+    $ cd just-start/
+    $ pipenv install --dev -e .
 
 This will ensure you have both the development and install dependencies.
 
@@ -105,7 +105,7 @@ following:
 
 .. code:: bash
 
-    pytest --cov=.
+    $ pytest --cov=.
 
 .. |Build Status| image:: https://travis-ci.org/AliGhahraei/
    just-start.svg?branch=master
