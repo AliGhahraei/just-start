@@ -23,14 +23,14 @@ def main_sysout(mocker, capsys, request):
 
     mocker.patch('just_start.os_utils.shelve.open', db_mock)
 
-    user_input = *request.param['input'], 'q'
+    user_input = *request.param['keypresses'], 'q'
     mocker.patch('just_start.client_example.prompt', side_effect=user_input)
     client_main()
     return capsys.readouterr()[0]
 
 
-def input_param(*args):
-    return ({'input': input_} for input_ in args)
+def simulate_keypresses(*args):
+    return ({'keypresses': keypresses} for keypresses in args)
 
 
 def assert_no_sysout_errors_except(sysout, *allowed_errors):
@@ -40,7 +40,7 @@ def assert_no_sysout_errors_except(sysout, *allowed_errors):
     assert not (set(allowed_errors) - POSSIBLE_ERRORS)
 
 
-@mark.parametrize('main_sysout', input_param(
+@mark.parametrize('main_sysout', simulate_keypresses(
         ('a', 'Task description',),
         ('c', '1',),
         ('d', '1',),
@@ -59,19 +59,19 @@ def test_right_action(main_sysout):
     assert_no_sysout_errors_except(main_sysout)
 
 
-@mark.parametrize('main_sysout', (({'input': ('s', '1'),
+@mark.parametrize('main_sysout', (({'keypresses': ('s', '1'),
                                     'db': {SKIP_ENABLED: True}}),),
                   indirect=True)
 def test_skip_enabled(main_sysout):
     assert_no_sysout_errors_except(main_sysout)
 
 
-@mark.parametrize('main_sysout', input_param('s'), indirect=True)
+@mark.parametrize('main_sysout', simulate_keypresses('s'), indirect=True)
 def test_skip_not_enabled(main_sysout):
     assert_no_sysout_errors_except(main_sysout, SKIP_NOT_ENABLED)
 
 
-@mark.parametrize('main_sysout', input_param('w', 'x'), indirect=True)
+@mark.parametrize('main_sysout', simulate_keypresses('w', 'x'), indirect=True)
 def test_wrong_action(main_sysout):
     assert_no_sysout_errors_except(main_sysout, INVALID_ACTION_KEY)
 

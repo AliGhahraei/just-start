@@ -13,7 +13,7 @@ from just_start.singleton import Singleton
 
 
 WeekdayInt = conint(le=0, ge=6)
-ClientsConfig = DefaultDict[str, Dict[str, str]]
+ClientsConfig = Dict[str, Dict[str, str]]
 
 
 class _ClockTime(time):
@@ -52,13 +52,13 @@ class _LocationConfig(BaseModel):
     activation: _LocationActivationConfig
     general: GeneralConfig = GeneralConfig()
     pomodoro: PomodoroConfig = PomodoroConfig()
-    clients: ClientsConfig = defaultdict(dict)
+    clients: ClientsConfig = {}
 
 
 class _FullConfig(BaseModel):
     general: GeneralConfig = GeneralConfig()
     pomodoro: PomodoroConfig = PomodoroConfig()
-    clients: ClientsConfig = defaultdict(dict)
+    clients: ClientsConfig = {}
     locations: List[_LocationConfig] = []
 
 
@@ -135,7 +135,7 @@ def get_pomodoro_config() -> PomodoroConfig:
 
 
 def get_client_config(client: str) -> Dict[str, str]:
-    return _get_config().clients[client]
+    return _get_config().clients.get(client, {})
 
 
 def get_location_name() -> str:
