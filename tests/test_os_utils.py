@@ -13,8 +13,16 @@ def test_run_task_raises_error_after_command_failure(mocker):
         run_command.assert_called_once()
 
 
-def test_run_with_sudo_handles_os_error(mocker, caplog):
+def test_run_sudo():
+    run_sudo('test_command', get_config_with_password)
+
+
+def test_run_sudo_handles_os_error(mocker, caplog):
     test_command = 'test_command'
     with mocker.patch('just_start.os_utils.spawn', side_effect=OSError()):
-        run_sudo(test_command, lambda: GeneralConfig(password='password'))
+        run_sudo(test_command, get_config_with_password)
     assert test_command in caplog.text
+
+
+def get_config_with_password():
+    return GeneralConfig(password='password')
