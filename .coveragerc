@@ -8,5 +8,5 @@ exclude_lines =
     pragma: no cover
 
     raise AssertionError
-
+    pass
     if __name__ == .__main__.:
