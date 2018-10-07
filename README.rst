@@ -18,7 +18,7 @@ Omodoro_.
 Features:
 
 - Configurable pomodoro phase durations
-- Support for multiple configurations (a.k.a. *locations*)
+- Support for multiple configurations (a.k.a. *locations*) based on the current time and day of the week
 - Desktop notifications
 - Block time-wasting sites while you’re working
 
