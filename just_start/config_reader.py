@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import time, datetime
 from os.path import expanduser
 from typing import (
-    Dict, List, Generator, Callable, Any, Mapping, Iterator, TypeVar, cast, DefaultDict,
+    Dict, List, Generator, Callable, Any, Mapping, TypeVar, cast, DefaultDict,
 )
 
 from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
@@ -74,11 +74,11 @@ class Config(Mapping):
     def __getitem__(self, item: str) -> Any:
         return getattr(self._config, item)
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._config_dict)
+    def __iter__(self):  # pragma: no cover
+        raise NotImplementedError
 
-    def __len__(self) -> int:
-        return len(self._config_dict)
+    def __len__(self):  # pragma: no cover
+        raise NotImplementedError
 
     @property
     def general(self) -> GeneralConfig:
@@ -111,7 +111,7 @@ class ConfigError(Exception):
     pass
 
 
-def _create_config() -> Config:
+def load_config() -> Config:
     try:
         return Config(**load(CONFIG_PATH))
     except FileNotFoundError:
@@ -123,7 +123,7 @@ class _ConfigSingleton(Singleton):
 
 
 def get_config() -> Config:
-    return cast(Config, _ConfigSingleton(_create_config))
+    return cast(Config, _ConfigSingleton(load_config))
 
 
 def get_client_config(client: str) -> Dict[str, str]:
