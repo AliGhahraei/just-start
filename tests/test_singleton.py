@@ -7,18 +7,18 @@ def test_singleton_is_created_once(mocker):
     class TestSingleton(Singleton):
         pass
 
-    init_instance = _init_test_instance(mocker)
+    init_instance = _create_test_init(mocker)
     for _ in range(2):
         TestSingleton(init_instance).lower()
 
     init_instance.assert_called_once()
 
 
-def test_singleton_is_not_recreated_with_an_attribute_error(mocker):
+def test_singleton_is_not_recreated_after_attribute_error(mocker):
     class TestSingleton(Singleton):
         pass
 
-    init_instance = _init_test_instance(mocker)
+    init_instance = _create_test_init(mocker)
     for _ in range(2):
         with raises(AttributeError):
             TestSingleton(init_instance).invalid_method()
@@ -26,5 +26,5 @@ def test_singleton_is_not_recreated_with_an_attribute_error(mocker):
     init_instance.assert_called_once()
 
 
-def _init_test_instance(mocker):
+def _create_test_init(mocker):
     return mocker.MagicMock(return_value='test')
