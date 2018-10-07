@@ -2,22 +2,22 @@ import shelve
 from collections import MutableMapping
 from pickle import HIGHEST_PROTOCOL
 from subprocess import run, PIPE, STDOUT
-from typing import List
+from typing import List, Callable
 
 from pexpect import spawn, EOF
 
-from .config_reader import get_config
+from .config_reader import get_general_config, GeneralConfig
 from .constants import PERSISTENT_PATH
 from ._log import log
 
 
-BLOCKING_IP = get_config().general.blocking_ip
+BLOCKING_IP = get_general_config().blocking_ip
 
 APP_SPECIFIC_COMMENT = '# just-start'
 BLOCKING_LINES = '\\n'.join(
     [f'{BLOCKING_IP}\\t{blocked_site}\\t{APP_SPECIFIC_COMMENT}\\n'
      f'{BLOCKING_IP}\\twww.{blocked_site}\\t{APP_SPECIFIC_COMMENT}'
-     for blocked_site in get_config().general.blocked_sites])
+     for blocked_site in get_general_config().blocked_sites])
 BLOCK_COMMAND = (f'/bin/bash -c "echo -e \'{BLOCKING_LINES}\' | sudo tee -a'
                  f' /etc/hosts > /dev/null"')
 UNBLOCK_COMMAND = f"sudo sed -i '' '/^.*{APP_SPECIFIC_COMMENT}$/d' /etc/hosts"
@@ -66,13 +66,13 @@ def run_task(*args) -> str:
     return process_output
 
 
-def run_sudo(command: str) -> None:
-    password = get_config().general.password
+def run_sudo(command: str, config_getter: Callable[[], GeneralConfig] = get_general_config) -> None:
+    password = config_getter().password
     if password:
-        run_with_password(command, password)
+        _run_with_password(command, password)
 
 
-def run_with_password(command: str, password: str):
+def _run_with_password(command: str, password: str):
     try:
         _spawn_sudo_command(command, password)
     except OSError:

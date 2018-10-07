@@ -65,7 +65,7 @@ class _FullConfig(BaseModel):
 Section = TypeVar('Section', bound=BaseModel)
 
 
-class Config(Mapping):
+class _Config(Mapping):
     def __init__(self, **data):
         self._config = _FullConfig(**data)
         self._config_dict = self._config.dict()  # type: Dict
@@ -111,20 +111,32 @@ class ConfigError(Exception):
     pass
 
 
-def load_config() -> Config:
+def load_config() -> _Config:
     try:
-        return Config(**load(CONFIG_PATH))
+        return _Config(**load(CONFIG_PATH))
     except FileNotFoundError:
-        return Config()
+        return _Config()
 
 
 class _ConfigSingleton(Singleton):
     pass
 
 
-def get_config() -> Config:
-    return cast(Config, _ConfigSingleton(load_config))
+def _get_config() -> _Config:
+    return cast(_Config, _ConfigSingleton(load_config))
+
+
+def get_general_config() -> GeneralConfig:
+    return _get_config().general
+
+
+def get_pomodoro_config() -> PomodoroConfig:
+    return _get_config().pomodoro
 
 
 def get_client_config(client: str) -> Dict[str, str]:
-    return get_config().clients[client]
+    return _get_config().clients[client]
+
+
+def get_location_name() -> str:
+    return _get_config().location_name
