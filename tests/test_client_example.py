@@ -4,7 +4,7 @@ from pytest import mark, fixture
 from just_start import log
 from just_start.client_example import main as client_main
 from just_start.constants import (
-    INVALID_ACTION_KEY, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
+    INVALID_ACTION_KEY, SKIP_NOT_ENABLED, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, SKIP_ENABLED,
     POSSIBLE_ERRORS,
 )
 
@@ -14,6 +14,13 @@ pytestmark = mark.usefixtures("recreate_just_start_module_vars")
 
 @fixture
 def main_sysout(mocker, capsys, request):
+    try:
+        keypresses = request.param['keypresses']
+    except KeyError:
+        side_effect = request.param['side_effect']
+    else:
+        side_effect = *keypresses, 'q'
+
     db_data = request.param.get('db', {})
     log.debug(db_data)
 
@@ -22,9 +29,7 @@ def main_sysout(mocker, capsys, request):
         yield db_data
 
     mocker.patch('just_start.os_utils.shelve.open', db_mock)
-
-    user_input = *request.param['keypresses'], 'q'
-    mocker.patch('just_start.client_example.prompt', side_effect=user_input)
+    mocker.patch('just_start.client_example.prompt', side_effect=side_effect)
     client_main()
     return capsys.readouterr()[0]
 
@@ -74,6 +79,11 @@ def test_skip_not_enabled(main_sysout):
 @mark.parametrize('main_sysout', simulate_keypresses('w', 'x'), indirect=True)
 def test_wrong_action(main_sysout):
     assert_no_sysout_errors_except(main_sysout, INVALID_ACTION_KEY)
+
+
+@mark.parametrize('main_sysout', ({'side_effect': Exception()},), indirect=True)
+def test_client_handles_unexpected_error(main_sysout, capsys):
+    assert_no_sysout_errors_except(main_sysout, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH)
 
 
 def test_keyboard_interrupt(mocker, capsys):
