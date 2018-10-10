@@ -65,20 +65,11 @@ class _FullConfig(BaseModel):
 Section = TypeVar('Section', bound=BaseModel)
 
 
-class _Config(Mapping):
+class _Config:
     def __init__(self, **data):
         self._config = _FullConfig(**data)
         self._config_dict = self._config.dict()  # type: Dict
         self._at_work_override = False
-
-    def __getitem__(self, item: str) -> Any:
-        return getattr(self._config, item)
-
-    def __iter__(self):  # pragma: no cover
-        raise NotImplementedError
-
-    def __len__(self):  # pragma: no cover
-        raise NotImplementedError
 
     @property
     def general(self) -> GeneralConfig:
@@ -111,7 +102,7 @@ class ConfigError(Exception):
     pass
 
 
-def load_config() -> _Config:
+def _load_config() -> _Config:
     try:
         return _Config(**load(CONFIG_PATH))
     except FileNotFoundError:
@@ -123,7 +114,7 @@ class _ConfigSingleton(Singleton):
 
 
 def _get_config() -> _Config:
-    return cast(_Config, _ConfigSingleton(load_config))
+    return cast(_Config, _ConfigSingleton(_load_config))
 
 
 def get_general_config() -> GeneralConfig:
