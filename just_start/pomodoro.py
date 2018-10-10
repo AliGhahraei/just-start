@@ -50,6 +50,7 @@ class PomodoroTimer:
 
         self.pomodoro_cycle = self._create_cycle()
         self.phase, self.time_left = self._get_next_phase_and_time_left()
+        self.skip_enabled = False
 
         if notify:
             self.notify(STOP_MESSAGE)

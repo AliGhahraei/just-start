@@ -1,8 +1,7 @@
-from collections import defaultdict
 from datetime import time, datetime
 from os.path import expanduser
 from typing import (
-    Dict, List, Generator, Callable, Any, Mapping, TypeVar, cast, DefaultDict,
+    Dict, List, Generator, Callable, TypeVar, cast,
 )
 
 from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint

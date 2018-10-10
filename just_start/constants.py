@@ -1,5 +1,5 @@
 from os import getenv
-from os.path import expanduser, join, dirname
+from os.path import expanduser, join
 
 LOCAL_DIR = join(getenv('XDG_DATA_HOME',
                         expanduser(join('~', '.local', 'share'))),

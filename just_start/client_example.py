@@ -1,5 +1,3 @@
-from traceback import format_exc
-
 from just_start import (
     init_gui, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
     JustStartError, PromptSkippedPhases, Action, UNARY_ACTIONS,
