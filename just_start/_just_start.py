@@ -13,9 +13,7 @@ from .constants import (
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
-from .os_utils import (
-    run_task, UserInputError, JustStartError, db
-)
+from .os_utils import run_task, UserInputError, db
 
 
 def create_module_vars():
@@ -30,18 +28,9 @@ status_manager, pomodoro_timer = create_module_vars()
 UnaryCallable = Callable[[Any], Any]
 
 
-def quit_just_start(*, exit_message_func: UnaryCallable,
-                    sync_error_func: UnaryCallable) -> None:
+def quit_just_start(*, exit_message_func: UnaryCallable) -> None:
     exit_message_func(EXIT_MESSAGE)
     serialize_timer()
-    sync_or_error(sync_error_func=sync_error_func)
-
-
-def sync_or_error(*, sync_error_func: UnaryCallable):
-    try:
-        sync()
-    except JustStartError as ex:
-        sync_error_func(str(ex))
 
 
 def init() -> None:
@@ -64,9 +53,8 @@ def init() -> None:
 signal(SIGTERM, quit_just_start)
 
 
-def init_gui(*, sync_error_func: UnaryCallable):
+def init_gui():
     refresh_tasks()
-    sync_or_error(sync_error_func=sync_error_func)
 
 
 def sync() -> None:

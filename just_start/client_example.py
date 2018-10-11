@@ -43,7 +43,7 @@ def prompt(prompt_):  # pragma: no cover
 def main():
     try:
         init()
-        init_gui(sync_error_func=error)
+        init_gui()
 
         try:
             while True:
@@ -58,7 +58,7 @@ def main():
         except KeyboardInterrupt:
             pass
 
-        quit_just_start(exit_message_func=print, sync_error_func=exit)
+        quit_just_start(exit_message_func=print)
     except Exception as ex:
         print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
         log.exception(UNHANDLED_ERROR)

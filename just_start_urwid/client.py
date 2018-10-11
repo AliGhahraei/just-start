@@ -43,8 +43,7 @@ class TaskListBox(ListBox):
                 return super().keypress(size, key)
 
         elif key == 'q':
-            quit_just_start(exit_message_func=write_status,
-                            sync_error_func=error)
+            quit_just_start(exit_message_func=write_status)
             raise ExitMainLoop()
 
         elif key in ('down', 'j'):
@@ -145,7 +144,7 @@ class TopWidget(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         init()
-        init_gui(sync_error_func=error)
+        init_gui()
 
 
 columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
@@ -162,11 +161,11 @@ def main():
             ('error', error_fg, error_bg),
         )).run()
     except KeyboardInterrupt:
-        quit_just_start(exit_message_func=print, sync_error_func=exit)
+        quit_just_start(exit_message_func=print)
     except Exception as ex:
         print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
         log.exception(UNHANDLED_ERROR)
-        quit_just_start(exit_message_func=print, sync_error_func=exit)
+        quit_just_start(exit_message_func=print)
 
 
 if __name__ == '__main__':
