@@ -66,8 +66,8 @@ Section = TypeVar('Section', bound=BaseModel)
 
 class _Config:
     def __init__(self, **data):
-        self._config = _FullConfig(**data)
-        self._config_dict = self._config.dict()  # type: Dict
+        self._full_config = _FullConfig(**data)
+        self._config_dict = self._full_config.dict()  # type: Dict
         self._at_work_override = False
 
     @property
@@ -89,10 +89,10 @@ class _Config:
     def _get_location_section_or_default(self, section_name: str) -> Section:
         try:
             section_name = next((getattr(location, section_name) for location
-                                 in self._config.locations if location.activation.start
+                                 in self._full_config.locations if location.activation.start
                                  <= datetime.now().time() <= location.activation.end))
         except StopIteration:
-            section_name = getattr(self._config, section_name)
+            section_name = getattr(self._full_config, section_name)
 
         return section_name
 
