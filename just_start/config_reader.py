@@ -1,14 +1,11 @@
 from datetime import time, datetime
 from os.path import expanduser
-from typing import (
-    Dict, List, Generator, Callable, TypeVar, cast,
-)
+from typing import Dict, List, Generator, Callable, TypeVar
 
 from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
 from toml import load
 
 from just_start.constants import CONFIG_PATH
-from just_start.singleton import Singleton
 
 
 WeekdayInt = conint(le=0, ge=6)
@@ -65,10 +62,14 @@ Section = TypeVar('Section', bound=BaseModel)
 
 
 class _Config:
-    def __init__(self, **data):
-        self._full_config = _FullConfig(**data)
-        self._config_dict = self._full_config.dict()  # type: Dict
+    def __init__(self, config_path: str = CONFIG_PATH):
+        self._loaded_config = None
+        self.config_path = config_path
         self._at_work_override = False
+
+    @property
+    def read_config(self):
+        return self._loaded_config if self._loaded_config is not None else self._load_config()
 
     @property
     def general(self) -> GeneralConfig:
@@ -86,13 +87,22 @@ class _Config:
     def location_name(self) -> str:
         return 'empty'
 
+    def _load_config(self) -> _FullConfig:
+        try:
+            config = _FullConfig(**load(self.config_path))
+        except FileNotFoundError:
+            config = _FullConfig()
+
+        self._loaded_config = config
+        return self._loaded_config
+
     def _get_location_section_or_default(self, section_name: str) -> Section:
         try:
             section_name = next((getattr(location, section_name) for location
-                                 in self._full_config.locations if location.activation.start
+                                 in self.read_config.locations if location.activation.start
                                  <= datetime.now().time() <= location.activation.end))
         except StopIteration:
-            section_name = getattr(self._full_config, section_name)
+            section_name = getattr(self.read_config, section_name)
 
         return section_name
 
@@ -101,32 +111,20 @@ class ConfigError(Exception):
     pass
 
 
-def _load_config() -> _Config:
-    try:
-        return _Config(**load(CONFIG_PATH))
-    except FileNotFoundError:
-        return _Config()
-
-
-class _ConfigSingleton(Singleton):
-    pass
-
-
-def _get_config() -> _Config:
-    return cast(_Config, _ConfigSingleton(_load_config))
+_config = _Config()
 
 
 def get_general_config() -> GeneralConfig:
-    return _get_config().general
+    return _config.general
 
 
 def get_pomodoro_config() -> PomodoroConfig:
-    return _get_config().pomodoro
+    return _config.pomodoro
 
 
 def get_client_config(client: str) -> Dict[str, str]:
-    return _get_config().clients.get(client, {})
+    return _config.clients.get(client, {})
 
 
 def get_location_name() -> str:
-    return _get_config().location_name
+    return _config.location_name
