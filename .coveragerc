@@ -2,6 +2,8 @@
 omit =
     setup.py
     tests/*
+    */__main__.py
+    */__init__.py
 
 [report]
 exclude_lines =

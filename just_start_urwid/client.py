@@ -2,18 +2,14 @@
 from typing import List, Union, Tuple
 
 from urwid import (
-    Text, ListBox, SimpleFocusListWalker, MainLoop, Edit, LineBox, Frame, Filler, Columns, TOP,
-    ExitMainLoop,
+    Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, Columns, TOP, ExitMainLoop,
 )
 
 from just_start import (
     client, init_gui, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
-    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init, log,
+    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init,
 )
-from just_start.constants import (
-    INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH,
-    UNHANDLED_ERROR,
-)
+from just_start.constants import INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT
 
 
 pomodoro_status = Text('')
@@ -149,22 +145,8 @@ columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
 top = TopWidget(columns, footer=pomodoro_status_box)
 
 
-def main():
+def _get_error_colors() -> Tuple[str, str]:
     client_config = get_client_config('just_start_urwid')
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
-
-    try:
-        MainLoop(top, palette=(
-            ('error', error_fg, error_bg),
-        )).run()
-    except KeyboardInterrupt:
-        quit_just_start(exit_message_func=print)
-    except Exception as ex:
-        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
-        log.exception(UNHANDLED_ERROR)
-        quit_just_start(exit_message_func=print)
-
-
-if __name__ == '__main__':
-    main()
+    return error_bg, error_fg
