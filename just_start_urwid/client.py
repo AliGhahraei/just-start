@@ -31,7 +31,7 @@ class TaskListBox(ListBox):
                 except JustStartError as e:
                     error(str(e))
             elif key == 'esc':
-                self.clear_edit_text_and_action()
+                self._clear_edit_text_and_action()
                 self.focus.set_caption(self.prev_caption)
             elif key not in ('up', 'down'):
                 return super().keypress(size, key)
@@ -52,7 +52,7 @@ class TaskListBox(ListBox):
             except JustStartError as e:
                 error(str(e))
 
-    def clear_edit_text_and_action(self):
+    def _clear_edit_text_and_action(self):
         self.action = None
         self.focus.edit_text = ''
 
@@ -71,7 +71,7 @@ class TaskListBox(ListBox):
                     or self.action is Action.SKIP_PHASES):
                 self.focus.set_caption(self.prev_caption)
 
-            self.clear_edit_text_and_action()
+            self._clear_edit_text_and_action()
 
     def read_action(self, key: str):
         try:
@@ -86,14 +86,14 @@ class TaskListBox(ListBox):
                 action(self.focus.id)
             else:
                 prompt_message = UNARY_ACTIONS[action]
-                self.set_caption_and_action(prompt_message, action)
+                self._set_caption_and_action(prompt_message, action)
         else:
             try:
                 action()
             except PromptSkippedPhases:
-                self.set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
+                self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
 
-    def set_caption_and_action(self, caption: str, action: Action):
+    def _set_caption_and_action(self, caption: str, action: Action):
         self.prev_caption = self.focus.caption
         self.focus.set_caption(f'{self.prev_caption}\n{caption} ')
         self.action = action
