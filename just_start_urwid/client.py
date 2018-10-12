@@ -9,7 +9,7 @@ from just_start import (
     client, init_gui, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
     quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init,
 )
-from just_start.constants import INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT
+from just_start import constants as const
 
 
 pomodoro_status = Text('')
@@ -80,7 +80,7 @@ class TaskListBox(ListBox):
             try:
                 action = UNARY_ACTION_KEYS[key]
             except KeyError:
-                raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
+                raise UserInputError(f'{const.INVALID_ACTION_KEY} "{key}"')
 
             if action in (Action.DELETE, Action.COMPLETE):
                 action(self.focus.id)
@@ -91,7 +91,7 @@ class TaskListBox(ListBox):
             try:
                 action()
             except PromptSkippedPhases:
-                self.set_caption_and_action(SKIPPED_PHASES_PROMPT, action)
+                self.set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
 
     def set_caption_and_action(self, caption: str, action: Action):
         self.prev_caption = self.focus.caption
