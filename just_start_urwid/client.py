@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-from typing import List, Union, Tuple
+from contextlib import contextmanager
+from typing import List, Union, Tuple, Type
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, Columns, TOP, ExitMainLoop,
+    MainLoop,
 )
 
 from just_start import (
     client, init_gui, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
-    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init,
+    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init, log,
 )
 from just_start import constants as const
 
@@ -150,3 +152,24 @@ def _get_error_colors() -> Tuple[str, str]:
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
     return error_bg, error_fg
+
+
+@contextmanager
+def handle_loop_exceptions():
+    try:
+        yield
+    except KeyboardInterrupt:
+        quit_just_start(exit_message_func=print)
+    except Exception as ex:
+        print(const.UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
+        log.exception(const.UNHANDLED_ERROR)
+        quit_just_start(exit_message_func=print)
+
+
+def create_main_loop(loop_class: Type = MainLoop) -> MainLoop:
+    return loop_class(
+        top,
+        palette=(
+            ('error', *_get_error_colors()),
+        )
+    )
