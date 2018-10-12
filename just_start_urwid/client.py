@@ -2,19 +2,17 @@
 from typing import List, Union, Tuple
 
 from urwid import (
-    Text, ListBox, SimpleFocusListWalker, MainLoop, Edit, LineBox, Frame,
-    Filler, Columns, TOP, ExitMainLoop
+    Text, ListBox, SimpleFocusListWalker, MainLoop, Edit, LineBox, Frame, Filler, Columns, TOP,
+    ExitMainLoop,
 )
 
 from just_start import (
-    client, init_gui, get_client_config,
-    NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS, quit_just_start,
-    JustStartError, UserInputError, PromptSkippedPhases, Action,
-    init, log
+    client, init_gui, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
+    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init, log,
 )
 from just_start.constants import (
     INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH,
-    UNHANDLED_ERROR
+    UNHANDLED_ERROR,
 )
 
 
