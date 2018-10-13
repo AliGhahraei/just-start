@@ -26,6 +26,11 @@ def action_runner_after_input(action_runner, request):
     return action_runner
 
 
+def assert_key_resets_action(key: str, action_runner_after_input):
+    action_runner_after_input.handle_key_for_action(key)
+    assert action_runner_after_input.action is None
+
+
 class TestActionRunner:
     def test_handle_key_for_action_raises_action_not_in_progress(self, action_runner):
         with raises(ActionNotInProgress):
@@ -34,15 +39,13 @@ class TestActionRunner:
     @mark.parametrize('action_runner_after_input',
                       [{'action': action} for action in UNARY_ACTIONS], indirect=True)
     def test_run_unary_action(self, action_runner_after_input):
-        action_runner_after_input.handle_key_for_action('enter')
-        assert action_runner_after_input.action is None
+        assert_key_resets_action('enter', action_runner_after_input)
 
     @mark.parametrize('action_runner_after_input',
                       [{'action': create_autospec(Action.ADD)}], indirect=True)
     def test_cancel_action(self, action_runner_after_input):
         action_to_cancel = action_runner_after_input.action
-        action_runner_after_input.handle_key_for_action('esc')
-        assert action_runner_after_input.action is None
+        assert_key_resets_action('esc', action_runner_after_input)
         action_to_cancel.assert_not_called()
 
     @mark.parametrize('key', IGNORED_KEYS_DURING_ACTION)
