@@ -18,31 +18,44 @@ pomodoro_status = Text('')
 status = Text('')
 
 
+class ActionNotInProgress(Exception):
+    pass
+
+
 class ActionRunner:
     def __init__(self, focused_task: 'FocusedTask'):
         self.action = None
         self.prev_caption = None
         self.focused_task = focused_task
 
-    def action_is_in_progress(self) -> bool:
-        return self.action is not None
+        ignored_keys_during_action = ('up', 'down')
+        self.key_handlers = {
+            'enter': self._run_unary_action_or_write_error,
+            'esc': self._cancel_action,
+            **{key: lambda: None for key in ignored_keys_during_action}
+        }
 
-    def handle_key(self, key: str) -> bool:
-        if key == 'enter':
-            self.run_unary_action_or_write_error()
-            return True
-        elif key == 'esc':
-            self._clear_edit_text_and_action()
-            self.focused_task.set_caption(self.prev_caption)
-            return True
+    def handle_key_for_current_action(self, key: str) -> bool:
+        if self.action is None:
+            raise ActionNotInProgress
 
-        return False
+        try:
+            handler = self.key_handlers[key]
+        except KeyError:
+            return False
 
-    def run_unary_action_or_write_error(self):
+        handler()
+        return True
+
+    def _run_unary_action_or_write_error(self):
         try:
             self._run_unary_action()
         except JustStartError as e:
             error(str(e))
+
+    def _cancel_action(self):
+        self._clear_edit_text_and_action()
+        self.focused_task.set_caption(self.prev_caption)
 
     def _run_unary_action(self):
         user_input = self.focused_task.edit_text
@@ -65,7 +78,7 @@ class ActionRunner:
         self.action = None
         self.focused_task.edit_text = ''
 
-    def read_action_or_write_error(self, key: str):
+    def start_action(self, key: str):
         try:
             self._read_action(key)
         except JustStartError as e:
@@ -112,32 +125,25 @@ class TaskListBox(ListBox):
     def __init__(self):
         body = SimpleFocusListWalker([])
         super().__init__(body)
-        self.action_reader = ActionRunner(FocusedTask(self))
+        self.action_runner = ActionRunner(FocusedTask(self))
 
     def keypress(self, size: int, key: str):
-        if self.action_reader.action_is_in_progress():
-            if not self.action_reader.handle_key(key) and key not in ('up', 'down'):
-                return super().keypress(size, key)
-
-        elif key == 'q':
+        if key == 'q':
             quit_just_start(exit_message_func=write_status)
             raise ExitMainLoop()
-
-        elif key in ('down', 'j'):
+        if key in ('down', 'j'):
             return super().keypress(size, 'down')
-
-        elif key in ('up', 'k'):
+        if key in ('up', 'k'):
             return super().keypress(size, 'up')
-
-        else:
-            self.action_reader.read_action_or_write_error(key)
+        try:
+            if not self.action_runner.handle_key_for_current_action(key):
+                return super().keypress(size, key)
+        except ActionNotInProgress:
+            self.action_runner.start_action(key)
 
 
 def error(status_: str):
     write_status(('error', status_))
-
-
-task_list = TaskListBox()
 
 
 @client
@@ -154,6 +160,9 @@ class TaskWidget(Edit):
     def __init__(self, caption: str='', **kwargs):
         self.id = caption.split()[0] if caption else None
         super().__init__(caption=caption, **kwargs)
+
+
+task_list = TaskListBox()
 
 
 @client
