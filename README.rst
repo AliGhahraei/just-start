@@ -105,7 +105,7 @@ following:
 
 .. code:: bash
 
-    $ pytest --cov=.
+    $ coverage run --source=just_start,just_start_urwid -m pytest; coverage report
 
 .. |Build Status| image:: https://travis-ci.org/AliGhahraei/
    just-start.svg?branch=master

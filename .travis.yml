@@ -9,6 +9,6 @@ install:
   - pip install pipenv
   - pipenv install --ignore-pipfile --dev .
 script:
-  - pytest --cov=.
+  - coverage run --source=just_start,just_start_urwid -m pytest; coverage report
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -8,7 +8,7 @@ name = "pypi"
 [dev-packages]
 pytest = "*"
 pytest-mock = "*"
-pytest-cov = "*"
+coverage = "*"
 urwid = "*"
 just-start = {editable = true, path = "."}
 
