@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from contextlib import contextmanager
-from typing import List, Union, Tuple, Type
+from typing import List, Union, Tuple, Type, Any
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, Columns, TOP, ExitMainLoop,
@@ -18,24 +18,105 @@ pomodoro_status = Text('')
 status = Text('')
 
 
+class ActionRunner:
+    def __init__(self, focused_task: 'FocusedTask'):
+        self.action = None
+        self.prev_caption = None
+        self.focused_task = focused_task
+
+    def action_is_in_progress(self) -> bool:
+        return self.action is not None
+
+    def handle_key(self, key: str) -> bool:
+        if key == 'enter':
+            self.run_unary_action_or_write_error()
+            return True
+        elif key == 'esc':
+            self._clear_edit_text_and_action()
+            self.focused_task.set_caption(self.prev_caption)
+            return True
+
+        return False
+
+    def run_unary_action_or_write_error(self):
+        try:
+            self._run_unary_action()
+        except JustStartError as e:
+            error(str(e))
+
+    def _run_unary_action(self):
+        user_input = self.focused_task.edit_text
+        try:
+            if self.action is Action.MODIFY:
+                self.action(self.focused_task.id, user_input)
+            else:
+                try:
+                    self.action(user_input)
+                except JustStartError as e:
+                    error(str(e))
+        finally:
+            if (self.action in UNARY_ACTIONS
+                    or self.action is Action.SKIP_PHASES):
+                self.focused_task.set_caption(self.prev_caption)
+
+            self._clear_edit_text_and_action()
+
+    def _clear_edit_text_and_action(self):
+        self.action = None
+        self.focused_task.edit_text = ''
+
+    def read_action_or_write_error(self, key: str):
+        try:
+            self._read_action(key)
+        except JustStartError as e:
+            error(str(e))
+
+    def _read_action(self, key: str):
+        try:
+            action = NULLARY_ACTION_KEYS[key]
+        except KeyError:
+            try:
+                action = UNARY_ACTION_KEYS[key]
+            except KeyError:
+                raise UserInputError(f'{const.INVALID_ACTION_KEY} "{key}"')
+
+            if action in (Action.DELETE, Action.COMPLETE):
+                action(self.focused_task.id)
+            else:
+                prompt_message = UNARY_ACTIONS[action]
+                self._set_caption_and_action(prompt_message, action)
+        else:
+            try:
+                action()
+            except PromptSkippedPhases:
+                self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
+
+    def _set_caption_and_action(self, caption: str, action: Action):
+        self.prev_caption = self.focused_task.caption
+        self.focused_task.set_caption(f'{self.prev_caption}\n{caption} ')
+        self.action = action
+
+
+class FocusedTask:
+    def __init__(self, task_list: 'TaskListBox'):
+        super().__setattr__('task_list', task_list)
+
+    def __getattr__(self, item: str):
+        return getattr(self.task_list.focus, item)
+
+    def __setattr__(self, key: str, value: Any):
+        return setattr(self.task_list.focus, key, value)
+
+
 class TaskListBox(ListBox):
     def __init__(self):
         body = SimpleFocusListWalker([])
         super().__init__(body)
-        self.action = None
-        self.prev_caption = None
+        self.action_reader = ActionRunner(FocusedTask(self))
 
     def keypress(self, size: int, key: str):
-        if self.action:
-            if key == 'enter':
-                try:
-                    self.run_unary_action()
-                except JustStartError as e:
-                    error(str(e))
-            elif key == 'esc':
-                self._clear_edit_text_and_action()
-                self.focus.set_caption(self.prev_caption)
-            elif key not in ('up', 'down'):
+        if self.action_reader.action_is_in_progress():
+            if not self.action_reader.handle_key(key) and key not in ('up', 'down'):
                 return super().keypress(size, key)
 
         elif key == 'q':
@@ -49,56 +130,7 @@ class TaskListBox(ListBox):
             return super().keypress(size, 'up')
 
         else:
-            try:
-                self.read_action(key)
-            except JustStartError as e:
-                error(str(e))
-
-    def _clear_edit_text_and_action(self):
-        self.action = None
-        self.focus.edit_text = ''
-
-    def run_unary_action(self):
-        user_input = self.focus.edit_text
-        try:
-            if self.action is Action.MODIFY:
-                self.action(self.focus.id, user_input)
-            else:
-                try:
-                    self.action(user_input)
-                except JustStartError as e:
-                    error(str(e))
-        finally:
-            if (self.action in UNARY_ACTIONS
-                    or self.action is Action.SKIP_PHASES):
-                self.focus.set_caption(self.prev_caption)
-
-            self._clear_edit_text_and_action()
-
-    def read_action(self, key: str):
-        try:
-            action = NULLARY_ACTION_KEYS[key]
-        except KeyError:
-            try:
-                action = UNARY_ACTION_KEYS[key]
-            except KeyError:
-                raise UserInputError(f'{const.INVALID_ACTION_KEY} "{key}"')
-
-            if action in (Action.DELETE, Action.COMPLETE):
-                action(self.focus.id)
-            else:
-                prompt_message = UNARY_ACTIONS[action]
-                self._set_caption_and_action(prompt_message, action)
-        else:
-            try:
-                action()
-            except PromptSkippedPhases:
-                self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
-
-    def _set_caption_and_action(self, caption: str, action: Action):
-        self.prev_caption = self.focus.caption
-        self.focus.set_caption(f'{self.prev_caption}\n{caption} ')
-        self.action = action
+            self.action_reader.read_action_or_write_error(key)
 
 
 def error(status_: str):
@@ -118,7 +150,7 @@ def write_pomodoro_status(status_: str) -> None:
     pomodoro_status.set_text(status_)
 
 
-class Task(Edit):
+class TaskWidget(Edit):
     def __init__(self, caption: str='', **kwargs):
         self.id = caption.split()[0] if caption else None
         super().__init__(caption=caption, **kwargs)
@@ -127,7 +159,7 @@ class Task(Edit):
 @client
 def on_tasks_refresh(task_list_: List[str]) -> None:
     task_list.body = SimpleFocusListWalker([
-        Task(task) for task in task_list_[4:]
+        TaskWidget(task) for task in task_list_[4:]
     ])
 
 
