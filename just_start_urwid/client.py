@@ -223,3 +223,7 @@ def create_main_loop(top: TopWidget, loop_class: Type = MainLoop) -> MainLoop:
             ('error', *get_error_colors()),
         )
     )
+
+
+def create_top_widget() -> TopWidget:
+    return TopWidget(columns, footer=pomodoro_status_box)
