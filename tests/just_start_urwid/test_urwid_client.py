@@ -1,10 +1,18 @@
-from unittest.mock import create_autospec
-from pytest import fixture, raises, mark
+from unittest.mock import create_autospec, patch
 
-from just_start import Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS
-from just_start_urwid.client import (
-    ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION
+from pytest import fixture, raises, mark
+from urwid import ExitMainLoop
+
+from just_start import (
+    Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, constants as const
 )
+from just_start_urwid.client import (
+    ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
+    get_error_colors, handle_loop_exceptions,
+)
+
+
+CLIENT_MODULE = 'just_start_urwid.client'
 
 
 @fixture
@@ -60,3 +68,51 @@ class TestActionRunner:
     def test_ignored_keys(self, key: str, action_runner_after_input):
         action_runner_after_input.handle_key_for_action(key)
         assert action_runner_after_input.action is not None
+
+
+@fixture
+def task_list_box(action_runner):
+    return TaskListBox(action_runner)
+
+
+class TestTaskListBox:
+    def test_quit(self, task_list_box):
+        with raises(ExitMainLoop):
+            task_list_box.keypress(0, 'q')
+
+    @mark.parametrize('key', ['down', 'j'])
+    def test_down_keys(self, key: str, task_list_box):
+        self.assert_key_translates_to(key, 'down', task_list_box)
+
+    @mark.parametrize('key', ['up', 'k'])
+    def test_up_keys(self, key: str, task_list_box):
+        self.assert_key_translates_to(key, 'up', task_list_box)
+
+    def test_action_key(self, task_list_box):
+        task_list_box.keypress(0, 'h')
+
+    @staticmethod
+    def assert_key_translates_to(key: str, translated_key: str, task_list_box):
+        with patch(f'{CLIENT_MODULE}.ListBox.keypress', autospec=True) as spec:
+            task_list_box.keypress(0, key)
+            spec.assert_called_once_with(task_list_box, 0, translated_key)
+
+
+def test_get_error_colors():
+    error_fg = 'fg'
+    error_bg = 'bg'
+    colors = get_error_colors(lambda _: {'error_fg': error_fg, 'error_bg': error_bg})
+    assert colors == (error_fg, error_bg)
+
+
+def test_handle_keyboard_interrupt():
+    with handle_loop_exceptions():
+        raise KeyboardInterrupt
+
+
+def test_handle_unexpected_exception(capsys):
+    ex = Exception()
+    with handle_loop_exceptions():
+        raise ex
+
+    assert const.UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex) in capsys.readouterr()[0]

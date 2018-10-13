@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from contextlib import contextmanager
-from typing import List, Union, Tuple, Type, Any
+from typing import List, Union, Tuple, Type, Any, Callable, Dict
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, Columns, TOP, ExitMainLoop,
@@ -123,10 +123,10 @@ class FocusedTask:
 
 
 class TaskListBox(ListBox):
-    def __init__(self):
+    def __init__(self, action_runner: ActionRunner = None):
         body = SimpleFocusListWalker([])
         super().__init__(body)
-        self.action_runner = ActionRunner(FocusedTask(self))
+        self.action_runner = action_runner or ActionRunner(FocusedTask(self))
 
     def keypress(self, size: int, key: str):
         if key == 'q':
@@ -197,11 +197,12 @@ columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
 top = TopWidget(columns, footer=pomodoro_status_box)
 
 
-def _get_error_colors() -> Tuple[str, str]:
-    client_config = get_client_config('just_start_urwid')
+def get_error_colors(client_config_getter: Callable[[str], Dict[str, str]] = get_client_config) \
+        -> Tuple[str, str]:
+    client_config = client_config_getter('just_start_urwid')
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
-    return error_bg, error_fg
+    return error_fg, error_bg
 
 
 @contextmanager
@@ -220,6 +221,6 @@ def create_main_loop(loop_class: Type = MainLoop) -> MainLoop:
     return loop_class(
         top,
         palette=(
-            ('error', *_get_error_colors()),
+            ('error', *get_error_colors()),
         )
     )
