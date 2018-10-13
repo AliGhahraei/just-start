@@ -194,7 +194,6 @@ class TopWidget(Frame):
 
 
 columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
-top = TopWidget(columns, footer=pomodoro_status_box)
 
 
 def get_error_colors(client_config_getter: Callable[[str], Dict[str, str]] = get_client_config) \
@@ -217,7 +216,7 @@ def handle_loop_exceptions():
         quit_just_start(exit_message_func=print)
 
 
-def create_main_loop(loop_class: Type = MainLoop) -> MainLoop:
+def create_main_loop(top: TopWidget, loop_class: Type = MainLoop) -> MainLoop:
     return loop_class(
         top,
         palette=(
