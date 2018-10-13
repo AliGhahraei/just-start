@@ -14,6 +14,8 @@ from just_start import (
 from just_start import constants as const
 
 
+IGNORED_KEYS_DURING_ACTION = ('up', 'down')
+
 pomodoro_status = Text('')
 status = Text('')
 
@@ -28,14 +30,13 @@ class ActionRunner:
         self.prev_caption = None
         self.focused_task = focused_task
 
-        ignored_keys_during_action = ('up', 'down')
         self.key_handlers = {
             'enter': self._run_unary_action_or_write_error,
             'esc': self._cancel_action,
-            **{key: lambda: None for key in ignored_keys_during_action}
+            **{key: lambda: None for key in IGNORED_KEYS_DURING_ACTION}
         }
 
-    def handle_key_for_current_action(self, key: str) -> bool:
+    def handle_key_for_action(self, key: str) -> bool:
         if self.action is None:
             raise ActionNotInProgress
 
@@ -61,7 +62,7 @@ class ActionRunner:
         user_input = self.focused_task.edit_text
         try:
             if self.action is Action.MODIFY:
-                self.action(self.focused_task.id, user_input)
+                self.action(self.focused_task.task_id, user_input)
             else:
                 try:
                     self.action(user_input)
@@ -94,7 +95,7 @@ class ActionRunner:
                 raise UserInputError(f'{const.INVALID_ACTION_KEY} "{key}"')
 
             if action in (Action.DELETE, Action.COMPLETE):
-                action(self.focused_task.id)
+                action(self.focused_task.task_id)
             else:
                 prompt_message = UNARY_ACTIONS[action]
                 self._set_caption_and_action(prompt_message, action)
@@ -136,7 +137,7 @@ class TaskListBox(ListBox):
         if key in ('up', 'k'):
             return super().keypress(size, 'up')
         try:
-            if not self.action_runner.handle_key_for_current_action(key):
+            if not self.action_runner.handle_key_for_action(key):
                 return super().keypress(size, key)
         except ActionNotInProgress:
             self.action_runner.start_action(key)
@@ -158,8 +159,16 @@ def write_pomodoro_status(status_: str) -> None:
 
 class TaskWidget(Edit):
     def __init__(self, caption: str='', **kwargs):
-        self.id = caption.split()[0] if caption else None
+        self._task_id = caption.split()[0] if caption else None
         super().__init__(caption=caption, **kwargs)
+
+    @property
+    def task_id(self):
+        return self._task_id
+
+    @task_id.setter
+    def task_id(self, task_id: str):
+        self._task_id = task_id
 
 
 task_list = TaskListBox()
