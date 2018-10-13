@@ -1,7 +1,7 @@
 from unittest.mock import create_autospec
 from pytest import fixture, raises, mark
 
-from just_start import Action, UNARY_ACTIONS
+from just_start import Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS
 from just_start_urwid.client import (
     ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION
 )
@@ -35,6 +35,14 @@ class TestActionRunner:
     def test_handle_key_for_action_raises_action_not_in_progress(self, action_runner):
         with raises(ActionNotInProgress):
             action_runner.handle_key_for_action('')
+
+    @mark.parametrize('key', NULLARY_ACTION_KEYS.keys())
+    def test_start_nullary_action(self, key: str, action_runner):
+        action_runner.start_action(key)
+
+    @mark.parametrize('key', UNARY_ACTION_KEYS.keys())
+    def test_start_unary_action(self, key: str, action_runner):
+        action_runner.start_action(key)
 
     @mark.parametrize('action_runner_after_input',
                       [{'action': action} for action in UNARY_ACTIONS], indirect=True)
