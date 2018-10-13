@@ -1,8 +1,9 @@
+from unittest.mock import create_autospec
 from pytest import fixture, raises, mark
 
 from just_start import Action, UNARY_ACTIONS
 from just_start_urwid.client import (
-    ActionRunner, ActionNotInProgress, TaskWidget
+    ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION
 )
 
 
@@ -32,5 +33,19 @@ class TestActionRunner:
 
     @mark.parametrize('action_runner_after_input',
                       [{'action': action} for action in UNARY_ACTIONS], indirect=True)
-    def test_handle_enter(self, action_runner_after_input):
+    def test_run_unary_action(self, action_runner_after_input):
         action_runner_after_input.handle_key_for_action('enter')
+        assert action_runner_after_input.action is None
+
+    @mark.parametrize('action_runner_after_input',
+                      [{'action': create_autospec(Action.ADD)}], indirect=True)
+    def test_cancel_action(self, action_runner_after_input):
+        action_to_cancel = action_runner_after_input.action
+        action_runner_after_input.handle_key_for_action('esc')
+        assert action_runner_after_input.action is None
+        action_to_cancel.assert_not_called()
+
+    @mark.parametrize('key', IGNORED_KEYS_DURING_ACTION)
+    def test_ignored_keys(self, key: str, action_runner_after_input):
+        action_runner_after_input.handle_key_for_action(key)
+        assert action_runner_after_input.action is not None
