@@ -8,8 +8,7 @@ from typing import Optional, Callable, Any
 from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT,
-    EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT,
-    LOCATION_CHANGE_PROMPT, CONFIG_DIR
+    EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT, CONFIG_DIR,
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
@@ -83,11 +82,6 @@ def stop_timer() -> None:
     pomodoro_timer.reset()
 
 
-def location_change(location: str) -> None:
-    stop_timer()
-    toggle_timer()
-
-
 @refresh_tasks
 def add(task_data: str) -> None:
     status_manager.app_status = run_task('add', *task_data.split())
@@ -125,7 +119,6 @@ class Action(Enum):
     DELETE = partial(delete)
     SHOW_HELP = partial(show_help)
     SKIP_PHASES = partial(skip_phases)
-    LOCATION_CHANGE = partial(location_change)
     MODIFY = partial(modify)
     TOGGLE_TIMER = partial(toggle_timer)
     REFRESH_TASKS = partial(refresh_tasks)
@@ -147,7 +140,6 @@ UNARY_ACTIONS = OrderedDict([
     (Action.COMPLETE, TASK_IDS_PROMPT),
     (Action.DELETE, TASK_IDS_PROMPT),
     (Action.MODIFY, MODIFY_PROMPT),
-    (Action.LOCATION_CHANGE, LOCATION_CHANGE_PROMPT),
     (Action.CUSTOM_COMMAND, CUSTOM_COMMAND_PROMPT),
 ])
 UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',),

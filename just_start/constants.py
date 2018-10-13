@@ -22,7 +22,6 @@ SKIPPED_PHASES_PROMPT = 'How many phases do you want to skip?'
 TASK_IDS_PROMPT = "Enter the tasks' ids"
 ADD_PROMPT = "Enter the task's data"
 MODIFY_PROMPT = "Enter the modified tasks' data"
-LOCATION_CHANGE_PROMPT = "Enter 'w' for work or anything else for home"
 CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
 EXIT_MESSAGE = 'Exiting...'
 
