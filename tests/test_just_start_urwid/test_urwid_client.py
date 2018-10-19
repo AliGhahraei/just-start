@@ -4,7 +4,8 @@ from pytest import fixture, raises, mark
 from urwid import ExitMainLoop
 
 from just_start import (
-    Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, constants as const
+    Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, constants as const,
+    UserInputError,
 )
 from just_start_urwid.client import (
     ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
@@ -68,6 +69,10 @@ class TestActionRunner:
     def test_ignored_keys(self, key: str, action_runner_after_input):
         action_runner_after_input.handle_key_for_action(key)
         assert action_runner_after_input.action is not None
+
+    def test_invalid_key(self, action_runner):
+        with raises(UserInputError):
+            action_runner.read_action_from_user('@')
 
 
 @fixture

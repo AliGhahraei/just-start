@@ -81,11 +81,11 @@ class ActionRunner:
 
     def start_action(self, key: str):
         try:
-            self._read_action(key)
+            self.read_action_from_user(key)
         except JustStartError as e:
             error(str(e))
 
-    def _read_action(self, key: str):
+    def read_action_from_user(self, key: str):
         try:
             action = NULLARY_ACTION_KEYS[key]
         except KeyError:
