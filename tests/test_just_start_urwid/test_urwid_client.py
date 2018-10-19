@@ -8,7 +8,7 @@ from just_start import (
 )
 from just_start_urwid.client import (
     ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
-    get_error_colors, handle_loop_exceptions,
+    get_error_colors, handle_loop_exceptions, FocusedTask,
 )
 
 
@@ -71,6 +71,22 @@ class TestActionRunner:
 
 
 @fixture
+def focused_task(mocker):
+    mock_task_list_box = mocker.create_autospec(TaskListBox)
+    mock_task_list_box.focus = mocker.create_autospec(TaskWidget)
+    return FocusedTask(mock_task_list_box)
+
+
+class TestFocusedTask:
+    def test_get_attr(self, focused_task):
+        assert focused_task.task_id
+
+    def test_set_attr(self, focused_task):
+        focused_task.task_id = '10'
+        assert focused_task.task_id == '10'
+
+
+@fixture
 def task_list_box(action_runner):
     return TaskListBox(action_runner)
 
@@ -96,6 +112,24 @@ class TestTaskListBox:
         with patch(f'{CLIENT_MODULE}.ListBox.keypress', autospec=True) as spec:
             task_list_box.keypress(0, key)
             spec.assert_called_once_with(task_list_box, 0, translated_key)
+
+
+@fixture
+def task_widget():
+    return TaskWidget('1 ignored_text')
+
+
+class TestTaskWidget:
+    def test_task_id(self, task_widget):
+        self.assert_id('1', task_widget)
+
+    def test_task_id_setter(self, task_widget):
+        task_widget.task_id = '2'
+        self.assert_id('2', task_widget)
+
+    @staticmethod
+    def assert_id(task_id: str, task_widget):
+        assert task_widget.task_id == task_id
 
 
 def test_get_error_colors():
