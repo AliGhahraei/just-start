@@ -23,7 +23,6 @@ TASK_IDS_PROMPT = "Enter the tasks' ids"
 ADD_PROMPT = "Enter the task's data"
 MODIFY_PROMPT = "Enter the modified tasks' data"
 CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
-EXIT_MESSAGE = 'Exiting...'
 
 INVALID_ACTION_KEY = 'Invalid action key'
 EMPTY_STRING = 'An empty string is not allowed'

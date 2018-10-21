@@ -1,10 +1,9 @@
-from just_start_urwid.client import (
-    handle_loop_exceptions, create_main_loop, create_top_widget,
-)
+from just_start import just_start
+from just_start_urwid.client import create_main_loop, create_top_widget
 
 
 def main():
-    with handle_loop_exceptions():
+    with just_start():
         create_main_loop(create_top_widget()).run()
 
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from contextlib import contextmanager
 from typing import List, Union, Tuple, Type, Any, Callable, Dict
 
 from urwid import (
@@ -8,8 +7,8 @@ from urwid import (
 )
 
 from just_start import (
-    client, init_gui, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
-    quit_just_start, JustStartError, UserInputError, PromptSkippedPhases, Action, init, log,
+    client, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
+    JustStartError, UserInputError, PromptSkippedPhases, Action, log,
 )
 from just_start import constants as const
 
@@ -130,7 +129,6 @@ class TaskListBox(ListBox):
 
     def keypress(self, size: int, key: str):
         if key == 'q':
-            quit_just_start(exit_message_func=write_status)
             raise ExitMainLoop()
         if key in ('down', 'j'):
             return super().keypress(size, 'down')
@@ -189,8 +187,6 @@ pomodoro_status_box = LineBox(pomodoro_status, title='Pomodoro Status')
 class TopWidget(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        init()
-        init_gui()
 
 
 columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
@@ -202,18 +198,6 @@ def get_error_colors(client_config_getter: Callable[[str], Dict[str, str]] = get
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
     return error_fg, error_bg
-
-
-@contextmanager
-def handle_loop_exceptions():
-    try:
-        yield
-    except KeyboardInterrupt:
-        quit_just_start(exit_message_func=print)
-    except Exception as ex:
-        print(const.UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
-        log.exception(const.UNHANDLED_ERROR)
-        quit_just_start(exit_message_func=print)
 
 
 def create_main_loop(top: TopWidget, loop_class: Type = MainLoop) -> MainLoop:

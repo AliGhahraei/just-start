@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from contextlib import contextmanager
 from enum import Enum
 from functools import partial
 from os import makedirs
@@ -7,9 +8,8 @@ from typing import Optional, Callable, Any
 
 from .client import StatusManager, refresh_tasks
 from .constants import (
-    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT,
-    EXIT_MESSAGE, TASK_IDS_PROMPT, CUSTOM_COMMAND_PROMPT, CONFIG_DIR,
-)
+    KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
+    CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR)
 from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import run_task, UserInputError, db
@@ -27,12 +27,21 @@ status_manager, pomodoro_timer = create_module_vars()
 UnaryCallable = Callable[[Any], Any]
 
 
-def quit_just_start(*, exit_message_func: UnaryCallable) -> None:
-    exit_message_func(EXIT_MESSAGE)
-    serialize_timer()
+@contextmanager
+def just_start() -> None:
+    _init_just_start()
+    try:
+        yield
+    except KeyboardInterrupt:
+        pass
+    except Exception as ex:
+        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
+        log.exception(UNHANDLED_ERROR)
+    finally:
+        _quit_just_start()
 
 
-def init() -> None:
+def _init_just_start():
     data = {}
     for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
         try:
@@ -40,20 +49,18 @@ def init() -> None:
         except KeyError:
             log.warning(f"Serialized attribute {attribute} couldn't be"
                         f" read (this might happen between updates)")
-
     if not data:
         log.warning(f'No serialized attributes could be read')
-
     pomodoro_timer.serializable_data = data
-
     makedirs(CONFIG_DIR, exist_ok=True)
-
-
-signal(SIGTERM, quit_just_start)
-
-
-def init_gui():
     refresh_tasks()
+
+
+def _quit_just_start() -> None:
+    serialize_timer()
+
+
+signal(SIGTERM, _quit_just_start)
 
 
 def sync() -> None:

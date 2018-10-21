@@ -9,7 +9,7 @@ from just_start import (
 )
 from just_start_urwid.client import (
     ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
-    get_error_colors, handle_loop_exceptions, FocusedTask,
+    get_error_colors, FocusedTask,
 )
 
 
@@ -142,16 +142,3 @@ def test_get_error_colors():
     error_bg = 'bg'
     colors = get_error_colors(lambda _: {'error_fg': error_fg, 'error_bg': error_bg})
     assert colors == (error_fg, error_bg)
-
-
-def test_handle_keyboard_interrupt():
-    with handle_loop_exceptions():
-        raise KeyboardInterrupt
-
-
-def test_handle_unexpected_exception(capsys):
-    ex = Exception()
-    with handle_loop_exceptions():
-        raise ex
-
-    assert const.UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex) in capsys.readouterr()[0]

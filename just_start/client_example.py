@@ -1,11 +1,9 @@
 from just_start import (
-    init_gui, client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS,
-    JustStartError, PromptSkippedPhases, Action, UNARY_ACTIONS,
-    UserInputError, quit_just_start, init, log
+    client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, PromptSkippedPhases, Action,
+    UNARY_ACTIONS, UserInputError, just_start
 )
 from just_start.constants import (
-    EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT,
-    TASK_IDS_PROMPT, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR
+    EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, TASK_IDS_PROMPT,
 )
 
 RESTORE_COLOR = '\033[0m'
@@ -41,27 +39,16 @@ def prompt(prompt_):  # pragma: no cover
 
 
 def main():
-    try:
-        init()
-        init_gui()
+    with just_start():
+        while True:
+            try:
+                key = prompt(ACTION_PROMPT)
+                if key == 'q':
+                    break
 
-        try:
-            while True:
-                try:
-                    key = prompt(ACTION_PROMPT)
-                    if key == 'q':
-                        break
-
-                    run_action(key)
-                except JustStartError as e:
-                    error(e)
-        except KeyboardInterrupt:
-            pass
-
-        quit_just_start(exit_message_func=print)
-    except Exception as ex:
-        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
-        log.exception(UNHANDLED_ERROR)
+                run_action(key)
+            except JustStartError as e:
+                error(e)
 
 
 def run_action(key):

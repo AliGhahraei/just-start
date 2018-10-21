@@ -1,6 +1,5 @@
 from ._just_start import (
-    init_gui, Action, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS,
-    UNARY_ACTIONS, quit_just_start, init
+    Action, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS, just_start
 )
 from .client import (
     client_decorator as client, ClientError, BaseClient as Client
@@ -14,9 +13,8 @@ from .os_utils import (
 
 
 __all__ = [
-    'client', 'UNARY_ACTION_KEYS', 'init_gui', 'Action',
+    'client', 'UNARY_ACTION_KEYS', 'Action',
     'NULLARY_ACTION_KEYS', 'ActionError', 'JustStartError', 'TaskWarriorError',
-    'UserInputError', 'log', 'ConfigError', 'PromptSkippedPhases',
-    'quit_just_start', 'UNARY_ACTIONS', 'get_client_config', 'PomodoroError',
-    'ClientError', 'init', 'Client'
+    'UserInputError', 'log', 'ConfigError', 'PromptSkippedPhases', 'UNARY_ACTIONS',
+    'get_client_config', 'PomodoroError', 'ClientError', 'just_start', 'Client'
 ]
