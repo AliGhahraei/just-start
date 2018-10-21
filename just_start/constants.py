@@ -16,7 +16,6 @@ KEYBOARD_HELP = ('(a)dd task, (c)omplete task, (d)elete task, (h)elp, (s)kip to'
                  ' pomodoro, s(y)nc server, (!) custom command')
 
 PHASE_SKIP_PROMPT = 'Enter how many phases you want to skip'
-SYNC_MSG = 'Syncing task server...'
 ACTION_PROMPT = 'Enter your action'
 SKIPPED_PHASES_PROMPT = 'How many phases do you want to skip?'
 TASK_IDS_PROMPT = "Enter the tasks' ids"

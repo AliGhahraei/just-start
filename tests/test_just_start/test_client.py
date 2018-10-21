@@ -58,7 +58,6 @@ def test_right_status_manager():
 
     status_manager.app_status = 'test'
     status_manager.pomodoro_status = 'test'
-    status_manager.sync()
 
 
 def test_wrong_client_decoration():

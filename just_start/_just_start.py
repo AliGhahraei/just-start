@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from contextlib import contextmanager
 from enum import Enum
-from functools import partial
+from functools import partial, wraps
 from os import makedirs
 from signal import signal, SIGTERM
 from typing import Optional, Callable, Any
@@ -9,7 +9,8 @@ from typing import Optional, Callable, Any
 from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
-    CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR)
+    CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR,
+)
 from ._log import log
 from .pomodoro import PomodoroTimer
 from .os_utils import run_task, UserInputError, db
@@ -77,35 +78,53 @@ def skip_phases(phases: Optional[str]=None) -> None:
             from e
 
 
+def update_app_status(f: Callable[..., str]):
+    @wraps(f)
+    def wrapper(*args, **kwargs) -> str:
+        status_manager.app_status = f(*args, **kwargs)
+        return status_manager.app_status
+    return wrapper
+
+
+@update_app_status
 @refresh_tasks
-def add(task_data: str) -> None:
-    status_manager.app_status = run_task('add', *task_data.split())
+def add(task_data: str) -> str:
+    return run_task('add', *task_data.split())
 
 
+@update_app_status
 @refresh_tasks
-def delete(ids: str) -> None:
-    status_manager.app_status = run_task(CONFIRMATION_OFF, RECURRENCE_OFF,
-                                         ids, 'delete')
+def delete(ids: str) -> str:
+    return run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids, 'delete')
 
 
+@update_app_status
 @refresh_tasks
-def modify(ids: str, task_data: str) -> None:
-    status_manager.app_status = run_task(RECURRENCE_OFF, ids,
-                                         'modify', *task_data.split())
+def modify(ids: str, task_data: str) -> str:
+    return run_task(RECURRENCE_OFF, ids, 'modify', *task_data.split())
 
 
+@update_app_status
 @refresh_tasks
-def complete(ids: str) -> None:
-    status_manager.app_status = run_task(ids, 'done')
+def complete(ids: str) -> str:
+    return run_task(ids, 'done')
 
 
+@update_app_status
 @refresh_tasks
-def custom_command(command: str) -> None:
-    status_manager.app_status = run_task(*command.split())
+def custom_command(command: str) -> str:
+    return run_task(*command.split())
 
 
-def show_help(help_message: str=KEYBOARD_HELP) -> None:
-    status_manager.app_status = help_message
+@update_app_status
+def show_help(help_message: str=KEYBOARD_HELP) -> str:
+    return help_message
+
+
+@update_app_status
+@refresh_tasks
+def sync() -> str:
+    return run_task('sync')
 
 
 class Action(Enum):
@@ -118,7 +137,7 @@ class Action(Enum):
     TOGGLE_TIMER = partial(pomodoro_timer.toggle)
     REFRESH_TASKS = partial(refresh_tasks)
     STOP_TIMER = partial(pomodoro_timer.reset)
-    SYNC = partial(status_manager.sync)
+    SYNC = partial(sync)
     CUSTOM_COMMAND = partial(custom_command)
 
     def __call__(self, *args, **kwargs) -> None:

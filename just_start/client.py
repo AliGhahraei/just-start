@@ -4,8 +4,7 @@ from inspect import isclass
 from typing import Callable, Union, Optional
 
 from ._log import log
-from .constants import SYNC_MSG
-from .os_utils import get_task_list, run_task, JustStartError
+from .os_utils import get_task_list, JustStartError
 
 
 NOT_IMPLEMENTED_FUNCTION = "Client didn't implement this function"
@@ -151,8 +150,3 @@ class StatusManager:
     def pomodoro_status(self, pomodoro_status) -> None:
         client.write_pomodoro_status(pomodoro_status)
         self._pomodoro_status = pomodoro_status
-
-    @refresh_tasks
-    def sync(self) -> None:
-        self.app_status = SYNC_MSG
-        self.app_status = run_task('sync')
