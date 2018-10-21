@@ -63,10 +63,6 @@ def _quit_just_start() -> None:
 signal(SIGTERM, _quit_just_start)
 
 
-def sync() -> None:
-    status_manager.sync()
-
-
 def serialize_timer() -> None:
     db.update(pomodoro_timer.serializable_data)
 
@@ -79,14 +75,6 @@ def skip_phases(phases: Optional[str]=None) -> None:
     except (TypeError, ValueError) as e:
         raise UserInputError('Number of phases must be a positive integer') \
             from e
-
-
-def toggle_timer() -> None:
-    pomodoro_timer.toggle()
-
-
-def stop_timer() -> None:
-    pomodoro_timer.reset()
 
 
 @refresh_tasks
@@ -127,10 +115,10 @@ class Action(Enum):
     SHOW_HELP = partial(show_help)
     SKIP_PHASES = partial(skip_phases)
     MODIFY = partial(modify)
-    TOGGLE_TIMER = partial(toggle_timer)
+    TOGGLE_TIMER = partial(pomodoro_timer.toggle)
     REFRESH_TASKS = partial(refresh_tasks)
-    STOP_TIMER = partial(stop_timer)
-    SYNC = partial(sync)
+    STOP_TIMER = partial(pomodoro_timer.reset)
+    SYNC = partial(status_manager.sync)
     CUSTOM_COMMAND = partial(custom_command)
 
     def __call__(self, *args, **kwargs) -> None:
