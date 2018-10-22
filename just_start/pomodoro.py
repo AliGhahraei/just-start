@@ -3,9 +3,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import partial
 from itertools import cycle
-from platform import system
 from threading import Timer
-from typing import Callable, Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, Callable
 
 from just_start.constants import (
     STOP_MESSAGE, SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, SKIP_ENABLED,
@@ -14,7 +13,7 @@ from just_start.constants import (
 from ._log import log
 from just_start.config_reader import get_location_name, get_pomodoro_config
 from just_start.os_utils import (
-    JustStartError, UserInputError, run_command, db, block_sites
+    JustStartError, UserInputError, db, block_sites,
 )
 
 
@@ -40,8 +39,7 @@ class PromptSkippedPhases(Exception):
 class PomodoroTimer:
     SERIALIZABLE_ATTRIBUTES = ('pomodoro_cycle', 'phase', 'time_left', 'work_count')
 
-    def __init__(self, status_callback: Callable[[str], None], notify: bool=False):
-        self.status_callback = status_callback
+    def __init__(self, notifier: Callable, notify: bool = False):
 
         self.start_datetime = self.timer = None
         self.is_running = False
@@ -52,8 +50,9 @@ class PomodoroTimer:
         self.phase, self.time_left = self._get_next_phase_and_time_left()
         self.skip_enabled = False
 
+        self.notifier = notifier
         if notify:
-            self.notify(STOP_MESSAGE)
+            self.notifier(STOP_MESSAGE)
 
     @property
     def serializable_data(self) -> Dict[str, Any]:
@@ -105,18 +104,10 @@ class PomodoroTimer:
         next_phase = next(self.pomodoro_cycle)
         return next_phase, self.PHASE_DURATION[next_phase]
 
-    def notify(self, status: str) -> None:
-        notification_command_args = (('notify-send', status) if system() == 'Linux'
-                                     else ('osascript', '-e', f'display notification "{status}"'
-                                                              f' with title "just-start"'))
-        run_command(*notification_command_args)
-
-        self.status_callback(status)
-
     def toggle(self) -> None:
         if self.is_running:
             self._pause()
-            self.notify('Paused')
+            self.notifier('Paused')
         else:
             self._run()
 
@@ -124,10 +115,10 @@ class PomodoroTimer:
         self.start_datetime = datetime.now()
         now = self.start_datetime.time().strftime('%H:%M')
         pomodoros = 'pomodoro' if self.work_count == 1 else 'pomodoros'
-        self.notify(f'{self.phase.value} - {self.work_count} {pomodoros} so'
-                    f' far at {get_location_name()}.'
-                    f'\n{now} - {time_after_seconds(self.time_left)}'
-                    f' ({int(self.time_left / 60)} mins)')
+        self.notifier(f'{self.phase.value} - {self.work_count} {pomodoros} so'
+                      f' far at {get_location_name()}.'
+                      f'\n{now} - {time_after_seconds(self.time_left)}'
+                      f' ({int(self.time_left / 60)} mins)')
 
         self.timer = Timer(self.time_left, partial(self.advance_phases, False))
         self.timer.start()
@@ -178,4 +169,4 @@ class PomodoroTimer:
 
     def reset(self) -> None:
         self._pause()
-        self.__init__(self.status_callback, notify=True)
+        self.__init__(notifier=self.notifier, notify=True)

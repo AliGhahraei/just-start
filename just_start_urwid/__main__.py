@@ -1,10 +1,29 @@
-from just_start import just_start
-from just_start_urwid.client import create_main_loop, create_top_widget
+from functools import partial
+
+from urwid import LineBox, Columns, TOP, Filler
+
+from just_start import just_start, notify
+from just_start_urwid.client import (
+    create_main_loop, TopWidget, status, on_tasks_refresh, TaskListBox, write_status,
+    ActionHandler, FocusedTask, pomodoro_status, pomodoro_status_box,
+)
+
+
+def client_notify(status: str):
+    notify(status)
+    pomodoro_status.set_text(status)
 
 
 def main():
-    with just_start():
-        create_main_loop(create_top_widget()).run()
+    task_list_box = TaskListBox()
+    refresh = partial(on_tasks_refresh, task_list_box)
+    with just_start(write_status, refresh, client_notify) as action_runner:
+        task_list_box.action_handler = ActionHandler(action_runner, FocusedTask(task_list_box))
+        task_list_box = LineBox(task_list_box, title='Tasks')
+        status_box = LineBox(Filler(status, valign=TOP), title='App Status')
+        columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
+
+        create_main_loop(TopWidget(columns, footer=pomodoro_status_box)).run()
 
 
 if __name__ == '__main__':

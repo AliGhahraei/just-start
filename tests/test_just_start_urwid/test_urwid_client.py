@@ -4,11 +4,11 @@ from pytest import fixture, raises, mark
 from urwid import ExitMainLoop
 
 from just_start import (
-    Action, UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, constants as const,
-    UserInputError,
+    UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UserInputError, Action, ActionRunner,
 )
+from just_start.pomodoro import PomodoroTimer
 from just_start_urwid.client import (
-    ActionRunner, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
+    ActionHandler, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
     get_error_colors, FocusedTask,
 )
 
@@ -18,61 +18,67 @@ CLIENT_MODULE = 'just_start_urwid.client'
 
 @fixture
 def action_runner(mocker):
-    focused_task = mocker.create_autospec(TaskWidget)
-    return ActionRunner(focused_task)
+    pomodoro_timer = mocker.create_autospec(PomodoroTimer)
+    return ActionRunner(pomodoro_timer, print, print)
 
 
 @fixture
-def action_runner_after_input(action_runner, request):
+def action_handler(action_runner, mocker):
+    focused_task = mocker.create_autospec(TaskWidget)
+    return ActionHandler(action_runner, focused_task)
+
+
+@fixture
+def action_handler_after_input(action_handler, request):
     default_action = Action.ADD
     default_text = 'default input'
     try:
-        action_runner.action = request.param.get('action', default_action)
-        action_runner.focused_task.edit_text = request.param.get('edit_text', default_text)
+        action_handler.action = request.param.get('action', default_action)
+        action_handler.focused_task.edit_text = request.param.get('edit_text', default_text)
     except AttributeError:
-        action_runner.action = default_action
-        action_runner.focused_task.edit_text = default_text
-    return action_runner
+        action_handler.action = default_action
+        action_handler.focused_task.edit_text = default_text
+    return action_handler
 
 
-def assert_key_resets_action(key: str, action_runner_after_input):
-    action_runner_after_input.handle_key_for_action(key)
-    assert action_runner_after_input.action is None
+def assert_key_resets_action(key: str, action_handler_after_input):
+    action_handler_after_input.handle_key_for_action(key)
+    assert action_handler_after_input.action is None
 
 
 class TestActionRunner:
-    def test_handle_key_for_action_raises_action_not_in_progress(self, action_runner):
+    def test_handle_key_for_action_raises_action_not_in_progress(self, action_handler):
         with raises(ActionNotInProgress):
-            action_runner.handle_key_for_action('')
+            action_handler.handle_key_for_action('')
 
     @mark.parametrize('key', NULLARY_ACTION_KEYS.keys())
-    def test_start_nullary_action(self, key: str, action_runner):
-        action_runner.start_action(key)
+    def test_start_nullary_action(self, key: str, action_handler):
+        action_handler.start_action(key)
 
     @mark.parametrize('key', UNARY_ACTION_KEYS.keys())
-    def test_start_unary_action(self, key: str, action_runner):
-        action_runner.start_action(key)
+    def test_start_unary_action(self, key: str, action_handler):
+        action_handler.start_action(key)
 
-    @mark.parametrize('action_runner_after_input',
+    @mark.parametrize('action_handler_after_input',
                       [{'action': action} for action in UNARY_ACTIONS], indirect=True)
-    def test_run_unary_action(self, action_runner_after_input):
-        assert_key_resets_action('enter', action_runner_after_input)
+    def test_run_unary_action(self, action_handler_after_input):
+        assert_key_resets_action('enter', action_handler_after_input)
 
-    @mark.parametrize('action_runner_after_input',
+    @mark.parametrize('action_handler_after_input',
                       [{'action': create_autospec(Action.ADD)}], indirect=True)
-    def test_cancel_action(self, action_runner_after_input):
-        action_to_cancel = action_runner_after_input.action
-        assert_key_resets_action('esc', action_runner_after_input)
+    def test_cancel_action(self, action_handler_after_input):
+        action_to_cancel = action_handler_after_input.action
+        assert_key_resets_action('esc', action_handler_after_input)
         action_to_cancel.assert_not_called()
 
     @mark.parametrize('key', IGNORED_KEYS_DURING_ACTION)
-    def test_ignored_keys(self, key: str, action_runner_after_input):
-        action_runner_after_input.handle_key_for_action(key)
-        assert action_runner_after_input.action is not None
+    def test_ignored_keys(self, key: str, action_handler_after_input):
+        action_handler_after_input.handle_key_for_action(key)
+        assert action_handler_after_input.action is not None
 
-    def test_invalid_key(self, action_runner):
+    def test_invalid_key(self, action_handler):
         with raises(UserInputError):
-            action_runner.read_action_from_user('@')
+            action_handler.read_action_from_user('@')
 
 
 @fixture
@@ -92,8 +98,10 @@ class TestFocusedTask:
 
 
 @fixture
-def task_list_box(action_runner):
-    return TaskListBox(action_runner)
+def task_list_box(action_handler):
+    task_list_box = TaskListBox()
+    task_list_box.action_handler = action_handler
+    return task_list_box
 
 
 class TestTaskListBox:

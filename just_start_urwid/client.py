@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-from typing import List, Union, Tuple, Type, Any, Callable, Dict
+from typing import List, Tuple, Type, Any, Callable, Dict, Union
 
 from urwid import (
-    Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, Columns, TOP, ExitMainLoop,
+    Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, TOP, ExitMainLoop,
     MainLoop,
 )
 
 from just_start import (
-    client, get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS,
-    JustStartError, UserInputError, PromptSkippedPhases, Action, log,
+    get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS, JustStartError,
+    UserInputError, PromptSkippedPhases, ActionRunner, Action,
 )
 from just_start import constants as const
 
@@ -23,10 +23,11 @@ class ActionNotInProgress(Exception):
     pass
 
 
-class ActionRunner:
-    def __init__(self, focused_task: 'FocusedTask'):
+class ActionHandler:
+    def __init__(self, action_runner: ActionRunner, focused_task: 'FocusedTask'):
         self.action = None
         self.prev_caption = None
+        self.action_runner = action_runner
         self.focused_task = focused_task
 
         self.key_handlers = {
@@ -61,15 +62,14 @@ class ActionRunner:
         user_input = self.focused_task.edit_text
         try:
             if self.action is Action.MODIFY:
-                self.action(self.focused_task.task_id, user_input)
+                self.action_runner(self.action, self.focused_task.task_id, user_input)
             else:
                 try:
-                    self.action(user_input)
+                    self.action_runner(self.action, user_input)
                 except JustStartError as e:
                     error(str(e))
         finally:
-            if (self.action in UNARY_ACTIONS
-                    or self.action is Action.SKIP_PHASES):
+            if self.action in UNARY_ACTIONS or self.action is Action.SKIP_PHASES:
                 self.focused_task.set_caption(self.prev_caption)
 
             self._clear_edit_text_and_action()
@@ -94,17 +94,17 @@ class ActionRunner:
                 raise UserInputError(f'{const.INVALID_ACTION_KEY} "{key}"')
 
             if action in (Action.DELETE, Action.COMPLETE):
-                action(self.focused_task.task_id)
+                self.action_runner(action, self.focused_task.task_id)
             else:
                 prompt_message = UNARY_ACTIONS[action]
                 self._set_caption_and_action(prompt_message, action)
         else:
             try:
-                action()
+                self.action_runner(action)
             except PromptSkippedPhases:
                 self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
 
-    def _set_caption_and_action(self, caption: str, action: Action):
+    def _set_caption_and_action(self, caption: str, action: ActionRunner):
         self.prev_caption = self.focused_task.caption
         self.focused_task.set_caption(f'{self.prev_caption}\n{caption} ')
         self.action = action
@@ -122,12 +122,14 @@ class FocusedTask:
 
 
 class TaskListBox(ListBox):
-    def __init__(self, action_runner: ActionRunner = None):
+    def __init__(self):
         body = SimpleFocusListWalker([])
         super().__init__(body)
-        self.action_runner = action_runner or ActionRunner(FocusedTask(self))
+        self.action_handler = None  # type: ActionHandler
 
     def keypress(self, size: int, key: str):
+        assert self.action_handler
+
         if key == 'q':
             raise ExitMainLoop()
         if key in ('down', 'j'):
@@ -135,24 +137,18 @@ class TaskListBox(ListBox):
         if key in ('up', 'k'):
             return super().keypress(size, 'up')
         try:
-            if not self.action_runner.handle_key_for_action(key):
+            if not self.action_handler.handle_key_for_action(key):
                 return super().keypress(size, key)
         except ActionNotInProgress:
-            self.action_runner.start_action(key)
+            self.action_handler.start_action(key)
 
 
 def error(status_: str):
     write_status(('error', status_))
 
 
-@client
 def write_status(status_: Union[str, Tuple[str, str]]) -> None:
     status.set_text(status_)
-
-
-@client
-def write_pomodoro_status(status_: str) -> None:
-    pomodoro_status.set_text(status_)
 
 
 class TaskWidget(Edit):
@@ -169,17 +165,12 @@ class TaskWidget(Edit):
         self._task_id = task_id
 
 
-task_list = TaskListBox()
-
-
-@client
-def on_tasks_refresh(task_list_: List[str]) -> None:
+def on_tasks_refresh(task_list: TaskListBox, task_list_: List[str]) -> None:
     task_list.body = SimpleFocusListWalker([
         TaskWidget(task) for task in task_list_[4:]
     ])
 
 
-task_list_box = LineBox(task_list, title='Tasks')
 status_box = LineBox(Filler(status, valign=TOP), title='App Status')
 pomodoro_status_box = LineBox(pomodoro_status, title='Pomodoro Status')
 
@@ -187,9 +178,6 @@ pomodoro_status_box = LineBox(pomodoro_status, title='Pomodoro Status')
 class TopWidget(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-
-columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
 
 
 def get_error_colors(client_config_getter: Callable[[str], Dict[str, str]] = get_client_config) \
@@ -207,7 +195,3 @@ def create_main_loop(top: TopWidget, loop_class: Type = MainLoop) -> MainLoop:
             ('error', *get_error_colors()),
         )
     )
-
-
-def create_top_widget() -> TopWidget:
-    return TopWidget(columns, footer=pomodoro_status_box)

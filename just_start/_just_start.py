@@ -1,36 +1,143 @@
 from collections import OrderedDict
 from contextlib import contextmanager
-from enum import Enum
-from functools import partial, wraps
+from enum import Enum, auto
+from functools import wraps
 from os import makedirs
 from signal import signal, SIGTERM
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
 
-from .client import StatusManager, refresh_tasks
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
     CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR,
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
-from .os_utils import run_task, UserInputError, db
+from .os_utils import run_task, UserInputError, db, get_task_list, notify
+
+StatusWriter = Callable[[str], None]
 
 
-def create_module_vars():
-    status_manager_ = StatusManager()
-    pomodoro_timer_ = PomodoroTimer(
-        lambda status: status_manager_.__setattr__('pomodoro_status', status),
-    )
-    return status_manager_, pomodoro_timer_
+def update_status(f: Callable[..., str]):
+    @wraps(f)
+    def wrapper(self: 'ActionRunner', *args, **kwargs) -> str:
+        self._status_setter('')
+        status = f(self, *args, **kwargs)
+        self._status_setter(status)
+        return status
+
+    return wrapper
 
 
-status_manager, pomodoro_timer = create_module_vars()
-UnaryCallable = Callable[[Any], Any]
+def refresh_tasks(f: Callable[..., str]):
+    @wraps(f)
+    def wrapper(self: 'ActionRunner', *args, **kwargs) -> str:
+        out = f(self, *args, **kwargs)
+        self._refresh_tasks()
+        return out
+
+    return wrapper
+
+
+class ActionRunner:
+    def __init__(self, pomodoro_timer: PomodoroTimer, status_setter: StatusWriter,
+                 refresh_tasks: Callable):
+        self._pomodoro_timer = pomodoro_timer
+        self._status_setter = status_setter
+        self._refresh_tasks = refresh_tasks
+
+    def __call__(self, action: 'Action', *args, **kwargs):
+        try:
+            return getattr(self, action.value)(*args, **kwargs)
+        except KeyboardInterrupt:
+            pass
+
+    @update_status
+    @refresh_tasks
+    def add(self, task_data: str) -> str:
+        return run_task('add', *task_data.split())
+
+    @update_status
+    @refresh_tasks
+    def delete(self, ids: str) -> str:
+        return run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids, 'delete')
+
+    @update_status
+    @refresh_tasks
+    def complete(self, ids: str) -> str:
+        return run_task(ids, 'done')
+
+    @update_status
+    @refresh_tasks
+    def modify(self, ids: str, task_data: str) -> str:
+        return run_task(RECURRENCE_OFF, ids, 'modify', *task_data.split())
+
+    @update_status
+    @refresh_tasks
+    def custom_command(self, command: str) -> str:
+        return run_task(*command.split())
+
+    @update_status
+    def show_help(self, help_message: str = KEYBOARD_HELP) -> str:
+        return help_message
+
+    @update_status
+    @refresh_tasks
+    def sync(self) -> str:
+        return run_task('sync')
+
+    def skip_phases(self, phases: Optional[str] = None) -> None:
+        try:
+            if phases:
+                phases = int(phases)
+            self._pomodoro_timer.advance_phases(phases_skipped=phases)
+        except (TypeError, ValueError) as e:
+            raise UserInputError('Number of phases must be a positive integer') \
+                from e
+
+    def toggle_timer(self):
+        self._pomodoro_timer.toggle()
+
+    def stop_timer(self):
+        self._pomodoro_timer.reset()
+
+    def refresh_tasks(self):
+        return self._refresh_tasks()
+
+
+class Action(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return name.lower()
+
+    ADD = auto()
+    COMPLETE = auto()
+    DELETE = auto()
+    SHOW_HELP = auto()
+    SKIP_PHASES = auto()
+    MODIFY = auto()
+    TOGGLE_TIMER = auto()
+    REFRESH_TASKS = auto()
+    STOP_TIMER = auto()
+    SYNC = auto()
+    CUSTOM_COMMAND = auto()
 
 
 @contextmanager
-def just_start() -> None:
-    _init_just_start()
+def just_start(status_writer: StatusWriter, on_tasks_refresh: Callable,
+               pomodoro_status_writer: StatusWriter = notify, pomodoro_timer: PomodoroTimer = None,
+               ) -> 'ActionRunner':
+    def refresh_tasks_():
+        on_tasks_refresh(get_task_list())
+
+    pomodoro_timer = pomodoro_timer or PomodoroTimer(notifier=pomodoro_status_writer)
+    _init_just_start(refresh_tasks_, pomodoro_timer)
+    signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_timer))
+
+    with handle_errors(pomodoro_timer):
+        yield ActionRunner(pomodoro_timer, status_writer, refresh_tasks_)
+
+
+@contextmanager
+def handle_errors(pomodoro_timer: PomodoroTimer):
     try:
         yield
     except KeyboardInterrupt:
@@ -39,10 +146,10 @@ def just_start() -> None:
         print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
         log.exception(UNHANDLED_ERROR)
     finally:
-        _quit_just_start()
+        _quit_just_start(pomodoro_timer)
 
 
-def _init_just_start():
+def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer):
     data = {}
     for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
         try:
@@ -54,99 +161,11 @@ def _init_just_start():
         log.warning(f'No serialized attributes could be read')
     pomodoro_timer.serializable_data = data
     makedirs(CONFIG_DIR, exist_ok=True)
-    refresh_tasks()
+    refresh_tasks_()
 
 
-def _quit_just_start() -> None:
-    serialize_timer()
-
-
-signal(SIGTERM, _quit_just_start)
-
-
-def serialize_timer() -> None:
+def _quit_just_start(pomodoro_timer: PomodoroTimer) -> None:
     db.update(pomodoro_timer.serializable_data)
-
-
-def skip_phases(phases: Optional[str]=None) -> None:
-    try:
-        if phases:
-            phases = int(phases)
-        pomodoro_timer.advance_phases(phases_skipped=phases)
-    except (TypeError, ValueError) as e:
-        raise UserInputError('Number of phases must be a positive integer') \
-            from e
-
-
-def update_app_status(f: Callable[..., str]):
-    @wraps(f)
-    def wrapper(*args, **kwargs) -> str:
-        status_manager.app_status = f(*args, **kwargs)
-        return status_manager.app_status
-    return wrapper
-
-
-@update_app_status
-@refresh_tasks
-def add(task_data: str) -> str:
-    return run_task('add', *task_data.split())
-
-
-@update_app_status
-@refresh_tasks
-def delete(ids: str) -> str:
-    return run_task(CONFIRMATION_OFF, RECURRENCE_OFF, ids, 'delete')
-
-
-@update_app_status
-@refresh_tasks
-def modify(ids: str, task_data: str) -> str:
-    return run_task(RECURRENCE_OFF, ids, 'modify', *task_data.split())
-
-
-@update_app_status
-@refresh_tasks
-def complete(ids: str) -> str:
-    return run_task(ids, 'done')
-
-
-@update_app_status
-@refresh_tasks
-def custom_command(command: str) -> str:
-    return run_task(*command.split())
-
-
-@update_app_status
-def show_help(help_message: str=KEYBOARD_HELP) -> str:
-    return help_message
-
-
-@update_app_status
-@refresh_tasks
-def sync() -> str:
-    return run_task('sync')
-
-
-class Action(Enum):
-    ADD = partial(add)
-    COMPLETE = partial(complete)
-    DELETE = partial(delete)
-    SHOW_HELP = partial(show_help)
-    SKIP_PHASES = partial(skip_phases)
-    MODIFY = partial(modify)
-    TOGGLE_TIMER = partial(pomodoro_timer.toggle)
-    REFRESH_TASKS = partial(refresh_tasks)
-    STOP_TIMER = partial(pomodoro_timer.reset)
-    SYNC = partial(sync)
-    CUSTOM_COMMAND = partial(custom_command)
-
-    def __call__(self, *args, **kwargs) -> None:
-        status_manager.app_status = ''
-        try:
-            self.value(*args, **kwargs)
-        except KeyboardInterrupt:
-            # Cancel current action while it's still running
-            pass
 
 
 UNARY_ACTIONS = OrderedDict([

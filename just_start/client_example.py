@@ -1,6 +1,6 @@
 from just_start import (
-    client, UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, PromptSkippedPhases, Action,
-    UNARY_ACTIONS, UserInputError, just_start
+    UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, PromptSkippedPhases, UNARY_ACTIONS,
+    UserInputError, just_start, ActionRunner, Action
 )
 from just_start.constants import (
     EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, TASK_IDS_PROMPT,
@@ -12,17 +12,14 @@ BLUE = '\033[94m'
 RED = '\033[91m'
 
 
-@client
 def on_tasks_refresh(task_list):
     print('\n'.join(task_list))
 
 
-@client
 def write_status(message):
     print(f'{GREEN}{message}{RESTORE_COLOR}')
 
 
-@client
 def write_pomodoro_status(message):
     print(f'{BLUE}{message}{RESTORE_COLOR}')
 
@@ -38,20 +35,20 @@ def prompt(prompt_):  # pragma: no cover
     return user_input
 
 
-def main():
-    with just_start():
+def main(*args):
+    with just_start(write_status, on_tasks_refresh, write_pomodoro_status, *args) as action_runner:
         while True:
             try:
                 key = prompt(ACTION_PROMPT)
                 if key == 'q':
                     break
 
-                run_action(key)
+                run_action(action_runner, key)
             except JustStartError as e:
                 error(e)
 
 
-def run_action(key):
+def run_action(action_runner: ActionRunner, key):
     try:
         action = NULLARY_ACTION_KEYS[key]
     except KeyError:
@@ -66,13 +63,13 @@ def run_action(key):
         if action is Action.MODIFY:
             args.append(prompt(TASK_IDS_PROMPT))
 
-        action(*args)
+        action_runner(action, *args)
     else:
         try:
-            action()
+            action_runner(action)
         except PromptSkippedPhases:
             phases = prompt(SKIPPED_PHASES_PROMPT)
-            Action.SKIP_PHASES(phases=phases)
+            action_runner.skip_phases(phases=phases)
 
 
 if __name__ == '__main__':

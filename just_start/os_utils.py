@@ -1,6 +1,7 @@
 import shelve
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from pickle import HIGHEST_PROTOCOL
+from platform import system
 from subprocess import run, PIPE, STDOUT
 from typing import List, Callable
 
@@ -49,6 +50,13 @@ def block_sites(block: bool) -> None:
 
     if block:
         run_sudo(BLOCK_COMMAND)
+
+
+def notify(status: str) -> None:
+    notification_command_args = (('notify-send', status) if system() == 'Linux'
+                                 else ('osascript', '-e', f'display notification "{status}"'
+                                                          f' with title "just-start"'))
+    run_command(*notification_command_args)
 
 
 def run_command(*args):
