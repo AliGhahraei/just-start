@@ -23,14 +23,9 @@ def pomodoro_timer(mocker):
 
 
 @fixture
-def skip_enabled_pomodoro_timer(mocker):
-    timer = PomodoroTimer(print)
-    with mocker.patch('just_start.pomodoro.db'):
-        timer.skip_enabled = True
-        try:
-            yield timer
-        finally:
-            timer.reset()
+def skip_enabled_pomodoro_timer(pomodoro_timer):
+    pomodoro_timer.skip_enabled = True
+    return pomodoro_timer
 
 
 class TestPomodoroTimer:
