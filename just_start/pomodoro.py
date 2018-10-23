@@ -134,7 +134,7 @@ class PomodoroTimer:
                 if not self.skip_enabled:
                     raise PomodoroError(SKIP_NOT_ENABLED)
 
-                if not phases_skipped:
+                if phases_skipped is None:
                     raise PromptSkippedPhases
 
                 if phases_skipped < 1:
