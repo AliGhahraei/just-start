@@ -1,3 +1,5 @@
+import sys
+
 from just_start import (
     UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, PromptSkippedPhases, UNARY_ACTIONS,
     UserInputError, just_start, ActionRunner, Action
@@ -25,7 +27,7 @@ def write_pomodoro_status(message):
 
 
 def error(message):
-    print(f'{RED}{message}{RESTORE_COLOR}')
+    print(f'{RED}{message}{RESTORE_COLOR}', file=sys.stderr)
 
 
 def prompt(prompt_):  # pragma: no cover
@@ -65,11 +67,15 @@ def run_action(action_runner: ActionRunner, key):
 
         action_runner(action, *args)
     else:
-        try:
-            action_runner(action)
-        except PromptSkippedPhases:
-            phases = prompt(SKIPPED_PHASES_PROMPT)
-            action_runner.skip_phases(phases=phases)
+        run_nullary_action(action_runner, action)
+
+
+def run_nullary_action(action_runner: ActionRunner, action):
+    try:
+        action_runner(action)
+    except PromptSkippedPhases:
+        phases = prompt(SKIPPED_PHASES_PROMPT)
+        action_runner.skip_phases(phases=phases)
 
 
 if __name__ == '__main__':

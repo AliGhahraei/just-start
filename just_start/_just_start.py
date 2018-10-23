@@ -4,6 +4,7 @@ from enum import Enum, auto
 from functools import wraps
 from os import makedirs
 from signal import signal, SIGTERM
+from sys import stderr
 from typing import Optional, Callable
 
 from .constants import (
@@ -143,7 +144,7 @@ def handle_errors(pomodoro_timer: PomodoroTimer):
     except KeyboardInterrupt:
         pass
     except Exception as ex:
-        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex))
+        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex), file=stderr)
         log.exception(UNHANDLED_ERROR)
     finally:
         _quit_just_start(pomodoro_timer)
@@ -175,7 +176,7 @@ UNARY_ACTIONS = OrderedDict([
     (Action.MODIFY, MODIFY_PROMPT),
     (Action.CUSTOM_COMMAND, CUSTOM_COMMAND_PROMPT),
 ])
-UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', 'l', '!',),
+UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', '!',),
                              UNARY_ACTIONS))
 NULLARY_ACTION_KEYS = dict(zip(
     ('h', 's', 'p', 'r', 't', 'y',),

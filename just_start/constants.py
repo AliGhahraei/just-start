@@ -32,10 +32,6 @@ SKIP_NOT_ENABLED = 'Sorry, please work 1 pomodoro to re-enable phase skipping'
 INVALID_PHASE_NUMBER = 'Number of phases must be positive'
 LONG_BREAK_SKIP_NOT_ENABLED = "Skip to a long break is not allowed"
 
-POSSIBLE_ERRORS = {INVALID_ACTION_KEY, EMPTY_STRING, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH,
-                   SKIP_NOT_ENABLED, INVALID_PHASE_NUMBER, LONG_BREAK_SKIP_NOT_ENABLED,
-                   UNHANDLED_ERROR}
-
 STOP_MESSAGE = 'Pomodoro timer stopped'
 
 SKIP_ENABLED = 'skip_enabled'
