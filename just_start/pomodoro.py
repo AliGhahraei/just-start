@@ -48,13 +48,12 @@ class PomodoroTimer:
     @property
     def serializable_data(self) -> Dict[str, Any]:
         self._pause()
-        return {attribute: self.__getattribute__(attribute) for attribute
-                in self.SERIALIZABLE_ATTRIBUTES}
+        return {attribute: getattr(self, attribute) for attribute in self.SERIALIZABLE_ATTRIBUTES}
 
     @serializable_data.setter
     def serializable_data(self, data: Dict) -> None:
         for attribute, value in data.items():
-            self.__setattr__(attribute, value)
+            setattr(self, attribute, value)
 
     def _pause(self) -> None:
         self._cancel_timer()
