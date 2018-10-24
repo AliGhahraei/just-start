@@ -115,12 +115,11 @@ class Action(Enum):
 
 @contextmanager
 def just_start(status_writer: StatusWriter, on_tasks_refresh: Callable,
-               pomodoro_status_writer: StatusWriter = notify, pomodoro_timer: PomodoroTimer = None,
-               ) -> 'ActionRunner':
+               pomodoro_status_writer: StatusWriter = notify) -> 'ActionRunner':
     def refresh_tasks_():
         on_tasks_refresh(get_task_list())
 
-    pomodoro_timer = pomodoro_timer or PomodoroTimer(notifier=pomodoro_status_writer)
+    pomodoro_timer = PomodoroTimer(notifier=pomodoro_status_writer)
     _init_just_start(refresh_tasks_, pomodoro_timer)
     signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_timer))
 

@@ -37,17 +37,21 @@ def prompt(prompt_):  # pragma: no cover
     return user_input
 
 
-def main(*args):
-    with just_start(write_status, on_tasks_refresh, write_pomodoro_status, *args) as action_runner:
-        while True:
-            try:
-                key = prompt(ACTION_PROMPT)
-                if key == 'q':
-                    break
+def main():
+    with just_start(write_status, on_tasks_refresh, write_pomodoro_status) as action_runner:
+        read_keys(action_runner)
 
-                run_action(action_runner, key)
-            except JustStartError as e:
-                error(e)
+
+def read_keys(action_runner: ActionRunner):
+    while True:
+        try:
+            key = prompt(ACTION_PROMPT)
+            if key == 'q':
+                break
+
+            run_action(action_runner, key)
+        except JustStartError as e:
+            error(e)
 
 
 def run_action(action_runner: ActionRunner, key):
