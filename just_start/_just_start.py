@@ -5,7 +5,7 @@ from functools import wraps
 from os import makedirs
 from signal import signal, SIGTERM
 from sys import stderr
-from typing import Optional, Callable
+from typing import Callable
 
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
@@ -13,7 +13,7 @@ from .constants import (
 )
 from ._log import log
 from .pomodoro import PomodoroTimer
-from .os_utils import run_task, UserInputError, db, get_task_list, notify
+from .os_utils import run_task, db, get_task_list, notify
 
 StatusWriter = Callable[[str], None]
 
@@ -86,15 +86,6 @@ class ActionRunner:
     def sync(self) -> str:
         return run_task('sync')
 
-    def skip_phases(self, phases: Optional[str] = None) -> None:
-        try:
-            if phases:
-                phases = int(phases)
-            self._pomodoro_timer.advance_phases(phases_skipped=phases)
-        except (TypeError, ValueError) as e:
-            raise UserInputError('Number of phases must be a positive integer') \
-                from e
-
     def toggle_timer(self):
         self._pomodoro_timer.toggle()
 
@@ -114,7 +105,6 @@ class Action(Enum):
     COMPLETE = auto()
     DELETE = auto()
     SHOW_HELP = auto()
-    SKIP_PHASES = auto()
     MODIFY = auto()
     TOGGLE_TIMER = auto()
     REFRESH_TASKS = auto()
@@ -170,16 +160,21 @@ def _quit_just_start(pomodoro_timer: PomodoroTimer) -> None:
     db.update(pomodoro_timer.serializable_data)
 
 
-UNARY_ACTIONS = OrderedDict([
+NULLARY_ACTION_KEYS = OrderedDict([
+    ('h', Action.SHOW_HELP),
+    ('p', Action.TOGGLE_TIMER),
+    ('r', Action.REFRESH_TASKS),
+    ('s', Action.STOP_TIMER),
+    ('y', Action.SYNC),
+])
+UNARY_ACTION_PROMPTS = OrderedDict([
     (Action.ADD, ADD_PROMPT),
     (Action.COMPLETE, TASK_IDS_PROMPT),
     (Action.DELETE, TASK_IDS_PROMPT),
     (Action.MODIFY, MODIFY_PROMPT),
     (Action.CUSTOM_COMMAND, CUSTOM_COMMAND_PROMPT),
 ])
-UNARY_ACTION_KEYS = dict(zip(('a', 'c', 'd', 'm', '!',),
-                             UNARY_ACTIONS))
-NULLARY_ACTION_KEYS = dict(zip(
-    ('h', 's', 'p', 'r', 't', 'y',),
-    [action for action in Action if action not in UNARY_ACTIONS]
-))
+UNARY_ACTION_KEYS = dict(zip(['a', 'c', 'd', 'm', '!'], UNARY_ACTION_PROMPTS))
+assert len(UNARY_ACTION_PROMPTS) == len(UNARY_ACTION_KEYS)
+# noinspection PyTypeChecker
+assert len(NULLARY_ACTION_KEYS) + len(UNARY_ACTION_KEYS) == len(Action)

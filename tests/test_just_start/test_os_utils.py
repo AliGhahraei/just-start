@@ -1,8 +1,25 @@
+import shelve
 from subprocess import CompletedProcess
 
 from just_start.config_reader import GeneralConfig
-from just_start.os_utils import run_task, TaskWarriorError, run_sudo
-from pytest import raises
+from just_start.os_utils import run_task, TaskWarriorError, run_sudo, Db
+from pytest import raises, fixture
+
+
+@fixture
+def database(mocker):
+    return Db(mocker.create_autospec(shelve.open))
+
+
+class TestDb:
+    def test_getitem(self, database):
+        assert database['key']
+
+    def test_setitem(self, database):
+        database['key'] = 'value'
+
+    def test_update(self, database):
+        database.update({'key': 'value'})
 
 
 def test_run_task_raises_error_after_command_failure(mocker):

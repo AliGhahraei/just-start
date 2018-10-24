@@ -45,7 +45,7 @@ def get_task_list() -> List[str]:
 
 
 def block_sites(block: bool) -> None:
-    # Always delete outdated blocked sites
+    # Blocked sites could be outdated, so unblock and re-block
     run_sudo(UNBLOCK_COMMAND)
 
     if block:
@@ -94,12 +94,15 @@ def _spawn_sudo_command(command, password):
 
 
 class Db(MutableMapping):
+    def __init__(self, db_opener: Callable = shelve.open):
+        self._db_opener = db_opener
+
     def __getitem__(self, item):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        with self._db_opener(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             return db_[item]
 
     def __setitem__(self, key, value):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+        with self._db_opener(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
             db_[key] = value
 
     def __delitem__(self, key):  # pragma: no cover
@@ -111,14 +114,9 @@ class Db(MutableMapping):
     def __len__(self):  # pragma: no cover
         raise NotImplementedError
 
-    def __str__(self):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            return str({key: value for key, value in db_.items()})
-
-    def update(*args):
-        with shelve.open(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
-            # method doesn't expect self argument
-            db_.update(*args[1:])
+    def update(self, *args, **kwargs):
+        with self._db_opener(PERSISTENT_PATH, protocol=HIGHEST_PROTOCOL) as db_:
+            db_.update(*args, **kwargs)
 
 
 db = Db()

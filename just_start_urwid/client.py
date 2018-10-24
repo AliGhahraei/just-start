@@ -6,8 +6,8 @@ from urwid import (
 )
 
 from just_start import (
-    get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTIONS, JustStartError,
-    UserInputError, PromptSkippedPhases, ActionRunner, Action,
+    get_client_config, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UNARY_ACTION_PROMPTS, JustStartError,
+    UserInputError, ActionRunner, Action,
 )
 from just_start import constants as const
 
@@ -68,7 +68,7 @@ class ActionHandler:
                 except JustStartError as e:
                     error(str(e))
         finally:
-            if self.action in UNARY_ACTIONS or self.action is Action.SKIP_PHASES:
+            if self.action in UNARY_ACTION_PROMPTS or self.action is Action.SKIP_PHASES:
                 self.focused_task.set_caption(self.prev_caption)
 
             self._clear_edit_text_and_action()
@@ -95,16 +95,10 @@ class ActionHandler:
             if action in (Action.DELETE, Action.COMPLETE):
                 self.action_runner(action, self.focused_task.task_id)
             else:
-                prompt_message = UNARY_ACTIONS[action]
+                prompt_message = UNARY_ACTION_PROMPTS[action]
                 self._set_caption_and_action(prompt_message, action)
         else:
-            self.run_nullary_action(action)
-
-    def run_nullary_action(self, action):
-        try:
             self.action_runner(action)
-        except PromptSkippedPhases:
-            self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
 
     def _set_caption_and_action(self, caption: str, action: ActionRunner):
         self.prev_caption = self.focused_task.caption

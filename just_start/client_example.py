@@ -1,11 +1,11 @@
 import sys
 
 from just_start import (
-    UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, PromptSkippedPhases, UNARY_ACTIONS,
+    UNARY_ACTION_KEYS, NULLARY_ACTION_KEYS, JustStartError, UNARY_ACTION_PROMPTS,
     UserInputError, just_start, ActionRunner, Action
 )
 from just_start.constants import (
-    EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, SKIPPED_PHASES_PROMPT, TASK_IDS_PROMPT,
+    EMPTY_STRING, ACTION_PROMPT, INVALID_ACTION_KEY, TASK_IDS_PROMPT,
 )
 
 RESTORE_COLOR = '\033[0m'
@@ -59,7 +59,7 @@ def run_action(action_runner: ActionRunner, key):
         except KeyError:
             raise UserInputError(f'{INVALID_ACTION_KEY} "{key}"')
 
-        prompt_message = UNARY_ACTIONS[action]
+        prompt_message = UNARY_ACTION_PROMPTS[action]
         args = [prompt(prompt_message)]
 
         if action is Action.MODIFY:
@@ -67,15 +67,7 @@ def run_action(action_runner: ActionRunner, key):
 
         action_runner(action, *args)
     else:
-        run_nullary_action(action_runner, action)
-
-
-def run_nullary_action(action_runner: ActionRunner, action):
-    try:
         action_runner(action)
-    except PromptSkippedPhases:
-        phases = prompt(SKIPPED_PHASES_PROMPT)
-        action_runner.skip_phases(phases=phases)
 
 
 if __name__ == '__main__':

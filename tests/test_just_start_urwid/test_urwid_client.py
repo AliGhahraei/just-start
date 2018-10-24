@@ -1,13 +1,13 @@
-from typing import cast
 from unittest.mock import create_autospec, patch
 
 from pytest import fixture, raises, mark
 from urwid import ExitMainLoop
 
 from just_start import (
-    UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UserInputError, Action, ActionRunner,
+    UNARY_ACTION_PROMPTS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UserInputError, Action,
+    ActionRunner,
 )
-from just_start.pomodoro import PomodoroTimer, PromptSkippedPhases
+from just_start.pomodoro import PomodoroTimer
 from just_start_urwid.client import (
     ActionHandler, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
     get_error_colors, FocusedTask,
@@ -65,7 +65,7 @@ class TestActionHandler:
         action_handler.start_action(key)
 
     @mark.parametrize('action_handler_after_input',
-                      [{'action': action} for action in UNARY_ACTIONS], indirect=True)
+                      [{'action': action} for action in UNARY_ACTION_PROMPTS], indirect=True)
     def test_run_unary_action(self, action_handler_after_input):
         assert_key_resets_action('enter', action_handler_after_input)
 
@@ -80,17 +80,6 @@ class TestActionHandler:
     def test_ignored_keys(self, key: str, action_handler_after_input):
         action_handler_after_input.handle_key_for_started_unary_action(key)
         assert action_handler_after_input.action is not None
-
-    def test_prompt_skipped_phases(self, mocker, focused_task):
-        class _MockActionRunner:
-            def __call__(self, *_, **__):
-                raise PromptSkippedPhases
-
-        action_handler = ActionHandler(cast(ActionRunner, _MockActionRunner()), focused_task)
-        with mocker.patch.object(action_handler, '_set_caption_and_action', create_autospec=True):
-            action_handler.run_nullary_action(Action.SKIP_PHASES)
-            # noinspection PyUnresolvedReferences
-            action_handler._set_caption_and_action.assert_called_once()
 
     def test_invalid_key(self, action_handler):
         with raises(UserInputError):
