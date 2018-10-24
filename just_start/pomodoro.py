@@ -90,6 +90,7 @@ class PomodoroTimer:
         durations = (duration * 60 for duration in (pomodoro_config.pomodoro_length,
                                                     pomodoro_config.short_rest,
                                                     pomodoro_config.long_rest))
+        # noinspection PyTypeChecker
         phase_duration = dict(zip(Phase, durations))
         return phase_duration
 

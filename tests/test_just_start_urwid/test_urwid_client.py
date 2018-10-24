@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import create_autospec, patch
 
 from pytest import fixture, raises, mark
@@ -6,7 +7,7 @@ from urwid import ExitMainLoop
 from just_start import (
     UNARY_ACTIONS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UserInputError, Action, ActionRunner,
 )
-from just_start.pomodoro import PomodoroTimer
+from just_start.pomodoro import PomodoroTimer, PromptSkippedPhases
 from just_start_urwid.client import (
     ActionHandler, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
     get_error_colors, FocusedTask,
@@ -23,8 +24,12 @@ def action_runner(mocker):
 
 
 @fixture
-def action_handler(action_runner, mocker):
-    focused_task = mocker.create_autospec(TaskWidget)
+def focused_task(mocker):
+    return mocker.create_autospec(TaskWidget)
+
+
+@fixture
+def action_handler(action_runner, focused_task):
     return ActionHandler(action_runner, focused_task)
 
 
@@ -42,14 +47,14 @@ def action_handler_after_input(action_handler, request):
 
 
 def assert_key_resets_action(key: str, action_handler_after_input):
-    action_handler_after_input.handle_key_for_action(key)
+    action_handler_after_input.handle_key_for_started_unary_action(key)
     assert action_handler_after_input.action is None
 
 
-class TestActionRunner:
+class TestActionHandler:
     def test_handle_key_for_action_raises_action_not_in_progress(self, action_handler):
         with raises(ActionNotInProgress):
-            action_handler.handle_key_for_action('')
+            action_handler.handle_key_for_started_unary_action('')
 
     @mark.parametrize('key', NULLARY_ACTION_KEYS.keys())
     def test_start_nullary_action(self, key: str, action_handler):
@@ -73,8 +78,19 @@ class TestActionRunner:
 
     @mark.parametrize('key', IGNORED_KEYS_DURING_ACTION)
     def test_ignored_keys(self, key: str, action_handler_after_input):
-        action_handler_after_input.handle_key_for_action(key)
+        action_handler_after_input.handle_key_for_started_unary_action(key)
         assert action_handler_after_input.action is not None
+
+    def test_prompt_skipped_phases(self, mocker, focused_task):
+        class _MockActionRunner:
+            def __call__(self, *_, **__):
+                raise PromptSkippedPhases
+
+        action_handler = ActionHandler(cast(ActionRunner, _MockActionRunner()), focused_task)
+        with mocker.patch.object(action_handler, '_set_caption_and_action', create_autospec=True):
+            action_handler.run_nullary_action(Action.SKIP_PHASES)
+            # noinspection PyUnresolvedReferences
+            action_handler._set_caption_and_action.assert_called_once()
 
     def test_invalid_key(self, action_handler):
         with raises(UserInputError):

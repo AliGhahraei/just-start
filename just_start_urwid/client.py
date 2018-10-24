@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Tuple, Type, Any, Callable, Dict, Union
+from typing import List, Tuple, Any, Callable, Dict, Union
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, TOP, ExitMainLoop,
@@ -35,7 +35,7 @@ class ActionHandler:
             **{key: lambda: None for key in IGNORED_KEYS_DURING_ACTION}
         }
 
-    def handle_key_for_action(self, key: str) -> bool:
+    def handle_key_for_started_unary_action(self, key: str) -> bool:
         if self.action is None:
             raise ActionNotInProgress
 
@@ -98,10 +98,13 @@ class ActionHandler:
                 prompt_message = UNARY_ACTIONS[action]
                 self._set_caption_and_action(prompt_message, action)
         else:
-            try:
-                self.action_runner(action)
-            except PromptSkippedPhases:
-                self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
+            self.run_nullary_action(action)
+
+    def run_nullary_action(self, action):
+        try:
+            self.action_runner(action)
+        except PromptSkippedPhases:
+            self._set_caption_and_action(const.SKIPPED_PHASES_PROMPT, action)
 
     def _set_caption_and_action(self, caption: str, action: ActionRunner):
         self.prev_caption = self.focused_task.caption
@@ -136,7 +139,7 @@ class TaskListBox(ListBox):
         if key in ('up', 'k'):
             return super().keypress(size, 'up')
         try:
-            if not self.action_handler.handle_key_for_action(key):
+            if not self.action_handler.handle_key_for_started_unary_action(key):
                 return super().keypress(size, key)
         except ActionNotInProgress:
             self.action_handler.start_action(key)
