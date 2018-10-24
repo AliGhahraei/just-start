@@ -4,7 +4,7 @@ from enum import Enum, auto
 from functools import wraps
 from os import makedirs
 from signal import signal, SIGTERM
-from sys import stderr
+import sys
 from typing import Callable
 
 from .constants import (
@@ -121,26 +121,27 @@ def just_start(status_writer: StatusWriter, on_tasks_refresh: Callable,
 
     pomodoro_timer = PomodoroTimer(notifier=pomodoro_status_writer)
     _init_just_start(refresh_tasks_, pomodoro_timer)
-    signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_timer))
 
-    with handle_errors(pomodoro_timer):
-        yield ActionRunner(pomodoro_timer, status_writer, refresh_tasks_)
+    with _handle_errors():
+        try:
+            yield ActionRunner(pomodoro_timer, status_writer, refresh_tasks_)
+        finally:
+            _quit_just_start(pomodoro_timer)
 
 
 @contextmanager
-def handle_errors(pomodoro_timer: PomodoroTimer):
+def _handle_errors():
     try:
         yield
     except KeyboardInterrupt:
         pass
-    except Exception as ex:
-        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH.format(ex), file=stderr)
+    except Exception:
+        print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, file=sys.stderr)
         log.exception(UNHANDLED_ERROR)
-    finally:
-        _quit_just_start(pomodoro_timer)
 
 
 def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer):
+    signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_timer))
     data = {}
     for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
         try:

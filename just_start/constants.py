@@ -23,7 +23,8 @@ CUSTOM_COMMAND_PROMPT = 'Enter your custom command'
 INVALID_ACTION_KEY = 'Invalid action key'
 EMPTY_STRING = 'An empty string is not allowed'
 UNHANDLED_ERROR = 'Unhandled error'
-UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH = f'{UNHANDLED_ERROR}. Please see {LOG_PATH}'
+UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH = (f'{UNHANDLED_ERROR}, please see {LOG_PATH} and/or contact'
+                                         f' the author')
 
 STOP_MESSAGE = 'Pomodoro timer stopped'
 
