@@ -1,11 +1,11 @@
 from functools import partial
 
-from urwid import LineBox, Columns, TOP, Filler
+from urwid import LineBox, Columns, TOP, Filler, MainLoop
 
 from just_start import just_start, notify
 from just_start_urwid.client import (
-    create_main_loop, TopWidget, status, on_tasks_refresh, TaskListBox, write_status,
-    ActionHandler, FocusedTask, pomodoro_status, pomodoro_status_box,
+    TopWidget, status, on_tasks_refresh, TaskListBox, write_status,
+    ActionHandler, FocusedTask, pomodoro_status, pomodoro_status_box, get_error_colors,
 )
 
 
@@ -23,7 +23,12 @@ def main():
         status_box = LineBox(Filler(status, valign=TOP), title='App Status')
         columns = Columns([('weight', 1.3, task_list_box), ('weight', 1, status_box)])
 
-        create_main_loop(TopWidget(columns, footer=pomodoro_status_box)).run()
+        MainLoop(
+            TopWidget(columns, footer=pomodoro_status_box),
+            palette=(
+                ('error', *get_error_colors()),
+            )
+        ).run()
 
 
 if __name__ == '__main__':

@@ -3,7 +3,6 @@ from typing import List, Tuple, Type, Any, Callable, Dict, Union
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, TOP, ExitMainLoop,
-    MainLoop,
 )
 
 from just_start import (
@@ -186,12 +185,3 @@ def get_error_colors(client_config_getter: Callable[[str], Dict[str, str]] = get
     error_fg = client_config.get('error_fg', 'dark red')
     error_bg = client_config.get('error_bg', '')
     return error_fg, error_bg
-
-
-def create_main_loop(top: TopWidget, loop_class: Type = MainLoop) -> MainLoop:
-    return loop_class(
-        top,
-        palette=(
-            ('error', *get_error_colors()),
-        )
-    )
