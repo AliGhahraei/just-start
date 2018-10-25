@@ -3,7 +3,6 @@ from ._just_start import (
 )
 from .config_reader import ConfigError, get_client_config
 from ._log import log
-from .pomodoro import PomodoroError
 from .os_utils import (
     JustStartError, TaskWarriorError, ActionError, UserInputError, notify,
 )
@@ -12,6 +11,5 @@ from .os_utils import (
 __all__ = [
     'Action', 'UNARY_ACTION_KEYS', 'ActionRunner', 'NULLARY_ACTION_KEYS', 'ActionError',
     'JustStartError', 'TaskWarriorError', 'UserInputError', 'log', 'ConfigError',
-    'UNARY_ACTION_PROMPTS',
-    'get_client_config', 'PomodoroError', 'ActionRunner', 'just_start', 'notify',
+    'UNARY_ACTION_PROMPTS', 'get_client_config', 'ActionRunner', 'just_start', 'notify',
 ]

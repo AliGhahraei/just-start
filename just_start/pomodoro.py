@@ -7,7 +7,7 @@ from typing import Dict, Any, Tuple, Callable
 
 from just_start.constants import STOP_MESSAGE
 from just_start.config_reader import get_location_name, get_pomodoro_config
-from just_start.os_utils import JustStartError, block_sites
+from just_start.os_utils import block_sites
 
 
 def time_after_seconds(seconds_left: int) -> str:
@@ -19,14 +19,6 @@ class Phase(Enum):
     WORK = 'Work and switch tasks'
     SHORT_REST = 'Short break'
     LONG_REST = 'LONG BREAK!!!'
-
-
-class PomodoroError(JustStartError):
-    pass
-
-
-class PromptSkippedPhases(Exception):
-    pass
 
 
 class PomodoroTimer:
@@ -56,11 +48,11 @@ class PomodoroTimer:
             setattr(self, attribute, value)
 
     def _pause(self) -> None:
-        self._cancel_timer()
+        self._cancel_internal_timer()
         self.is_running = False
         block_sites(True)
 
-    def _cancel_timer(self) -> None:
+    def _cancel_internal_timer(self) -> None:
         if self.is_running:
             self.timer.cancel()
             elapsed_timedelta = datetime.now() - self.start_datetime
@@ -110,7 +102,7 @@ class PomodoroTimer:
 
     def advance_phase(self) -> None:
         self.work_count += 1
-        self._cancel_timer()
+        self._cancel_internal_timer()
 
         self.phase, self.time_left = self._get_next_phase_and_time_left()
         self._run()

@@ -68,7 +68,7 @@ class ActionHandler:
                 except JustStartError as e:
                     error(str(e))
         finally:
-            if self.action in UNARY_ACTION_PROMPTS or self.action is Action.SKIP_PHASES:
+            if self.action in UNARY_ACTION_PROMPTS:
                 self.focused_task.set_caption(self.prev_caption)
 
             self._clear_edit_text_and_action()

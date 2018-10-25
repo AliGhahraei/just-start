@@ -20,12 +20,6 @@ def pomodoro_timer():
         timer.reset()
 
 
-@fixture
-def skip_enabled_pomodoro_timer(pomodoro_timer):
-    pomodoro_timer.skip_enabled = True
-    return pomodoro_timer
-
-
 class TestPomodoroTimer:
-    def test_advance_phases(self, skip_enabled_pomodoro_timer):
-        skip_enabled_pomodoro_timer.advance_phase()
+    def test_advance_phases(self, pomodoro_timer):
+        pomodoro_timer.advance_phase()
