@@ -14,7 +14,7 @@ ClientsConfig = Dict[str, Dict[str, str]]
 
 class _ClockTime(time):
     @classmethod
-    def get_validators(cls) -> Generator[Callable, None, None]:
+    def __get_validators__(cls) -> Generator[Callable, None, None]:
         yield cls.validate_format
 
     @classmethod
