@@ -6,7 +6,7 @@ before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
   - cp example_config.toml ~/.config/just-start/preferences.toml
-  - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+  - pip3 install poetry
 install:
   - poetry install
 script:
