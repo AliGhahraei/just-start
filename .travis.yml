@@ -1,14 +1,16 @@
 language: python
+cache: pip
 python:
   - "3.6" 
 before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
   - cp example_config.toml ~/.config/just-start/preferences.toml
+  - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 install:
-  - pip install pipenv
-  - pipenv install --ignore-pipfile --dev .
+  - poetry install
 script:
-  - coverage run --source=just_start,just_start_urwid -m pytest; coverage report
+  - poetry run coverage run --source=just_start,just_start_urwid -m pytest
+  - coverage report
 after_success:
   - bash <(curl -s https://codecov.io/bash)

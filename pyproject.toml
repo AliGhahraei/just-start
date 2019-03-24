@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "just-start"
+version = "0.4.0"
+description = "Just Start is a wrapper for TaskWidget Warrior with pomodoro support"
+license = "GPL-3.0+"
+
+authors = ["Ali Ghahraei <aligf94@gmail.com>"]
+readme = "README.rst"
+repository = "https://github.com/AliGhahraei/just-start/"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+pexpect = "^4.6"
+toml = "^0.10.0"
+pydantic = "^0.21.0"
+urwid = {version = "^2.0", optional = true}
+
+[tool.poetry.dev-dependencies]
+pytest = "^4.3"
+pytest-mock = "^1.10"
+coverage = "^4.5"
+
+[tool.poetry.extras]
+urwid = ["urwid"]
+# Just to be "installable" like the other clients
+term = []
+
+[tool.poetry.scripts]
+just-start-term = "just_start.client_example:main[term]"
+just-start-urwid = "just_start_urwid:main[urwid]"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
