@@ -8,6 +8,11 @@ authors = ["Ali Ghahraei <aligf94@gmail.com>"]
 readme = "README.rst"
 repository = "https://github.com/AliGhahraei/just-start/"
 
+packages = [
+    { include = "just_start" },
+    { include = "just_start_urwid" },
+]
+
 [tool.poetry.dependencies]
 python = "^3.7"
 pexpect = "^4.6"
