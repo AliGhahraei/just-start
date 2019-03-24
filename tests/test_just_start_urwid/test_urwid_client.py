@@ -1,7 +1,6 @@
 from unittest.mock import create_autospec, patch
 
 from pytest import fixture, raises, mark
-from urwid import ExitMainLoop
 
 from just_start import (
     UNARY_ACTION_PROMPTS, NULLARY_ACTION_KEYS, UNARY_ACTION_KEYS, UserInputError, Action,
@@ -10,7 +9,7 @@ from just_start import (
 from just_start.pomodoro import PomodoroTimer
 from just_start_urwid.client import (
     ActionHandler, ActionNotInProgress, TaskWidget, IGNORED_KEYS_DURING_ACTION, TaskListBox,
-    get_error_colors, FocusedTask,
+    get_error_colors, FocusedTask, ExitMainLoop,
 )
 
 

@@ -1,14 +1,17 @@
 language: python
 cache: pip
-python:
-  - "3.7"
+matrix:
+  include: 
+    - python: 3.7
+      dist: xenial
+      sudo: true
 before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
   - cp example_config.toml ~/.config/just-start/preferences.toml
   - pip3 install poetry
 install:
-  - poetry install
+  - poetry install -E urwid
 script:
   - poetry run coverage run --source=just_start,just_start_urwid -m pytest
   - coverage report
