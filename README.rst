@@ -32,7 +32,7 @@ Supported platforms:
 
 Requirements:
 
-- Python 3.6
+- Python 3.7
 - TaskWarrior_ (latest)
 
 Clone this repo and run the following replacing <client_name> with a name from
