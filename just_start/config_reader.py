@@ -1,64 +1,63 @@
+from dataclasses import field
 from datetime import time, datetime
+from ipaddress import IPv4Address
 from os.path import expanduser
-from typing import Dict, List, Generator, Callable, TypeVar
+from typing import Dict, List, TypeVar, Optional
 
-from pydantic import BaseModel, UrlStr, PositiveInt, FilePath, conint
+from pydantic import PositiveInt, FilePath, conint, SecretStr
+from pydantic.dataclasses import dataclass
 from toml import load
 
 from just_start.constants import CONFIG_PATH
 
 
-WeekdayInt = conint(le=0, ge=6)
-ClientsConfig = Dict[str, Dict[str, str]]
+ISOWeekday = conint(ge=1, le=7)
+ConfigName = str
+ClientsConfig = Dict[ConfigName, Dict[str, str]]
 
 
-class _ClockTime(time):
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable, None, None]:
-        yield cls.validate_format
-
-    @classmethod
-    def validate_format(cls, time_str: str) -> time:
-        return datetime.strptime(time_str, '%H:%M').time()
+@dataclass
+class _LocationActivationConfig:
+    start: time
+    end: time
+    days: List[ISOWeekday]
 
 
-class _LocationActivationConfig(BaseModel):
-    start: _ClockTime
-    end: _ClockTime
-    days: List[WeekdayInt]
-
-
-class GeneralConfig(BaseModel):
-    password: str = None
+@dataclass
+class GeneralConfig:
+    password: Optional[SecretStr] = None
     taskrc_path: FilePath = expanduser("~/.taskrc")
-    blocked_sites: List[str] = []
-    blocking_ip: UrlStr = "127.0.0.1"
+    blocked_sites: List[str] = field(default_factory=list)
+    blocking_ip: IPv4Address = "127.0.0.1"
     notifications: bool = True
 
 
-class PomodoroConfig(BaseModel):
+@dataclass
+class PomodoroConfig:
     pomodoro_length: PositiveInt = 25
     short_rest: PositiveInt = 5
     long_rest: PositiveInt = 15
     cycles_before_long_rest: PositiveInt = 4
 
 
-class _LocationConfig(BaseModel):
+@dataclass
+class _LocationConfig:
     name: str
     activation: _LocationActivationConfig
-    general: GeneralConfig = GeneralConfig()
-    pomodoro: PomodoroConfig = PomodoroConfig()
-    clients: ClientsConfig = {}
+    general: GeneralConfig = field(default_factory=GeneralConfig)
+    pomodoro: PomodoroConfig = field(default_factory=PomodoroConfig)
+    clients: ClientsConfig = field(default_factory=dict)
 
 
-class _FullConfig(BaseModel):
-    general: GeneralConfig = GeneralConfig()
-    pomodoro: PomodoroConfig = PomodoroConfig()
-    clients: ClientsConfig = {}
-    locations: List[_LocationConfig] = []
+@dataclass
+class _FullConfig:
+    general: GeneralConfig = field(default_factory=GeneralConfig)
+    pomodoro: PomodoroConfig = field(default_factory=PomodoroConfig)
+    clients: ClientsConfig = field(default_factory=list)
+    locations: List[_LocationConfig] = field(default_factory=list)
 
 
-Section = TypeVar('Section', bound=BaseModel)
+Section = TypeVar('Section')
 
 
 class _Config:
