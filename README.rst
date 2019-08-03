@@ -1,7 +1,7 @@
 just-start
 ==========
 
-|Build Status| |Coverage Status| |Waffle.io - Columns and their card count|
+|Build Status| |Coverage Status|
 
 An app to defeat procrastination!
 
@@ -95,7 +95,7 @@ If you want to help out please install Pipenv_, clone the repo and run:
 
 This will ensure you have both the development and install dependencies.
 
-Issues are tracked using Waffle_ + `GitHub Issues`_
+Issues are tracked using `GitHub Issues`_
 
 Running Tests
 -------------
@@ -113,9 +113,6 @@ following:
 .. |Coverage Status| image:: https://codecov.io/gh/AliGhahraei/just-start/branch
    /master/graph/badge.svg
    :target: https://codecov.io/gh/AliGhahraei/just-start
-.. |Waffle.io - Columns and their card count| image:: https://badge.waffle.io/
-   AliGhahraei/just-start.svg?columns=To%20Do,Priority
-   :target: https://waffle.io/AliGhahraei/just-start
 
 .. _Calcurse: http://calcurse.org
 .. _GitHub Issues: https://github.com/AliGhahraei/just-start/issues
@@ -125,4 +122,3 @@ following:
 .. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
 .. _Urwid: http://urwid.org/
-.. _Waffle: https://waffle.io/AliGhahraei/just-start
