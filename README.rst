@@ -92,12 +92,11 @@ Issues are tracked using `GitHub Issues`_
 Running Tests
 -------------
 
-First, you’ll need the Development_ dependencies. Then, just issue the
-following:
+You just need Tox_
 
 .. code:: bash
 
-    $ coverage run --source=just_start,just_start_urwid -m pytest; coverage report
+    $ tox
 
 .. |Build Status| image:: https://travis-ci.org/AliGhahraei/
    just-start.svg?branch=master
@@ -114,3 +113,5 @@ following:
 .. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
 .. _Urwid: http://urwid.org/
+.. _Tox: https://tox.readthedocs.io/en/latest/
+
