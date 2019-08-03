@@ -35,38 +35,30 @@ Requirements:
 - Python 3.7
 - TaskWarrior_ (latest)
 
-Clone this repo and run the following replacing <client_name> with a name from
-the Clients_ table:
+Pick a client from the table below and run:
 
 .. code:: bash
 
-    $ pip install -e just-start[<client_name>]
+    $ pip install just-start[<client_name>]
 
-So, for example, this would install the urwid client:
+If you pick urwid, you should run:
 
 .. code:: bash
 
-    $ pip install -e just-start[urwid]
-
-Now go to Usage_
-
-This installs an editable/development version (run ``pip install --help | grep
- --after-context=4 -- --editable`` to find out more). You can of course install
-without the ``-e`` flag, but be aware that things still move very fast. You may
-also download a release_ instead.
+    $ pip install just-start[urwid]
 
 Clients
 -------
 
-+------+----------+------------------------------------------------------------+
-|Name  |Framework |Notes                                                       |
-+======+==========+============================================================+
-|urwid |Urwid_    |Inspired by Calcurse_. Similar to a graphical               |
-|      |          |application, but in your terminal                           |
-+------+----------+------------------------------------------------------------+
-|term  |Terminal  |Example client. Useful for seeing how to write a brand new  |
-|      |(none)    |one but not intended for continuous usage                   |
-+------+----------+------------------------------------------------------------+
++--------------------+----------+------------------------------------------------------------+
+|Name                |Framework |Notes                                                       |
++====================+==========+============================================================+
+|urwid (recommended) |Urwid_    |Inspired by Calcurse_. Similar to a graphical               |
+|                    |          |application, but in your terminal                           |
++--------------------+----------+------------------------------------------------------------+
+|term                |Terminal  |Example client. Useful for seeing how to write a brand new  |
+|                    |(none)    |one but not intended for continuous usage                   |
++--------------------+----------+------------------------------------------------------------+
 
 Usage
 -----
@@ -86,12 +78,12 @@ Press h to see a list of available user actions.
 Development
 -----------
 
-If you want to help out please install Pipenv_, clone the repo and run:
+If you want to help out please install Poetry_, clone the repo and run:
 
 .. code:: bash
 
     $ cd just-start/
-    $ pipenv install --dev -e .
+    $ poetry install
 
 This will ensure you have both the development and install dependencies.
 
@@ -117,7 +109,7 @@ following:
 .. _Calcurse: http://calcurse.org
 .. _GitHub Issues: https://github.com/AliGhahraei/just-start/issues
 .. _Omodoro: https://github.com/okraits/omodoro
-.. _Pipenv: https://docs.pipenv.org
+.. _Poetry: https://poetry.eustace.io/docs/
 .. _Pomodoro Technique: https://cirillocompany.de/pages/pomodoro-technique
 .. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
