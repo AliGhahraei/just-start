@@ -1,5 +1,8 @@
 language: python
-cache: pip
+cache:
+  pip: true
+  directories:
+    - $HOME/.cache/pypoetry
 dist: xenial
 sudo: true
 
@@ -10,7 +13,9 @@ before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
   - cp example_config.toml ~/.config/just-start/preferences.toml
-  - pip install poetry
+  - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+  - source $HOME/.poetry/env
+  - pip install pip -U
 install:
   - pip install tox
 script:

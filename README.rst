@@ -92,7 +92,7 @@ Issues are tracked using `GitHub Issues`_
 Running Tests
 -------------
 
-You just need Tox_
+You just need Poetry_ and Tox_
 
 .. code:: bash
 
