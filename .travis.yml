@@ -1,21 +1,27 @@
 language: python
+dist: xenial
+sudo: true
+
 cache:
   pip: true
   directories:
     - $HOME/.cache/pypoetry
-dist: xenial
-sudo: true
+
+env:
+  global:
+    - TOXENV=py
 
 jobs:
   include:
     - stage: test
       python: 3.6
-      env: TOXENV=py
     - python: 3.7
-      env: TOXENV=py
-    - stage: "type check"
-      python: 3.7
-      env: TOXENV=type
+    - stage: "post-test checks"
+      name: typing
+      env: TOXENV=typing
+    - name: style
+      env: TOXENV=style
+
 before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
@@ -23,6 +29,7 @@ before_install:
   - curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
   - source $HOME/.poetry/env
   - pip install pip -U
+
 install:
   - pip install tox
 script:

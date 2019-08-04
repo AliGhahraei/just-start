@@ -148,7 +148,7 @@ def write_status(status_: Union[str, Tuple[str, str]]) -> None:
 
 
 class TaskWidget(Edit):
-    def __init__(self, caption: str='', **kwargs):
+    def __init__(self, caption: str = '', **kwargs):
         self._task_id = caption.split()[0] if caption else None
         super().__init__(caption=caption, **kwargs)
 
