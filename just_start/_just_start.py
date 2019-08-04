@@ -5,17 +5,16 @@ from functools import wraps
 from os import makedirs
 from signal import signal, SIGTERM
 import sys
+from threading import Timer
 from typing import Callable
 
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
     CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR,
 )
-from ._log import log
-from .pomodoro import PomodoroTimer
-from .os_utils import run_task, db, get_task_list, notify
-
-StatusWriter = Callable[[str], None]
+from just_start._log import log
+from just_start.pomodoro import PomodoroTimer, StatusWriter, PomodoroSerializer
+from just_start.os_utils import run_task, db, get_task_list, notify
 
 
 def update_status(f: Callable[..., str]):
@@ -119,14 +118,52 @@ def just_start(status_writer: StatusWriter, on_tasks_refresh: Callable,
     def refresh_tasks_():
         on_tasks_refresh(get_task_list())
 
-    pomodoro_timer = PomodoroTimer(notifier=pomodoro_status_writer)
-    _init_just_start(refresh_tasks_, pomodoro_timer)
+    pomodoro_timer = PomodoroTimer(notifier=pomodoro_status_writer, timer=TimerRunner())
+    pomodoro_serializer = _init_just_start(refresh_tasks_, pomodoro_timer)
 
     with _handle_errors():
         try:
             yield ActionRunner(pomodoro_timer, status_writer, refresh_tasks_)
         finally:
-            _quit_just_start(pomodoro_timer)
+            _quit_just_start(pomodoro_serializer)
+
+
+class TimerRunner:
+    def __init__(self):
+        self.timer = None
+
+    def start(self, seconds: int, callback: Callable[[], None]):
+        self.timer = Timer(seconds, callback)
+        self.timer.start()
+
+    def stop(self):
+        self.timer.cancel()
+
+
+def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer) -> PomodoroSerializer:
+    pomodoro_serializer = PomodoroSerializer(pomodoro_timer)
+    signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_serializer))
+    _read_serialized_data(pomodoro_serializer)
+    makedirs(CONFIG_DIR, exist_ok=True)
+    refresh_tasks_()
+    return pomodoro_serializer
+
+
+def _quit_just_start(pomodoro_serializer: PomodoroSerializer) -> None:
+    db.update(pomodoro_serializer.serializable_data)
+
+
+def _read_serialized_data(pomodoro_serializer: PomodoroSerializer):
+    data = {}
+    for attribute in pomodoro_serializer.serializable_attributes:
+        try:
+            data[attribute] = db[attribute]
+        except KeyError:
+            log.warning(f"Serialized attribute {attribute} couldn't be"
+                        f" read (this might happen between updates)")
+    if not data:
+        log.warning(f'No serialized attributes could be read')
+    pomodoro_serializer.serializable_data = data
 
 
 @contextmanager
@@ -138,26 +175,6 @@ def _handle_errors():
     except Exception:
         print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, file=sys.stderr)
         log.exception(UNHANDLED_ERROR)
-
-
-def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer):
-    signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_timer))
-    data = {}
-    for attribute in PomodoroTimer.SERIALIZABLE_ATTRIBUTES:
-        try:
-            data[attribute] = db[attribute]
-        except KeyError:
-            log.warning(f"Serialized attribute {attribute} couldn't be"
-                        f" read (this might happen between updates)")
-    if not data:
-        log.warning(f'No serialized attributes could be read')
-    pomodoro_timer.serializable_data = data
-    makedirs(CONFIG_DIR, exist_ok=True)
-    refresh_tasks_()
-
-
-def _quit_just_start(pomodoro_timer: PomodoroTimer) -> None:
-    db.update(pomodoro_timer.serializable_data)
 
 
 NULLARY_ACTION_KEYS = OrderedDict([
