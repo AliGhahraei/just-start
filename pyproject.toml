@@ -26,6 +26,7 @@ pytest-mock = "^1.10"
 coverage = "^4.5"
 mypy = "^0.720.0"
 pygments = "^2.4"
+codecov = "^2.0"
 
 [tool.poetry.extras]
 urwid = ["urwid"]

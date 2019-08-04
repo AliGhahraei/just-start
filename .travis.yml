@@ -12,7 +12,7 @@ jobs:
       python: 3.6
       env: TOXENV=py
     - python: 3.7
-      env: TOXENV=coverage
+      env: TOXENV=py
     - stage: "type check"
       python: 3.7
       env: TOXENV=type
