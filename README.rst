@@ -18,12 +18,13 @@ Omodoro_.
 Features:
 
 - Configurable pomodoro phase durations
-- Support for multiple configurations (a.k.a. *locations*) based on the current time and day of the week
+- Support for multiple configurations (a.k.a. *locations*) based on the current time and day of the
+  week
 - Desktop notifications
 - Block time-wasting sites while you’re working
 
-Installation
-------------
+Installation and usage
+----------------------
 
 Supported platforms:
 
@@ -32,20 +33,24 @@ Supported platforms:
 
 Requirements:
 
-- Python 3.7
+- Python 3.6+
 - TaskWarrior_ (latest)
 
-Pick a client from the table below and run:
+Pick a client name from the table below and run:
 
 .. code:: bash
 
     $ pip install just-start[<client_name>]
+    $ just-start-<client_name>
 
-If you pick urwid, you should run:
+So for the urwid client:
 
 .. code:: bash
 
-    $ pip install just-start[urwid]
+    $ pip install just-start-urwid
+    $ just-start-urwid
+
+Press h to see a list of available user actions.
 
 Clients
 -------
@@ -60,21 +65,6 @@ Clients
 |                    |(none)    |one but not intended for continuous usage                   |
 +--------------------+----------+------------------------------------------------------------+
 
-Usage
------
-
-.. code:: bash
-
-    $ just-start-<client_name>
-
-So for the urwid client:
-
-.. code:: bash
-
-    $ just-start-urwid
-
-Press h to see a list of available user actions.
-
 Development
 -----------
 
@@ -86,6 +76,20 @@ If you want to help out please install Poetry_, clone the repo and run:
     $ poetry install
 
 This will ensure you have both the development and install dependencies.
+
+You can also install the package in editable mode to test manually without having to run a build
+after every change, but you'll need to generate a setup.py since projects using pyproject.toml alone
+can't be used this way (see the note about editable mode in PEP517_ for more info). I use Dephell_
+for this:
+
+.. code:: bash
+
+    $ cd just-start
+    $ dephell deps convert --from=pyproject.toml --to=setup.py
+    $ pip install -e just_start
+
+Bug reports
+-----------
 
 Issues are tracked using `GitHub Issues`_
 
@@ -110,8 +114,8 @@ You just need Poetry_ and Tox_
 .. _Omodoro: https://github.com/okraits/omodoro
 .. _Poetry: https://poetry.eustace.io/docs/
 .. _Pomodoro Technique: https://cirillocompany.de/pages/pomodoro-technique
-.. _release: https://github.com/AliGhahraei/just-start/releases
 .. _Taskwarrior: https://taskwarrior.org/
 .. _Urwid: http://urwid.org/
 .. _Tox: https://tox.readthedocs.io/en/latest/
-
+.. _Dephell: https://github.com/dephell/dephell
+.. _PEP517: https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist

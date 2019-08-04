@@ -2,18 +2,22 @@ from dataclasses import field
 from datetime import time, datetime
 from ipaddress import IPv4Address
 from os.path import expanduser
-from typing import Dict, List, TypeVar, Optional
+from typing import Dict, List, TypeVar, Optional, cast
 
-from pydantic import PositiveInt, FilePath, conint, SecretStr
+from pydantic import PositiveInt, FilePath, SecretStr, ConstrainedInt
 from pydantic.dataclasses import dataclass
 from toml import load
 
 from just_start.constants import CONFIG_PATH
 
 
-ISOWeekday = conint(ge=1, le=7)
 ConfigName = str
 ClientsConfig = Dict[ConfigName, Dict[str, str]]
+
+
+class ISOWeekday(ConstrainedInt):
+    ge = 1
+    le = 7
 
 
 @dataclass
@@ -26,18 +30,18 @@ class _LocationActivationConfig:
 @dataclass
 class GeneralConfig:
     password: Optional[SecretStr] = None
-    taskrc_path: FilePath = expanduser("~/.taskrc")
+    taskrc_path: FilePath = cast(FilePath, expanduser("~/.taskrc"))
     blocked_sites: List[str] = field(default_factory=list)
-    blocking_ip: IPv4Address = "127.0.0.1"
+    blocking_ip: IPv4Address = IPv4Address("127.0.0.1")  # NOSONAR
     notifications: bool = True
 
 
 @dataclass
 class PomodoroConfig:
-    pomodoro_length: PositiveInt = 25
-    short_rest: PositiveInt = 5
-    long_rest: PositiveInt = 15
-    cycles_before_long_rest: PositiveInt = 4
+    pomodoro_length: PositiveInt = PositiveInt(25)
+    short_rest: PositiveInt = PositiveInt(5)
+    long_rest: PositiveInt = PositiveInt(15)
+    cycles_before_long_rest: PositiveInt = PositiveInt(4)
 
 
 @dataclass
@@ -53,7 +57,7 @@ class _LocationConfig:
 class _FullConfig:
     general: GeneralConfig = field(default_factory=GeneralConfig)
     pomodoro: PomodoroConfig = field(default_factory=PomodoroConfig)
-    clients: ClientsConfig = field(default_factory=list)
+    clients: ClientsConfig = field(default_factory=dict)
     locations: List[_LocationConfig] = field(default_factory=list)
 
 
@@ -62,7 +66,7 @@ Section = TypeVar('Section')
 
 class _Config:
     def __init__(self, config_path: str = CONFIG_PATH):
-        self._loaded_config = None
+        self._loaded_config = None  # type: Optional[_FullConfig]
         self.config_path = config_path
         self._at_work_override = False
 
@@ -97,13 +101,14 @@ class _Config:
 
     def _get_location_section_or_default(self, section_name: str) -> Section:
         try:
-            section_name = next((getattr(location, section_name) for location
-                                 in self.read_config.locations if location.activation.start
-                                 <= datetime.now().time() <= location.activation.end))
+            section = next((getattr(location, section_name)
+                            for location in self.read_config.locations
+                            if location.activation.start <= datetime.now().time()
+                            <= location.activation.end))
         except StopIteration:
-            section_name = getattr(self.read_config, section_name)
+            section = getattr(self.read_config, section_name)
 
-        return section_name
+        return section
 
 
 class ConfigError(Exception):

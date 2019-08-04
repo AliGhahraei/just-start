@@ -6,13 +6,13 @@ from os import makedirs
 from signal import signal, SIGTERM
 import sys
 from threading import Timer
-from typing import Callable
+from typing import Callable, Generator
 
 from .constants import (
     KEYBOARD_HELP, RECURRENCE_OFF, CONFIRMATION_OFF, MODIFY_PROMPT, ADD_PROMPT, TASK_IDS_PROMPT,
     CUSTOM_COMMAND_PROMPT, CONFIG_DIR, UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, UNHANDLED_ERROR,
 )
-from just_start._log import log
+from just_start.logging import logger
 from just_start.pomodoro import PomodoroTimer, StatusWriter, PomodoroSerializer
 from just_start.os_utils import run_task, db, get_task_list, notify
 
@@ -114,7 +114,8 @@ class Action(Enum):
 
 @contextmanager
 def just_start(status_writer: StatusWriter, on_tasks_refresh: Callable,
-               pomodoro_status_writer: StatusWriter = notify) -> 'ActionRunner':
+               pomodoro_status_writer: StatusWriter = notify) \
+        -> Generator['ActionRunner', None, None]:
     def refresh_tasks_():
         on_tasks_refresh(get_task_list())
 
@@ -142,8 +143,8 @@ class TimerRunner:
 
 def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer) -> PomodoroSerializer:
     pomodoro_serializer = PomodoroSerializer(pomodoro_timer)
+    pomodoro_serializer.set_serialized_timer_data(db)
     signal(SIGTERM, lambda *_, **__: _quit_just_start(pomodoro_serializer))
-    _read_serialized_data(pomodoro_serializer)
     makedirs(CONFIG_DIR, exist_ok=True)
     refresh_tasks_()
     return pomodoro_serializer
@@ -151,19 +152,6 @@ def _init_just_start(refresh_tasks_: Callable, pomodoro_timer: PomodoroTimer) ->
 
 def _quit_just_start(pomodoro_serializer: PomodoroSerializer) -> None:
     db.update(pomodoro_serializer.serializable_data)
-
-
-def _read_serialized_data(pomodoro_serializer: PomodoroSerializer):
-    data = {}
-    for attribute in pomodoro_serializer.serializable_attributes:
-        try:
-            data[attribute] = db[attribute]
-        except KeyError:
-            log.warning(f"Serialized attribute {attribute} couldn't be"
-                        f" read (this might happen between updates)")
-    if not data:
-        log.warning(f'No serialized attributes could be read')
-    pomodoro_serializer.serializable_data = data
 
 
 @contextmanager
@@ -174,7 +162,7 @@ def _handle_errors():
         pass
     except Exception:
         print(UNHANDLED_ERROR_MESSAGE_WITH_LOG_PATH, file=sys.stderr)
-        log.exception(UNHANDLED_ERROR)
+        logger.exception(UNHANDLED_ERROR)
 
 
 NULLARY_ACTION_KEYS = OrderedDict([

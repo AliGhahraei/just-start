@@ -2,11 +2,15 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
-from typing import Dict, Any, Tuple, Callable, Iterator
+from logging import getLogger
+from typing import Dict, Any, Tuple, Callable, Iterator, Optional, Mapping
 
 from just_start.constants import STOP_MESSAGE
 from just_start.config_reader import get_location_name, get_pomodoro_config
 from just_start.os_utils import block_sites
+
+
+logger = getLogger(__name__)
 
 
 StatusWriter = Callable[[str], None]
@@ -37,7 +41,7 @@ def _create_cycle() -> Iterator[PomodoroPhase]:
 
 class PomodoroTimer:
     def __init__(self, notifier: StatusWriter, timer):
-        self.start_datetime = None
+        self.start_datetime = None  # type: Optional[datetime]
         self.timer = timer
         self.is_running = False
         self.work_count = 0
@@ -61,7 +65,7 @@ class PomodoroTimer:
     def reset(self) -> None:
         self.stop()
         self.notifier(STOP_MESSAGE)
-        self.__init__(notifier=self.notifier, timer=self.timer)
+        self.__init__(notifier=self.notifier, timer=self.timer)  # type: ignore
 
     def stop(self):
         self._pause()
@@ -74,6 +78,7 @@ class PomodoroTimer:
     def _cancel_internal_timer(self) -> None:
         if self.is_running:
             self.timer.stop()
+            assert self.start_datetime is not None
             elapsed_timedelta = datetime.now() - self.start_datetime
             self.seconds_left -= elapsed_timedelta.seconds
 
@@ -103,7 +108,7 @@ def _add_to_time(time: datetime, seconds_left: int) -> str:
 
 
 class PomodoroSerializer:
-    serializable_attributes = ('pomodoro_cycle', 'phase', 'time_left', 'work_count')
+    serializable_attributes = ('pomodoro_cycle', 'pomodoro_phase', 'seconds_left', 'work_count')
 
     def __init__(self, timer: 'PomodoroTimer'):
         self.timer = timer
@@ -114,7 +119,12 @@ class PomodoroSerializer:
         return {attribute: getattr(self.timer, attribute)
                 for attribute in self.serializable_attributes}
 
-    @serializable_data.setter
-    def serializable_data(self, data: Dict) -> None:
-        for attribute, value in data.items():
-            setattr(self.timer, attribute, value)
+    def set_serialized_timer_data(self, data: Mapping) -> None:
+        for attribute in self.serializable_attributes:
+            try:
+                value = data[attribute]
+            except KeyError:
+                logger.warning(f"Serialized attribute {attribute} couldn't be read (this might"
+                               f" happen between updates)")
+            else:
+                setattr(self.timer, attribute, value)

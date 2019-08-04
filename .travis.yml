@@ -6,10 +6,15 @@ cache:
 dist: xenial
 sudo: true
 
-matrix:
+jobs:
   include:
+    - stage: test
+      env: TOXENV=py
     - python: 3.6
     - python: 3.7
+    - stage: "type check"
+      env: TOXENV=type
+      python: 3.7
 before_install:
   - touch ~/.taskrc
   - mkdir -p ~/.config/just-start/
@@ -20,6 +25,6 @@ before_install:
 install:
   - pip install tox
 script:
-  - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d .)
+  - tox
 after_success:
   - bash <(curl -s https://codecov.io/bash)

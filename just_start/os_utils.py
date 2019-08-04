@@ -1,15 +1,19 @@
 import shelve
 from collections.abc import MutableMapping
+from logging import getLogger
 from pickle import HIGHEST_PROTOCOL
 from platform import system
 from subprocess import run, PIPE, STDOUT
 from typing import List, Callable
 
 from pexpect import spawn, EOF
+from pydantic import SecretStr
 
 from .config_reader import get_general_config, GeneralConfig
 from .constants import PERSISTENT_PATH
-from ._log import log
+
+
+logger = getLogger(__name__)
 
 
 BLOCKING_IP = get_general_config().blocking_ip
@@ -53,10 +57,9 @@ def block_sites(block: bool) -> None:
 
 
 def notify(status: str) -> None:
-    notification_command_args = (('notify-send', status) if system() == 'Linux'
-                                 else ('osascript', '-e', f'display notification "{status}"'
-                                                          f' with title "just-start"'))
-    run_command(*notification_command_args)
+    command = (['notify-send', status] if system() == 'Linux'
+               else ['osascript', '-e', f'display notification "{status}" with title "just-start"'])
+    run_command(*command)
 
 
 def run_command(*args):
@@ -64,8 +67,8 @@ def run_command(*args):
 
 
 def run_task(*args) -> str:
-    args = args or ['-BLOCKED']
-    completed_process = run_command('task', *args)
+    command = args or ('-BLOCKED',)
+    completed_process = run_command('task', *command)
     process_output = completed_process.stdout.decode('utf-8')
 
     if completed_process.returncode != 0:
@@ -80,16 +83,16 @@ def run_sudo(command: str, config_getter: Callable[[], GeneralConfig] = get_gene
         _run_with_password(command, password)
 
 
-def _run_with_password(command: str, password: str):
+def _run_with_password(command: str, password: SecretStr):
     try:
         _spawn_sudo_command(command, password)
     except OSError:
-        log.exception(f'"{command}" command failed')
+        logger.exception(f'"{command}" command failed')
 
 
-def _spawn_sudo_command(command, password):
+def _spawn_sudo_command(command: str, password: SecretStr):
     child = spawn(command)
-    child.sendline(password)
+    child.sendline(password.get_secret_value())
     child.expect(EOF)
 
 

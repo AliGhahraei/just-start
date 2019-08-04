@@ -24,6 +24,8 @@ urwid = {version = "^2.0", optional = true}
 pytest = "^5.0"
 pytest-mock = "^1.10"
 coverage = "^4.5"
+mypy = "^0.720.0"
+pygments = "^2.4"
 
 [tool.poetry.extras]
 urwid = ["urwid"]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Tuple, Any, Callable, Dict, Union
+from typing import List, Tuple, Any, Callable, Dict, Union, Optional
 
 from urwid import (
     Text, ListBox, SimpleFocusListWalker, Edit, LineBox, Frame, Filler, TOP, ExitMainLoop,
@@ -24,7 +24,7 @@ class ActionNotInProgress(Exception):
 
 class ActionHandler:
     def __init__(self, action_runner: ActionRunner, focused_task: 'FocusedTask'):
-        self.action = None
+        self.action = None  # type: Optional[Action]
         self.prev_caption = None
         self.action_runner = action_runner
         self.focused_task = focused_task
@@ -100,7 +100,7 @@ class ActionHandler:
         else:
             self.action_runner(action)
 
-    def _set_caption_and_action(self, caption: str, action: ActionRunner):
+    def _set_caption_and_action(self, caption: str, action: Action):
         self.prev_caption = self.focused_task.caption
         self.focused_task.set_caption(f'{self.prev_caption}\n{caption} ')
         self.action = action
@@ -121,7 +121,7 @@ class TaskListBox(ListBox):
     def __init__(self):
         body = SimpleFocusListWalker([])
         super().__init__(body)
-        self.action_handler = None  # type: ActionHandler
+        self.action_handler = None  # type: Optional[ActionHandler]
 
     def keypress(self, size: int, key: str):
         assert self.action_handler
