@@ -10,20 +10,19 @@ cache:
 env:
   global:
     - TOXENV=py
-    - LATEST_PYTHON=3.7
 
 jobs:
   include:
     - stage: test
       python: 3.6
-    - python: $LATEST_PYTHON
+    - python: 3.7
     - stage: "post-test checks"
       name: typing
       env: TOXENV=typing
-      python: $LATEST_PYTHON
+      python: 3.7
     - name: style
       env: TOXENV=style
-      python: $LATEST_PYTHON
+      python: 3.7
 
 before_install:
   - touch ~/.taskrc
