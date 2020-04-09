@@ -15,7 +15,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.8"
 pexpect = "^4.6"
 toml = "^0.10.0"
 pydantic = "^0.31"

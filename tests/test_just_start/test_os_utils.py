@@ -1,5 +1,6 @@
 import shelve
 from subprocess import CompletedProcess
+from unittest.mock import patch
 
 from just_start.config_reader import GeneralConfig
 from just_start.os_utils import run_task, TaskWarriorError, run_sudo, Db
@@ -34,9 +35,9 @@ def test_run_sudo():
     run_sudo('test_command', _get_config_with_password)
 
 
-def test_run_sudo_handles_os_error(mocker, caplog):
+def test_run_sudo_handles_os_error(caplog):
     test_command = 'test_command'
-    with mocker.patch('just_start.os_utils.spawn', side_effect=OSError()):
+    with patch('just_start.os_utils.spawn', side_effect=OSError()):
         run_sudo(test_command, _get_config_with_password)
     assert test_command in caplog.text
 
