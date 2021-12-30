@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "just-start"
-version = "0.5.1"
+version = "0.5.2"
 description = "Just Start is a wrapper for Task Warrior with pomodoro support"
 license = "GPL-3.0+"
 
