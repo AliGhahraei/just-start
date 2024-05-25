@@ -1,3 +1,7 @@
+NO LONGER MAINTAINED
+====================
+Check out the new app: https://github.com/AliGhahraei/little-by-little
+
 just-start
 ==========
 
